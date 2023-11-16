@@ -3,11 +3,11 @@ mod config;
 use std::{io, env};
 use config::{AppConfigAction, parse_action};
 
-pub struct AppConfig {
+pub struct App {
     action: AppConfigAction,
 }
 
-impl AppConfig {
+impl App {
     fn new(action: AppConfigAction) -> Self {
         return Self {
             action: action,
@@ -21,11 +21,11 @@ impl AppConfig {
 }
 
 
-pub fn parse_from_env() -> Result<AppConfig, io::Error> {
+pub fn parse_from_env() -> Result<App, io::Error> {
     self::parse_args(&env::args().collect())
 }
 
-pub fn parse_args(args: &Vec<String>) -> Result<AppConfig, io::Error> {
+pub fn parse_args(args: &Vec<String>) -> Result<App, io::Error> {
     let action = parse_action(args)?;
-    Ok(AppConfig::new(action))
+    Ok(App::new(action))
 }
