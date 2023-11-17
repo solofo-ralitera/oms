@@ -1,14 +1,14 @@
-mod config;
+mod actions;
 
 use std::{io, env};
-use config::{AppConfigAction, parse_action};
+use actions::{Action, parse_action};
 
 pub struct App {
-    action: AppConfigAction,
+    action: Action,
 }
 
 impl App {
-    fn new(action: AppConfigAction) -> Self {
+    fn new(action: Action) -> Self {
         return Self {
             action: action,
         };
