@@ -1,20 +1,29 @@
 mod info;
 mod read;
+mod search;
 
 use std::io::{self, Error, ErrorKind};
 
-pub enum Action {
-    Info(),
-    Read(String),
+
+pub trait Runnable {
+    fn run(&self) -> Result<(), io::Error>;
 }
 
-impl Action {
-    pub fn run(&self) -> Result<(), io::Error> {
-        match &self {
-            Action::Info() => info::run(),
-            Action::Read(file_path) => read::run(&file_path),
-        }
-    }
+pub fn parse_action(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error> {
+    let action = match get_args_parameter(args, 1, "") {
+        Ok(v) => v,
+        Err(_) => "info".to_string(), // Default action: info
+    };
+    
+    match &action[..] {
+        "info" => Ok(Box::new(info::build_action()?)),
+        "read" => Ok(Box::new(read::build_action(args)?)),
+        "search" => Ok(Box::new(search::build_action(args)?)),
+        _ => Err(Error::new(
+            ErrorKind::InvalidInput, 
+            format!("'{action}' is not a valid command{}", info::help_command())
+        ))
+    } 
 }
 
 fn get_args_parameter(args: &Vec<String>, index:usize, error_message: &str) -> Result<String, io::Error> {
@@ -27,29 +36,6 @@ fn get_args_parameter(args: &Vec<String>, index:usize, error_message: &str) -> R
     };
     Ok(parameter.to_string())
 }
-
-pub fn parse_action(args: &Vec<String>) -> Result<Action, io::Error> {
-    let action = match get_args_parameter(args, 1, "") {
-        Ok(v) => v,
-        Err(_) => "info".to_string(), // Default action: info
-    };
-    
-    match &action[..] {
-        "info" => Ok(Action::Info()),
-        "read" => {
-            Ok(Action::Read(get_args_parameter(
-                args,
-                2,
-                &format!("{}{}", read::error_command(), info::help_command())[..]
-            )?))
-        },
-        _ => Err(Error::new(
-            ErrorKind::InvalidInput, 
-            format!("\n'{action}' is not a valid command{}", info::help_command())
-        ))
-    } 
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -79,26 +65,15 @@ mod tests {
             assert_eq!(err.to_string(), "error message");
             return Ok(());
         }
-        Err(format!("get_args_parameter should throw error"))
+        Err(format!("get_args_parameter should throw error 'error message'"))
     }
 
     #[test]
-    fn parse_action_info() -> Result<(), String> {
-        if let Ok(action) = parse_action(&vec!["cmd".to_string(), "info".to_string()]) {
-            if let Action::Info() = action {
-                return Ok(());
-            }
+    fn parse_action_error() -> Result<(), String> {
+        if let Err(err) = parse_action(&vec!["cmd".to_string(), "unknown command".to_string()]) {
+            assert!(err.to_string().contains("unknown command"), "Error should contain 'unknown command'");
+            return Ok(());
         }
-        Err(format!("parse_action should return Ok(Acion::Info)"))
-    }
-
-    #[test]
-    fn parse_action_read() -> Result<(), String> {
-        if let Ok(action) = parse_action(&vec!["cmd".to_string(), "read".to_string(), "filename".to_string()]) {
-            if let Action::Read(_) = action {
-                return Ok(());
-            }
-        }
-        Err("parse_action should return Ok(Acion::Read)".to_string())
+        Err(format!("parse_action should throw unkown command"))
     }
 }

@@ -1,31 +1,42 @@
 mod actions;
 
-use std::{io, env};
-use actions::{Action, parse_action};
+use std::{env, error::Error};
+use actions::{Runnable, parse_action};
 
 pub struct App {
-    action: Action,
+    action: Box<dyn Runnable>,
 }
 
 impl App {
-    fn new(action: Action) -> Self {
-        return Self {
+    fn new(action: Box<dyn Runnable>) -> Self {
+        App {
             action: action,
-        };
+        }
     }
 
-    pub fn run(&self) -> Result<&Self, io::Error> {
+    pub fn from_env() -> Result<App, Box<dyn Error>> {
+        Self::from_args(&env::args().collect())
+    }
+
+    pub fn from_args(args: &Vec<String>) -> Result<App, Box<dyn Error>> {
+        let action = parse_action(args)?;
+        Ok(App::new(action))
+    }
+
+    pub fn run(&self) -> Result<&Self, Box<dyn Error>> {
         self.action.run()?;
         Ok(self)
     }
 }
 
+#[cfg(test)]
+mod tests {
 
-pub fn parse_from_env() -> Result<App, io::Error> {
-    self::parse_args(&env::args().collect())
-}
-
-pub fn parse_args(args: &Vec<String>) -> Result<App, io::Error> {
-    let action = parse_action(args)?;
-    Ok(App::new(action))
+    #[test]
+    fn from_args() -> Result<(), String> {
+        if let Err(err) = super::App::from_args(&vec![]) {
+            return Err(err.to_string());
+        }
+        Ok(())
+    }
 }

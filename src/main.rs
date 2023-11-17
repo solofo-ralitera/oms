@@ -1,18 +1,16 @@
-use oms::app;
+use oms::app::App;
 use std::process;
 
-/**
-* cargo run -- read /home/solofo/Videos/text.txt
-*/
+
 fn main() {
-    app::parse_from_env()
+    App::from_env()
         .unwrap_or_else(|err| {
-            println!("{err}");
+            eprintln!("\nInvalid command: {err}");
             process::exit(1);
         })
         .run()
         .unwrap_or_else(|err| {
-            println!("{err}");
+            eprintln!("\n{err}\n");
             process::exit(1);
         });
 }
