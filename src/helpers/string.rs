@@ -1,15 +1,13 @@
 
-pub fn search_lines(content: &String, query: &String) -> Vec<(usize, String)> {
+pub fn search_lines<'a>(content: &'a String, query: &String) -> Vec<(usize, &'a str)> {
     let query = query.to_lowercase();
-    let mut res: Vec<(usize, String)> = Vec::new();
 
-    for (index, line) in content.lines().into_iter().enumerate() {
-        if line.to_lowercase().contains(&query) {
-            res.push((index + 1, line.trim().to_string()));
-        }
-    }
-
-    return res;
+    content
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.to_lowercase().contains(&query))
+        .map(|(index, line)| (index + 1, line.trim()))
+        .collect()
 }
 
 

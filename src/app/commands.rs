@@ -23,7 +23,7 @@ pub fn parse_command(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error>
             ErrorKind::InvalidInput, 
             format!("'{cmd}' is not a valid command{}", help::help_command())
         ))
-    } 
+    }
 }
 
 fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str, io::Error> {

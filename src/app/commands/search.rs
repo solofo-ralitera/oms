@@ -23,9 +23,12 @@ impl Runnable for Search {
         let content =  file::get_content(&self.file_path)?;
 
         println!("\n{}\nLine(s) found for \"{}\":\n", self.file_path, self.search_term);
-        for line  in string::search_lines(&content, &self.search_term) {
-            println!("{}\t{}", line.0, line.1);
-        }
+
+        string::search_lines(&content, &self.search_term)
+            .iter()
+            .for_each(|line| {
+                println!("{}\t{}", line.0, line.1);
+            });
 
         println!("\n");
         Ok(())
