@@ -4,6 +4,10 @@ use crate::helpers::file;
 
 /**
 * cargo run -- read /home/solofo/Videos/text.txt
+*   Read text file: OK
+*   Read pdf: TODO
+*   Read movie: TODO (?)
+*   Read office file: TODO
 */
 
 pub struct Read {
@@ -25,7 +29,11 @@ impl Runnable for Read {
     }
 }
 
-pub fn build_action(args: &Vec<String>) -> Result<Read, io::Error> {
+pub fn usage() -> &'static str {
+    "read [file_path]        Display the content of the file"
+}
+
+pub fn build_cmd(args: &Vec<String>) -> Result<Read, io::Error> {
     let file_path = get_args_parameter(
         args,
         2,

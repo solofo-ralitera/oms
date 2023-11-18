@@ -4,6 +4,13 @@ use crate::helpers::{file, string};
 
 /**
 * cargo run -- search /home/solofo/Videos/text.txt you
+*   Search in text file: OK
+*   Search in PDF: TODO
+*   Search in office file: TODO
+*   Search in directory: TODO
+*   Search in movie: TODO
+*   Search in link: TODO
+*   ...
 */
 
 pub struct Search {
@@ -15,17 +22,24 @@ impl Runnable for Search {
     fn run(&self) -> Result<(), io::Error> {
         let content =  file::get_content(&self.file_path)?;
 
-        println!("\nLine(s) found for \"{}\":\n", self.search_term);
+        println!("\n{}\nLine(s) found for \"{}\":\n", self.file_path, self.search_term);
         for line  in string::search_lines(&content, &self.search_term) {
             println!("{}\t{}", line.0, line.1);
         }
-        println!("\n");
 
+        println!("\n");
         Ok(())
     }
 }
 
-pub fn build_action(args: &Vec<String>) -> Result<Search, io::Error> {
+pub fn usage() -> &'static str {
+    "\
+    search [file_path] [query]      Search in file
+                                    Display each line of the file containing the query text
+    "
+}
+
+pub fn build_cmd(args: &Vec<String>) -> Result<Search, io::Error> {
     let file_path = get_args_parameter(
         args,
         2,

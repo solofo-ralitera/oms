@@ -5,7 +5,7 @@ use std::process;
 fn main() {
     App::from_env()
         .unwrap_or_else(|err| {
-            eprintln!("\nInvalid command: {err}");
+            eprintln!("\n{err}");
             process::exit(1);
         })
         .run()
