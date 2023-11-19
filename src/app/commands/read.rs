@@ -2,15 +2,24 @@ use std::io::{self, Error};
 use super::{get_args_parameter, Runnable};
 use crate::helpers::file;
 
-/**
-* cargo run -- read /home/solofo/Videos/text.txt
-*   Read text file: OK
-*   Read pdf: TODO
-*   Read movie: TODO (?)
-*   Read office file: TODO
-*/
 
+/// # Read command
+/// 
+/// Display the content of the given file
+/// 
+/// ## Usage
+/// 
+/// `oms read /home/me/texe.txt`
+/// 
+/// ## Features
+/// 
+/// * Read text file: OK
+/// * Read pdf: TODO
+/// * Read movie: TODO (?)
+/// * Read office file: TODO
+/// 
 pub struct Read {
+    /// the path of the file to read
     file_path: String,
 }
 

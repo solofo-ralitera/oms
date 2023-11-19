@@ -5,11 +5,21 @@ mod info;
 
 use std::io::{self, Error, ErrorKind};
 
-
+/// App action must implement this Trait
 pub trait Runnable {
     fn run(&self) -> Result<(), io::Error>;
 }
 
+/// Parse the comand line
+/// 
+/// # Arguments
+///
+/// * `args` - A Vector string ref that holds each itme of the command
+/// 
+/// # Examples
+/// if let Err(err) = parse_command(&vec!["cmd".to_string(), "unknown command".to_string()]) {
+///     assert!(err.to_string().contains("unknown command"), "Error should contain 'unknown command'");
+/// }
 pub fn parse_command(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error> {
     let cmd = get_args_parameter(args, 1, "")
         .unwrap_or("help");
@@ -26,6 +36,20 @@ pub fn parse_command(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error>
     }
 }
 
+/// Get item of a string vector a the givent index
+/// 
+/// # Arguments
+///
+/// * `args` - A Vector string ref where to get the value
+/// * `index` - Index of the item to get
+/// * `error_message` - A string slice that holds the error message if error occurs
+/// 
+/// # Examples
+/// ```
+/// let args = vec!["oms".to_string(), "help".to_string()];
+/// let cmd = get_args_parameter(&args, 1, "")
+///     .unwrap_or("help");
+/// ```
 fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str, io::Error> {
     let parameter = match args.get(index) {
         Some(v) => v,

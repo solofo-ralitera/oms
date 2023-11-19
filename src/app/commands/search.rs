@@ -2,19 +2,29 @@ use std::io;
 use super::{get_args_parameter, Runnable};
 use crate::helpers::{file, string};
 
-/**
-* cargo run -- search /home/solofo/Videos/text.txt you
-*   Search in text file: OK
-*   Search in PDF: TODO
-*   Search in office file: TODO
-*   Search in directory: TODO
-*   Search in movie: TODO
-*   Search in link: TODO
-*   ...
-*/
-
+/// # Search command
+/// 
+/// Search for a term in a file or directory
+/// 
+/// ## Usage
+/// 
+/// `cargo run -- search /home/solofo/Videos/text.txt you`
+/// `oms search /home/solofo/Videos/text.txt you`
+/// 
+/// ## Features
+/// 
+/// * Search in text file: OK
+/// * Search in PDF: TODO
+/// * Search in office file: TODO
+/// * Search in directory: TODO
+/// * Search in movie: TODO
+/// * Search in link: TODO
+/// *  ...
+/// 
 pub struct Search {
+    /// path of the file to search in
     file_path: String,
+    /// The search term
     search_term: String,
 }
 
@@ -25,7 +35,7 @@ impl Runnable for Search {
         println!("\n{}\nLine(s) found for \"{}\":\n", self.file_path, self.search_term);
 
         string::search_lines(&content, &self.search_term)
-            .iter()
+            .into_iter()
             .for_each(|line| {
                 println!("{}\t{}", line.0, line.1);
             });

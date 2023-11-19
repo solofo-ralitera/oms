@@ -1,4 +1,25 @@
-
+/// Find each line of content content containing query
+/// 
+/// # Arguments
+///
+/// * `content` - A String reference that contains the content to search in
+/// * `query` - A String reference that contains the search term
+/// 
+/// 
+/// # Examples
+/// 
+/// ```
+/// let content = "\
+///        I'm nobody! Who are you?
+///        Are you nobody, too?
+///        Then there's a pair of us - don't tell!
+///        They'd banish us, you know.".to_string();
+/// let needle = "don't TELL";
+/// string::search_lines(&content, &search_term)
+///     .into_iter()
+///     .for_each(|line| println!("{}\t{}", line.0, line.1))
+/// ```
+/// 
 pub fn search_lines<'a>(content: &'a String, query: &String) -> Vec<(usize, &'a str)> {
     let query = query.to_lowercase();
 

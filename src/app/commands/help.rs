@@ -1,12 +1,13 @@
 use std::io;
-
 use super::{Runnable, info, read, search};
 
-/**
-* cargo run -- help
-* cargo run
-*/
 
+/// # Help command
+/// 
+/// Display help for this app
+/// 
+/// ## Usage
+/// `oms help`
 pub struct Help {}
 
 impl Runnable for Help {
@@ -37,6 +38,7 @@ pub fn help_command() -> &'static str {
     "\nSee 'oms help'\n"
 }
 
+/// Returns Help
 pub fn build_cmd() -> Result<Help, io::Error> {
     Ok(Help {})
 }

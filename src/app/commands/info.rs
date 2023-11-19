@@ -1,14 +1,23 @@
 use std::io;
 use super::{Runnable, get_args_parameter};
 
-/**
-* cargo run -- info /home/solofo/Videos/text.txt
-*   File information: TODO
-*   Movie information: TODO
-*   Read office file: TODO
-*/
 
+/// # Info command
+/// 
+/// Finds information related to the file
+/// 
+/// ## Usage
+/// 
+/// `oms info /home/me/movie.mp4`
+/// 
+/// ## Features
+/// 
+/// * File information: TODO
+/// * Movie information: TODO
+/// * Read office file: TODO
+/// 
 pub struct Info {
+    /// the path of the file
     file_path: String,
 }
 
