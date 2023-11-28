@@ -1,7 +1,6 @@
 use std::io::{self, Error};
 use super::{get_args_parameter, Runnable};
-use crate::helpers::file;
-
+use std::fs;
 
 /// # Read command
 /// 
@@ -13,10 +12,10 @@ use crate::helpers::file;
 /// 
 /// ## Features
 /// 
-/// * Read text file: OK
-/// * Read pdf: TODO
-/// * Read movie: TODO (?)
-/// * Read office file: TODO
+/// * [x] Read text file: OK
+/// * [ ] Read pdf: TODO
+/// * [ ] Read movie: TODO (?)
+/// * [ ] Read office file: TODO
 /// 
 pub struct Read {
     /// the path of the file to read
@@ -24,8 +23,9 @@ pub struct Read {
 }
 
 impl Runnable for Read {
+    /// Start processing the command
     fn run(&self) -> Result<(), io::Error> {
-        match file::get_content(&self.file_path) {
+        match fs::read_to_string(&self.file_path) {
             Ok(content) => {
                 println!("{content}");
                 Ok(())
@@ -38,10 +38,24 @@ impl Runnable for Read {
     }
 }
 
+/// Help message for this command
 pub fn usage() -> &'static str {
     "read [file_path]        Display the content of the file"
 }
 
+/// Returns Read from command line args
+///
+/// # Arguments
+///
+/// * `args` - A Vector string from command line
+///
+/// # Examples
+///
+/// ```
+/// use oms::app::commands::read;
+/// let args = vec!["oms".to_string(), "read".to_string(), "/home/me/text.txt".to_string()];
+/// read::build_cmd(&args);
+/// ```
 pub fn build_cmd(args: &Vec<String>) -> Result<Read, io::Error> {
     let file_path = get_args_parameter(
         args,

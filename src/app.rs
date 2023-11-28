@@ -1,4 +1,4 @@
-mod commands;
+pub mod commands;
 
 use std::{env, error::Error};
 use commands::{Runnable, parse_command};
@@ -14,12 +14,9 @@ impl App {
     /// 
     /// # Examples
     /// ```
-    /// App::from_env.unwrap_or_else(|err| {
-    ///     eprintln!("\n{err}");
-    ///     process::exit(1);
-    /// });
+    /// use oms::app::App;
+    /// let app = App::from_env().unwrap();
     /// ```
-    /// 
     pub fn from_env() -> Result<App, Box<dyn Error>> {
         Self::from_args(&env::args().collect())
     }
@@ -27,9 +24,11 @@ impl App {
     /// Create App from a string vector
     /// 
     /// # Examples
+    /// 
     /// ```
-    /// let cms = vec!["oms".to_string(), "help".to_string()];
-    /// let app = App::from_args(&cms)?;
+    /// use oms::app::App;
+    /// let cmd = vec!["oms".to_string(), "help".to_string()];
+    /// let app = App::from_args(&cmd).unwrap();
     /// ```
     pub fn from_args(args: &Vec<String>) -> Result<App, Box<dyn Error>> {
         Ok(App {
@@ -38,25 +37,73 @@ impl App {
     }
 
     /// Run the Runnable Action of the App
+    /// 
     /// # Examples
+    /// 
     /// ```
-    /// les cms = vec!["oms".to_string(), "help".to_string()];
-    /// let app = App::from_args(&cms)?.run()?;
+    /// use oms::app::App;
+    /// let cmd = vec!["oms".to_string(), "help".to_string()];
+    /// let app = App::from_args(&cmd).unwrap();
+    /// app.run();
     /// ```
-    pub fn run(&self) -> Result<&Self, Box<dyn Error>> {
+    pub fn run(&self) -> Result<(), Box<dyn Error>> {
         self.action.run()?;
-        Ok(self)
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{io:: {Error, ErrorKind}, cell::RefCell, rc::Rc};
+    use super::{App, commands::Runnable};
 
     #[test]
-    fn from_args() -> Result<(), String> {
-        if let Err(err) = super::App::from_args(&vec![]) {
-            return Err(err.to_string());
+    fn from_args() {
+        assert!(super::App::from_args(&vec![]).is_ok(), "from args should be ok");
+    }
+
+    #[test]
+    fn run_success() {
+        struct MockRunnable {
+            counter: Rc<RefCell<u8>>,
         }
-        Ok(())
+        impl Runnable for MockRunnable {
+            fn run(&self) -> Result<(), Error> {
+                *self.counter.borrow_mut() += 1;
+                Ok(())
+            }
+        }
+
+        let counter = Rc::new(RefCell::new(0));
+
+        let mock_runnable = MockRunnable {
+            counter: Rc::clone(&counter),
+        };
+        
+        let app: App = App {
+            action: Box::new(mock_runnable)
+        };
+        assert!(app.run().is_ok(), "App run 1 should be successfull");
+        assert!(app.run().is_ok(), "App run 2 should be successfull");
+        assert_eq!(2, *counter.borrow(), "App should run twice");
+    }
+
+    #[test]
+    fn run_error() {
+        struct MockRunnable {}
+        impl Runnable for MockRunnable {
+            fn run(&self) -> Result<(), Error> {
+                Err(Error::new(ErrorKind::WouldBlock, "WouldBlock"))
+            }
+        }
+
+        let mock_runnable = MockRunnable {};
+        let app = App {
+            action: Box::new(mock_runnable)
+        };
+        match app.run() {
+            Ok(_) => panic!("App run should failed"),
+            Err(err) => assert_eq!(err.to_string(), "WouldBlock", "App run should fail with message 'WouldBlock'"),
+        };
     }
 }

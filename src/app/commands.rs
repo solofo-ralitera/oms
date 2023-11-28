@@ -1,11 +1,17 @@
-mod help;
-mod read;
-mod search;
-mod info;
+//! # Commands
+//!
+//! Provide all commands for oms app
+//! 
+//! like info, read, search...
+
+pub mod help;
+pub mod read;
+pub mod search;
+pub mod info;
 
 use std::io::{self, Error, ErrorKind};
 
-/// App action must implement this Trait
+/// All commands must implement this Trait
 pub trait Runnable {
     fn run(&self) -> Result<(), io::Error>;
 }
@@ -14,12 +20,24 @@ pub trait Runnable {
 /// 
 /// # Arguments
 ///
-/// * `args` - A Vector string ref that holds each itme of the command
+/// * `args` - A Vector string ref that holds arguments passed via the command line
 /// 
 /// # Examples
-/// if let Err(err) = parse_command(&vec!["cmd".to_string(), "unknown command".to_string()]) {
-///     assert!(err.to_string().contains("unknown command"), "Error should contain 'unknown command'");
+/// 
+/// ```
+/// use oms::app::commands::parse_command;
+/// if let Ok(action) = parse_command(&vec!["cmd".to_string(), "help".to_string()]) {
+///     action.run();
+/// } else {
+///     panic!("Should be ok")
 /// }
+/// 
+/// if let Err(err) = parse_command(&vec!["cmd".to_string(), "unknown_command".to_string()]) {
+///     assert!(err.to_string().contains("unknown_command"), "Error should contain 'unknown_command'");
+/// } else {
+///     panic!("Should be an Err")
+/// }
+/// ```
 pub fn parse_command(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error> {
     let cmd = get_args_parameter(args, 1, "")
         .unwrap_or("help");
@@ -45,12 +63,18 @@ pub fn parse_command(args: &Vec<String>) -> Result<Box<dyn Runnable>, io::Error>
 /// * `error_message` - A string slice that holds the error message if error occurs
 /// 
 /// # Examples
+/// 
 /// ```
-/// let args = vec!["oms".to_string(), "help".to_string()];
-/// let cmd = get_args_parameter(&args, 1, "")
-///     .unwrap_or("help");
+/// use oms::app::commands::get_args_parameter;
+/// let args = vec!["oms".to_string(), "info".to_string()];
+/// 
+/// let cmd1 = get_args_parameter(&args, 1, "").unwrap_or("help");
+/// assert_eq!("info", cmd1);
+/// 
+/// let cmd2 = get_args_parameter(&args, 2, "").unwrap_or("index not found");
+/// assert_eq!("index not found", cmd2);
 /// ```
-fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str, io::Error> {
+pub fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str, io::Error> {
     let parameter = match args.get(index) {
         Some(v) => v,
         None => return Err(Error::new(
@@ -66,38 +90,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_args_info_single_parameter() -> Result<(), String> {
+    fn parse_args_info_single_parameter() {
         if let Ok(v) = get_args_parameter(&vec!["info".to_string()], 0, "") {
             assert_eq!(v, "info");
-            return Ok(());
+            return ();
         }
-        Err(format!("get_args_parameter should return Ok(info)"))
+        panic!("get_args_parameter should return Ok(info)");
     }
 
     #[test]
-    fn parse_args_info_two_parameters() -> Result<(), String> {
+    fn parse_args_info_two_parameters() {
         if let Ok(v) = get_args_parameter(&vec!["info".to_string(), "help".to_string()], 1, "") {
             assert_eq!(v, "help");
-            return Ok(());
+            return ();
         }
-        Err(format!("get_args_parameter should return Ok(help)"))
+        panic!("get_args_parameter should return Ok(help)");
     }
 
     #[test]
-    fn parse_args_info_error_message() -> Result<(), String> {
+    fn parse_args_info_error_message() {
         if let Err(err) = get_args_parameter(&vec!["info".to_string(), "help".to_string()], 3, "error message") {
             assert_eq!(err.to_string(), "error message");
-            return Ok(());
+            return ();
         }
-        Err(format!("get_args_parameter should throw error 'error message'"))
+        panic!("get_args_parameter should throw error 'error message'");
     }
 
     #[test]
-    fn parse_action_error() -> Result<(), String> {
+    fn parse_action_error() {
         if let Err(err) = parse_command(&vec!["cmd".to_string(), "unknown command".to_string()]) {
             assert!(err.to_string().contains("unknown command"), "Error should contain 'unknown command'");
-            return Ok(());
+            return ();
         }
-        Err(format!("parse_action should throw unkown command"))
+        panic!("parse_action should throw unkown command");
     }
 }

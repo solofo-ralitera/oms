@@ -8,6 +8,13 @@ use std::{thread, time::Duration};
 /// # Arguments
 ///
 /// * `millis` - pause duration in millis
+/// 
+/// # Examples
+/// 
+/// ```
+/// use oms::helpers;
+/// helpers::sleep(1);
+/// ```
 pub fn sleep(millis: u64) {
     thread::sleep(Duration::from_millis(millis));
 }
