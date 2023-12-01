@@ -1,9 +1,14 @@
-use std::io;
-use std::fs;
+pub mod text;
+pub mod pdf;
+
+
+use std::io::{self, Error, ErrorKind};
+use std::fs::{metadata, read_dir};
+use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::thread;
 use super::{get_args_parameter, Runnable};
-use crate::helpers::string;
+use crate::helpers::file;
 
 /// # Search command
 /// 
@@ -11,17 +16,18 @@ use crate::helpers::string;
 /// 
 /// ## Usage
 /// 
-/// `cargo run -- search /home/solofo/Videos/text.txt you`
-/// `oms search /home/solofo/Videos/text.txt you`
+/// `cargo run -- search ./Cargo.toml opt`
+/// `cargo run -- search . opt`
 /// 
 /// ## Features
 /// 
 /// * [x] Search in text file: OK
-/// * [ ] Search in PDF: TODO
+/// * [o] Search in PDF: TODO
 /// * [ ] Search in office file: TODO
-/// * [ ] Search in directory: TODO
+/// * [x] Search in directory: TODO
 /// * [ ] Search in movie: TODO
 /// * [ ] Search in link: TODO
+/// * [ ] Search arguments: extension, ...
 /// *  ...
 /// 
 pub struct Search {
@@ -36,37 +42,70 @@ impl Runnable for Search {
     fn run(&self) -> Result<(), io::Error> {
         let (tx, rx) = mpsc::channel();
 
-        search_text_file(&self.file_path, &self.search_term, &tx);
+        match metadata(&self.file_path) {
+            Ok(md) => {
+                if md.is_file() {
+                    search_in_file(&self.file_path, &self.search_term, tx.clone());
+                } else if md.is_dir() {
+                    search_in_dir(&self.file_path, &self.search_term, tx.clone());
+                } else {
+                    return Err(Error::new(
+                        ErrorKind::InvalidInput, 
+                        format!("\n{}\n\tread error: unknown file\n\n", self.file_path)
+                    ));
+                }
+            },
+            Err(err) => {
+                return Err(Error::new(
+                    ErrorKind::NotFound, 
+                    format!("\n{}\n\tread error: {}\n\n", self.file_path, err)
+                ));
+            }
+        };
 
+        drop(tx);
         for message in rx {
             println!("{message}");
         }
-
-        println!("\n");
         Ok(())
     }
 }
 
-fn search_text_file(file_path: &String, search_term: &String, tx: &Sender<String>) {
-    let tx = tx.clone();
-    let file_path = file_path.clone();
-    let content =  fs::read_to_string(&file_path).expect("Unable to read file").clone();
+
+fn search_in_dir(dir_path: &String, search_term: &String, tx: Sender<String>) {
+    let dir_path = dir_path.clone();
     let search_term = search_term.clone();
 
-    let mut result = String::new();
     thread::spawn(move || {
-        string::search_lines(&content, &search_term)
-            .enumerate()
-            .for_each(|(index, (line, text))| {
-                if index == 0 {
-                    result.push_str(&format!("\n{}\nLine(s) found for \"{}\":\n\n", file_path, search_term));
-                }
-                result.push_str(&format!("l.{}\t->\t{}\n", line, text));
-            });
-        match tx.send(result) {
-            _ => (),
-        };
+        for entry in read_dir(Path::new(&dir_path)).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_file() {
+                search_in_file(&path.to_str().unwrap().to_string(), &search_term, tx.clone())
+            } else if path.is_dir() {
+                search_in_dir(&path.to_str().unwrap().to_string(), &search_term, tx.clone())
+            }
+        }
     });
+}
+
+fn search_in_file(file_path: &String, search_term: &String, tx: Sender<String>) {
+    match file::get_extension(file_path).unwrap_or("").to_lowercase().as_str() {
+        "pdf" => pdf::search_in_file(file_path, search_term, tx),
+        _ => text::search_in_file(file_path, search_term, tx),
+    }
+
+}
+
+fn text_contains(text: &String, search_term: &String) -> bool {
+    text.to_lowercase().contains(search_term)
+}
+
+fn format_file_display(file_path: &String) -> String {
+    format!("\n{}\n", file_path)
+}
+
+fn format_line_found<'a>(item: &'a String, text: &'a String) -> String {
+    format!("  {} ->  {}\n", item, text.trim())
 }
 
 /// Help message for this command

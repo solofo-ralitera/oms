@@ -1,4 +1,4 @@
-use std::io::{self, Error};
+use std::{io::{self, Error}, thread::{self, JoinHandle}};
 use super::{get_args_parameter, Runnable};
 use std::fs;
 
@@ -8,7 +8,8 @@ use std::fs;
 /// 
 /// ## Usage
 /// 
-/// `oms read /home/me/texe.txt`
+/// `oms read /home/solofo/Videos/text.txt`
+/// `cargo run -- read /home/solofo/Videos/text.txt`
 /// 
 /// ## Features
 /// 
@@ -25,17 +26,29 @@ pub struct Read {
 impl Runnable for Read {
     /// Start processing the command
     fn run(&self) -> Result<(), io::Error> {
-        match fs::read_to_string(&self.file_path) {
+        match read_text_file(&self.file_path).join() {
+            _ => Ok(()),
+        }
+    }
+}
+
+fn read_text_file(file_path: &String) -> JoinHandle<Result<(), io::Error>> {
+    let file_path = file_path.clone();
+    thread::spawn(move || {
+        match fs::read_to_string(file_path) {
             Ok(content) => {
                 println!("{content}");
                 Ok(())
             }
-            Err(err) => return Err(Error::new(
-                err.kind(), 
-                format!("\nread error: {err}\n")
-            ))
+            Err(err) => {
+                println!("\nRead error: {err}\n");
+                return Err(Error::new(
+                    err.kind(), 
+                    format!("{err}")
+                ));
+            }
         }
-    }
+    })
 }
 
 /// Help message for this command
