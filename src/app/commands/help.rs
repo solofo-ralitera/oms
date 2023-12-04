@@ -15,13 +15,14 @@ impl Runnable for Help {
     /// Start processing the command
     fn run(&self) -> Result<(), io::Error> {
         println!("\
-\nUsage:  oms [OPTIONS] COMMAND
+\nUsage:  oms [options] <command> [<args>]
 
 Available commands:
-    {}
-    {}
-    {}
-    {}
+
+{}
+{}
+{}
+{}
 ",
         self::usage(),
         info::usage(),
@@ -48,6 +49,7 @@ pub fn help_command() -> &'static str {
 ///
 /// ```
 /// use oms::app::commands::help;
+/// 
 /// help::build_cmd();
 /// ```
 pub fn build_cmd() -> Result<Help, io::Error> {

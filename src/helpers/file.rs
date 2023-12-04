@@ -42,8 +42,20 @@ pub fn read_lines(file_path: &str) -> io::Lines<io::BufReader<File>> {
     reader.lines()
 }
 
-pub fn get_extension(filename: &str) -> Option<&str> {
+pub fn get_extension(filename: &str) -> String {
     Path::new(filename)
         .extension()
         .and_then(OsStr::to_str)
+        .unwrap_or("")
+        .to_string()
+
+}
+
+pub fn get_file_name(file_path: &String) -> String {
+    Path::new(file_path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap_or("")
+        .to_string()
 }

@@ -1,5 +1,7 @@
 pub mod string;
 pub mod file;
+pub mod pdf;
+pub mod output;
 
 use std::{thread, time::Duration};
 
@@ -13,7 +15,7 @@ use std::{thread, time::Duration};
 /// 
 /// ```
 /// use oms::helpers;
-/// helpers::sleep(1);
+/// helpers::sleep(0);
 /// ```
 pub fn sleep(millis: u64) {
     thread::sleep(Duration::from_millis(millis));

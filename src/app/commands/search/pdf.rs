@@ -1,7 +1,9 @@
-use std::{thread, path::Path};
 use std::sync::mpsc::Sender;
-use pdf::file::FileOptions;
-use super::{format_file_display, text_contains, format_line_found};
+
+use super::{format_file_display, text_contains, format_line_found, SearchOption, text_reg_contains};
+use crate::helpers::pdf::PdfInfo;
+use crate::helpers::file::get_file_name;
+
 
 ///
 ///
@@ -10,57 +12,77 @@ use super::{format_file_display, text_contains, format_line_found};
 /// cargo run -- search /home/solofo/Documents/books tunique
 /// cargo run -- search /home/solofo/Documents/mb_manual_z790-gx-series_e_1201.pdf test
 /// 
-pub fn search_in_file(file_path: &String, search_term: &String, tx: Sender<String>) {
-    let file_path = file_path.clone();
-    let search_term = search_term.to_lowercase().clone();
+/// ## Features
+/// 
+/// * [x] Search in metadata (title, author, keywords...)
+/// * [ ] Search in content
+/// * [ ] Search in summary?
+pub struct PdfSearch<'a> {
+    pub file_path: &'a String,
+    pub search_term: &'a String,
+    pub search_option: &'a SearchOption,
+}
 
-    thread::spawn(move || {
+impl<'a> PdfSearch<'a> {
+    pub fn search(&self, tx: Sender<String>) {
         let mut result = String::new();
-        let mut found = vec![];
-        let file_name = Path::new(&file_path);
-        
-        if text_contains(&file_name.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string(), &search_term) {
-            found.push(("File", &file_path));
+        let mut found: Vec<(String, String)> = vec![];
+        let file_name = get_file_name(&self.file_path).to_lowercase();
+
+        if text_contains(&file_name, &self.search_term) {
+            found.push(("File".to_string(), file_name.clone()));
         }
 
-        if let Ok(file) = FileOptions::cached().open(&file_path) {
-            if let Some(ref info) = file.trailer.info_dict {
-                let title = info.title.as_ref().map(|p| p.to_string_lossy()).unwrap_or_default().to_lowercase();
-                let author = info.author.as_ref().map(|p| p.to_string_lossy()).unwrap_or_default().to_lowercase();
-                let creator = info.creator.as_ref().map(|p| p.to_string_lossy()).unwrap_or_default().to_lowercase();
-                let keywords = info.keywords.as_ref().map(|p| p.to_string_lossy()).unwrap_or_default().to_lowercase();
-                let subject = info.subject.as_ref().map(|p| p.to_string_lossy()).unwrap_or_default().to_lowercase();
-                
-                if text_contains(&title, &search_term) {
-                    found.push(("Title", &title));
-                }
-                if text_contains(&author, &search_term) {
-                    found.push(("Author", &author));
-                }
-                if text_contains(&creator, &search_term) {
-                    found.push(("Creator", &creator));
-                }
-                if text_contains(&keywords, &search_term) {
-                    found.push(("Keywords", &keywords));
-                }
-                if text_contains(&subject, &search_term) {
-                    found.push(("Subject", &subject));
-                }
+        if let Ok(pdf_info) = PdfInfo::read(&self.file_path) {
+            if text_contains(&pdf_info.title, &self.search_term) {
+                found.push(("Title".to_string(), pdf_info.title));
+            }
+            if text_contains(&pdf_info.author, &self.search_term) {
+                found.push(("Author".to_string(), pdf_info.author));
+            }
+            if text_contains(&pdf_info.creator, &self.search_term) {
+                found.push(("Creator".to_string(), pdf_info.creator));
+            }
+            if text_contains(&pdf_info.keywords, &self.search_term) {
+                found.push(("Keywords".to_string(), pdf_info.keywords));
+            }
+            if text_contains(&pdf_info.subject, &self.search_term) {
+                found.push(("Subject".to_string(), pdf_info.subject));
+            }
 
-                if found.len() > 0 {
-                    result.push_str(&format_file_display(&file_path));
-                    found.iter().for_each(|(item, text)| {
-                        result.push_str(&format_line_found(&item.to_string(), &text));
-
-                    });
+            for (page, content) in pdf_info.content.enumerate() {
+                if self.skip_file(&found) {
+                    break;
                 }
-                // info.
-                // result.push_str(&format!("{file_path}\t-\t{title}\t-\t{author}\t-\t{creator}\t-\t{keywords}\t-\t{subject}\n\n"));
+                match text_reg_contains(&content, &self.search_term) {
+                    None => (),
+                    Some(results) => {
+                        for line in results {
+                            if self.skip_file(&found) {
+                                break;
+                            }
+                            let text_page = "Page ".to_string() + &page.to_string();
+                            found.push((text_page, line));
+                        }
+                    }
+                }
+            }
+
+            if found.len() > 0 {
+                result.push_str(&format_file_display(&self.file_path));
+                found.iter().for_each(|(item, text)| {
+                    result.push_str(&format_line_found(&item.to_string(), &text, &self.search_option));
+
+                });
             }
         }
-            
+
         if !result.is_empty() {
             tx.send(result).unwrap_or_default();
         }
-    });
+    }    
+
+    fn skip_file(&self, found: &Vec<(String, String)>) -> bool {
+        self.search_option.display == "file-only" && found.len() > 0
+    }
 }

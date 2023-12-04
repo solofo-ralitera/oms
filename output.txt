@@ -1,9 +1,0 @@
-
-Line(s) found for "you":
-
-1	I'm nobody! Who are you?
-2	Are you nobody, too?
-4	They'd banish us, you know.
-8	To tell your name the livelong day
-
-

@@ -1,7 +1,11 @@
 pub mod commands;
 
-use std::{env, error::Error};
-use commands::{Runnable, parse_command};
+use std::{env, error::Error, process};
+use commands::{Runnable, parse_command, parse_command_option};
+
+
+/// App version
+pub const VERSION: &str = "v0.0.1";
 
 /// It's the main application
 pub struct App {
@@ -31,8 +35,13 @@ impl App {
     /// let app = App::from_args(&cmd).unwrap();
     /// ```
     pub fn from_args(args: &Vec<String>) -> Result<App, Box<dyn Error>> {
+        let options = parse_command_option(args);
+        if options.contains_key("version") {
+            println!("{VERSION}");
+            process::exit(0);
+        }
         Ok(App {
-            action: parse_command(args)?,
+            action: parse_command(args, options)?,
         })
     }
 

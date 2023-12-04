@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+colored = "2.0.4"
+diacritics = "0.2.0"
+dotext = "0.1.1"
+lopdf = { version = "0.31.0", features = ["pom", "pom_parser"] }
 pdf = "0.9.0"
+regex = "1.10.2"
 
 [profile.dev]
 opt-level = 0
