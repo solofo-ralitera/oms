@@ -1,7 +1,10 @@
 pub mod string;
 pub mod file;
 pub mod pdf;
+pub mod http;
 pub mod output;
+pub mod movie;
+pub mod cache;
 
 use std::{thread, time::Duration};
 

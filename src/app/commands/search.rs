@@ -1,3 +1,4 @@
+pub mod option;
 pub mod text;
 pub mod pdf;
 pub mod ms;
@@ -15,6 +16,7 @@ use crate::helpers::output::colorize;
 use crate::helpers::{file::{get_file_name, get_extension}, sleep};
 use colored::Colorize;
 use diacritics::remove_diacritics;
+use option::SearchOption;
 use pdf::PdfSearch;
 use regex::Regex;
 use text::TextSearch;
@@ -73,6 +75,7 @@ impl Runnable for Search {
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "display" => search_option.set_display(value)?,
+                "pause" => search_option.set_pause(value)?,
                 "e" | "extensions" => search_option.extensions_from(value)?,
                 "exclude-extensions" => search_option.exclude_extensions_from(value)?, 
                 "f" | "files" => search_option.files_from(value)?, 
@@ -95,14 +98,14 @@ impl Runnable for Search {
                 } else {
                     return Err(Error::new(
                         ErrorKind::InvalidInput, 
-                        format!("\n{}\n\tread error: unknown file\n\n", self.file_path)
+                        format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
                     ));
                 }
             },
             Err(err) => {
                 return Err(Error::new(
                     ErrorKind::NotFound, 
-                    format!("\n{}\n\tread error: {}\n\n", self.file_path, err)
+                    format!("\n{}\nread error: {}\n\n", self.file_path, err)
                 ));
             }
         };
@@ -115,113 +118,6 @@ impl Runnable for Search {
     }
 }
 
-
-pub struct SearchOption {
-    search_term: String,
-
-    display: String,
-
-    extensions: Vec<String>,
-    exclude_extensions: Vec<String>,
-
-    files: Vec<String>,
-    exclude_files: Vec<String>,
-}
-
-impl SearchOption {
-    fn new(search_term: String) -> Self {
-        SearchOption {
-            search_term: search_term,
-            display: String::from("all"),
-            extensions: vec![],
-            exclude_extensions: vec![],
-            files: vec![],
-            exclude_files: vec![],
-        }
-    }
-
-    fn set_display(&mut self, value: &String) -> Result<(), io::Error> {
-        match value.as_str() {
-            "file-only" | "debug" => {
-                self.display = value.clone();
-                Ok(())
-            },
-            _ => Err(Error::new(
-                ErrorKind::NotFound, 
-                format!("Unknown value for display")
-            ))
-        }
-    }
-
-    fn extensions_from(&mut self, value: &String) -> Result<(), io::Error> {
-        self.extensions = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
-        Ok(())
-    }
-    fn exclude_extensions_from(&mut self, value: &String) -> Result<(), io::Error> {
-        self.exclude_extensions = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
-        Ok(())
-    }
-
-    fn files_from(&mut self, value: &String) -> Result<(), io::Error> {
-        self.files = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
-        Ok(())
-    }
-
-    fn exclude_files_from(&mut self, value: &String) -> Result<(), io::Error> {
-        self.exclude_files = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
-        Ok(())
-    }
-    
-    fn has_extension(&self, extension: &String) -> bool {
-        if self.extensions.len() == 0 {
-            return true;
-        }
-        self.extensions.contains(extension)
-    }
-
-    fn is_extension_excluded(&self, extension: &String) -> bool {
-        if self.exclude_extensions.len() == 0 {
-            return false;
-        }
-        if extension.is_empty() {
-            return false;
-        }
-        self.exclude_extensions.contains(extension)
-    }
-
-    fn has_file(&self, file_name: &String) -> bool {
-        if self.files.len() == 0 {
-            return true;
-        }
-        if file_name.is_empty() {
-            return true;
-        }
-        self.files.contains(file_name)
-    }
-
-    fn is_file_excluded(&self, file_name: &String) -> bool {
-        if self.exclude_files.len() == 0 {
-            return false;
-        }
-        if file_name.is_empty() {
-            return false;
-        }
-        self.exclude_files.contains(file_name)
-    }
-}
-
-impl Clone for SearchOption {
-    fn clone(&self) -> Self {
-        SearchOption { 
-            search_term: self.search_term.clone(),
-            display: self.display.clone(),
-            extensions: self.extensions.clone(),
-            exclude_extensions: self.exclude_extensions.clone(),
-            files: self.files.clone(),
-            exclude_files: self.exclude_files.clone(),
-        }
-    }
-}
 
 fn search_in_dir(dir_path: &String, search_term: &String, search_option: &SearchOption, tx: Sender<String>) {
     let dir_path = dir_path.clone();
@@ -244,6 +140,7 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
     let file_path = file_path.clone();
     let search_term = remove_diacritics(&search_term.to_lowercase().clone());
     let search_option = search_option.clone();
+    let pause = search_option.pause;
 
     let extension = get_extension(&file_path).to_lowercase();
     let file_name = get_file_name(&file_path).to_lowercase();
@@ -260,6 +157,7 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
     if search_option.is_file_excluded(&file_name) {
         return ();
     }
+    
     thread::spawn(move || {
         match extension.as_str() {
             "pdf" => PdfSearch { 
@@ -279,7 +177,7 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
                 }.search(tx),
         }
     });
-    sleep(100);
+    sleep(pause);
 }
 
 fn text_contains(text: &String, search_term: &String) -> bool {
@@ -322,12 +220,14 @@ fn format_line_found<'a>(item: &'a String, text: &'a String, search_option: &Sea
 pub fn usage() -> String {
     format!("\
 search [options] <file_path|directory_path> <query>
-  Search in file or directory. Display each line of the file containing the query text
+    Search in file or directory. Display each line of the file containing the query text
     --help    
     -e <string> --extensions=<string>    Search only in these file extensions, separated by '{OPTION_SEPARATOR}'
     --exclude-extensions=<string>    exlude these file extensions, separated by '{OPTION_SEPARATOR}'
     -f <> --files=<string>  Search only in these file names
     --exclude-files=<string>    exlude these files, separated by '{OPTION_SEPARATOR}'
+    --display=<string>  file-only|debug
+    --pause<int>    Pause between each file, in millis
 ")
 }
 

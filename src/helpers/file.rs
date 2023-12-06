@@ -1,7 +1,9 @@
 use std::ffi::OsStr;
-use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader};
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
+use bytes::Bytes;
+use image::EncodableLayout;
 
 
 /// Check if the given file exists
@@ -59,3 +61,34 @@ pub fn get_file_name(file_path: &String) -> String {
         .unwrap_or("")
         .to_string()
 }
+
+pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<(), io::Error> {
+    // TODO: auto create sub/directories
+    let mut fopen = match OpenOptions::new()
+       .append(append)
+       .write(true)
+       .create(true)
+       .open(file_name) {
+          Ok(file) => file,
+          Err(err) => return Err(err),
+       };
+    match fopen.write(content.as_bytes()) {
+       Ok(_) => Ok(()),
+       Err(err) => return Err(err),
+    }
+ }
+
+ pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<(), io::Error> {
+    // TODO: auto create sub/directories
+    let mut fopen = match OpenOptions::new()
+       .write(true)
+       .create(true)
+       .open(file_name) {
+          Ok(file) => file,
+          Err(err) => return Err(err),
+       };
+    match fopen.write(&content.as_bytes()) {
+       Ok(_) => Ok(()),
+       Err(err) => return Err(err),
+    }
+ }
