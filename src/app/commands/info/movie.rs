@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::movie::{tmdb::TMDb, format_title};
+use crate::helpers::movie::{tmdb::TMDb, format_title, omdb::OMDb};
 use super::option::InfoOption;
 
 
@@ -28,6 +28,13 @@ impl<'a> MovieInfo<'a> {
             },
             "tmdb" => {
                 if let Ok(movies) = TMDb::info(movie_title) {
+                    for movie in movies {
+                        tx.send(format!("{movie}")).unwrap_or_default();
+                    }
+                }
+            },
+            "omdb" => {
+                if let Ok(movies) = OMDb::info(movie_title) {
                     for movie in movies {
                         tx.send(format!("{movie}")).unwrap_or_default();
                     }

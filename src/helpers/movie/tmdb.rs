@@ -44,8 +44,6 @@ impl TMDb {
     pub fn info(param: MovieTitle) -> Result<Vec<MovieResult>, Error> {
         let access_token = Self::get_token()?;
 
-        let genres = TMDbGenre::genres(&access_token)?;
-
         let request_url = format!("https://api.themoviedb.org/3/search/movie");
         let mut params = vec![];
         if !param.title.is_empty() {
@@ -70,7 +68,7 @@ impl TMDb {
         headers.push(("Authorization".to_string(), format!("Bearer {}", access_token)));
 
         if let Ok(result) = http::get::<TMDbMovie>(&request_url, headers, params, true) {
-            return Ok(Self::to_movie_result(&result, &genres));
+            return Ok(Self::to_movie_result(&result));
         }
         return Err(Error::new(
             ErrorKind::NotConnected, 
@@ -78,8 +76,9 @@ impl TMDb {
         ));        
     }
 
-    pub fn to_movie_result(movies: &TMDbMovie, genres: &TMDbGenre) -> Vec<MovieResult> {
+    pub fn to_movie_result(movies: &TMDbMovie) -> Vec<MovieResult> {
         let access_token = Self::get_token().unwrap_or_default();
+        let genres = TMDbGenre::genres(&access_token).unwrap();
 
         let mut results = vec![];
         for item in &movies.results {
@@ -94,11 +93,14 @@ impl TMDb {
                 .map(|genre| genre.name.clone())
                 .collect();
             
-            let thumb_path = get_image(&format!("https://image.tmdb.org/t/p/w300{}", item.backdrop_path)).unwrap_or_default();
+            let thumb_url = format!("https://image.tmdb.org/t/p/w300{}", item.backdrop_path);
+            let thumb_path = get_image(&thumb_url).unwrap_or_default();
 
             results.push(MovieResult {
                 title: item.title.clone(),
                 summary: item.overview.clone(),
+                date: item.release_date.clone(),
+                thumb_url: thumb_url,
                 thumb: thumb_path,
                 genres: g,
                 casts: casts,

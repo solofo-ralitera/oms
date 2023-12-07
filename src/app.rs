@@ -1,7 +1,8 @@
 pub mod commands;
 
 use std::{env, error::Error, process};
-use commands::{Runnable, parse_command, parse_command_option};
+use commands::{Runnable, parse_command};
+use crate::helpers::input::parse_command_option;
 
 
 /// App version

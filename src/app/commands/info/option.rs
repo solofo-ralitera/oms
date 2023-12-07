@@ -13,7 +13,7 @@ impl InfoOption {
 
     pub fn set_provider(&mut self, value: &String) -> Result<(), Error> {
         match value.as_str() {
-            "local" | "tmdb" => {
+            "local" | "tmdb" | "omdb" => {
                 self.provider = value.clone();
                 Ok(())
             },

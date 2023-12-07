@@ -3,6 +3,7 @@ pub mod file;
 pub mod pdf;
 pub mod http;
 pub mod output;
+pub mod input;
 pub mod movie;
 pub mod cache;
 

@@ -111,6 +111,9 @@ fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>)  
 pub fn usage() -> &'static str {
     "\
 info [file_path]        Display file informations
+    --help
+    --cache-path=<string>   Cache path, default ./.oms/
+    --provider=<string>     Api provider for movies: tmbd, omdb
 "
 }
 

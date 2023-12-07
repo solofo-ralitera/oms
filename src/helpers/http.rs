@@ -26,7 +26,7 @@ where
     }
 
     if cache == true {
-        if let Some((_, content)) = cache::check_cache(&cache_key) {
+        if let Some((_, content)) = cache::get_cache(&cache_key) {
             let result: T = serde_json::from_str(&content).unwrap();
             return Ok(result);
         }
@@ -43,7 +43,8 @@ where
 }
 
 pub fn get_image(url: &String) -> Result<String, io::Error> {
-    if let Some((path, _)) = cache::check_cache(url) {
+    if let Some(path) = cache::check_cache_path(url) {
+        // TODO: skip here ?
         return Ok(path);
     }
     let img_bytes = reqwest::blocking::get(url).unwrap().bytes().unwrap();
