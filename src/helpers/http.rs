@@ -1,12 +1,15 @@
 use std::io;
-
 use serde::{de::DeserializeOwned, Serialize};
 use urlencoding::encode;
+use super::cache;
 
-use super::cache::{self, write_cache_string, write_cache_bytes};
+type Result<T> = std::result::Result<T, std::io::Error>;
+
+const CACHE_SUBDIR: &str = ".http";
+const CACHE_IMG_SUBDIR: &str = ".img";
 
 
-pub fn get<T>(url: &String, headers: Vec<(String, String)>, params: Vec<(String, String)>, cache: bool) -> Result<T, io::Error>
+pub fn get<T>(url: &String, headers: Vec<(String, String)>, params: Vec<(String, String)>, cache: bool) -> Result<T>
 where
     T: DeserializeOwned + Serialize,
 {
@@ -26,30 +29,66 @@ where
     }
 
     if cache == true {
-        if let Some((_, content)) = cache::get_cache(&cache_key) {
+        if let Some((_, content)) = cache::get_cache(&cache_key, CACHE_SUBDIR) {
             let result: T = serde_json::from_str(&content).unwrap();
             return Ok(result);
         }
     }
     
-    let result = request.send()
-        .unwrap()
-        .json::<T>()
-        .unwrap();
-        
-    write_cache_string(&cache_key, &serde_json::to_string(&result).unwrap().to_string());
-
-    return Ok(result);
+    match request.send().unwrap().json::<T>() {
+        Ok(result) => {
+            cache::write_cache_string(&cache_key, &serde_json::to_string(&result).unwrap().to_string(), CACHE_SUBDIR);
+            return Ok(result);
+        },
+        Err(err) => return Err(io::Error::new(
+            io::ErrorKind::NotConnected, 
+            format!("Request error (json<T>): {err}")
+        )),
+    };    
 }
 
-pub fn get_image(url: &String) -> Result<String, io::Error> {
-    if let Some(path) = cache::check_cache_path(url) {
+pub fn post_body<T>(url: &String, headers: &Vec<(String, String)>, post_body: &T) -> Result<String>
+where 
+    T: Serialize
+{
+    let mut request = reqwest::blocking::Client::new()
+        .post(url)
+        .header("Content-Type", "application/json");
+
+    for (key, value) in headers {
+        request = request.header(key, value);
+    }
+
+    let post_body = serde_json::to_string(&post_body).unwrap();
+
+
+    match request.body(post_body).send() {
+        Ok(r) => {
+            return Ok(r.text().unwrap_or_default());
+        },
+        Err(err) => return Err(io::Error::new(
+            io::ErrorKind::NotConnected, 
+            format!("post_body error: {err}")
+        ))
+    }
+}
+
+pub fn get_image(url: &String) -> Result<String> {
+    if let Some(path) = cache::check_cache_path(url, CACHE_IMG_SUBDIR) {
         // TODO: skip here ?
         return Ok(path);
     }
-    let img_bytes = reqwest::blocking::get(url).unwrap().bytes().unwrap();
-    match write_cache_bytes(url, &img_bytes) {
-        Some(path) => Ok(path),
-        _ => Ok(String::new()),
+
+    match reqwest::blocking::get(url) {
+        Ok(img_bytes) => {
+            match cache::write_cache_bytes(url, &img_bytes.bytes().unwrap(), CACHE_IMG_SUBDIR) {
+                Some(path) => Ok(path),
+                _ => Ok(String::new()),
+            }
+        },
+        Err(err) => return Err(io::Error::new(
+            io::ErrorKind::Unsupported, 
+            format!("get_image error: {err}")
+        )),
     }
 }

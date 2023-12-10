@@ -5,7 +5,7 @@ pub mod ms;
 
 
 use std::collections::HashMap;
-use std::io::{self, Error, ErrorKind};
+use std::io::{Error, ErrorKind};
 use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
@@ -21,6 +21,8 @@ use pdf::PdfSearch;
 use regex::Regex;
 use text::TextSearch;
 use ms::MsSearch;
+
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 /// # Search command
 /// 
@@ -62,7 +64,7 @@ pub struct Search {
 
 impl Runnable for Search {
     /// Start processing the command
-    fn run(&self) -> Result<(), io::Error> {
+    fn run(&self) -> Result<()> {
         let (tx, rx) = mpsc::channel();
         let mut search_option = SearchOption::new(self.search_term.clone());
 
@@ -247,7 +249,7 @@ search [options] <file_path|directory_path> <query>
 /// let args = vec!["oms".to_string(), "search".to_string(), "/home/me/text.txt".to_string(), "search term".to_string()];
 /// search::build_cmd(&args, HashMap::new());
 /// ```
-pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result<Search, io::Error> {
+pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result<Search> {
     let file_path = get_args_parameter(
         args,
         args.len() - 2, // Get before last agruments

@@ -4,8 +4,10 @@ use std::env;
 use std::io::{Error, ErrorKind};
 use crate::helpers::http::{self, get_image};
 use self::movie::OMDbMovie;
-
 use super::{MovieTitle, MovieResult};
+
+type Result<T> = std::result::Result<T, std::io::Error>;
+
 
 /// 
 /// // Search by title/year
@@ -17,7 +19,7 @@ pub struct OMDb {
 }
 
 impl OMDb {
-    pub fn get_token() -> Result<String, Error> {
+    pub fn get_token() -> Result<String> {
         let access_token = env::var("OMDB_KEY").unwrap_or_default();
         if access_token.is_empty() {
             return Err(Error::new(
@@ -28,7 +30,7 @@ impl OMDb {
         Ok(access_token)
     }
     
-    pub fn info(param: MovieTitle) -> Result<Vec<MovieResult>, Error> {
+    pub fn info(movie: &MovieTitle) -> Result<Vec<MovieResult>> {
         let access_token = Self::get_token()?;
 
         let request_url = format!("https://www.omdbapi.com/");
@@ -36,20 +38,20 @@ impl OMDb {
         let mut params = vec![];
         params.push(("apikey".to_string(), access_token));
 
-        if !param.title.is_empty() {
-            params.push(("t".to_string(), param.title));
+        if !movie.title.is_empty() {
+            params.push(("t".to_string(), movie.title.to_string()));
         }
-        if !param.year.is_empty() {
-            params.push(("y".to_string(), param.year));
+        if !movie.year.is_empty() {
+            params.push(("y".to_string(), movie.year.to_string()));
         }
 
-        if let Ok(result) = http::get::<OMDbMovie>(&request_url, vec![], params, true) {
-            return Ok(Self::to_movie_result(&result));
+        match http::get::<OMDbMovie>(&request_url, vec![], params, true) {
+            Ok(result) => return Ok(Self::to_movie_result(&result)),
+            Err(err) => return Err(Error::new(
+                ErrorKind::InvalidData, 
+                format!("Unable to get information from OMDb: {err}")
+            )),
         }
-        return Err(Error::new(
-            ErrorKind::NotConnected, 
-            format!("Unable to get information from OMDb")
-        ));        
     }
 
     pub fn to_movie_result(movie: &OMDbMovie) -> Vec<MovieResult> {
@@ -60,8 +62,17 @@ impl OMDb {
             date: movie.Year.clone(),
             thumb_url: movie.Poster.clone(),
             thumb: get_image(&format!("{}", movie.Poster)).unwrap_or_default(),
+            poster_url: movie.Poster.clone(),            
             genres: movie.Genre.split(",").map(|i| i.trim().to_string()).collect(),
-            casts: movie.Actors.split(",").map(|i| (i.trim().to_string(), String::new())).collect(),
+            casts: movie.Actors.split(",").map(|i| i.trim().to_string()).collect(),
+            rating: movie.imdbRating.parse().unwrap_or_default(),
+
+            provider: String::from("omdb"),
+            provider_id: movie.imdbID.to_string(),
+
+            file_path: String::new(),
+            file_type: String::from("movie"),
+            file_hash: String::new(),
         });
         return results;
     }

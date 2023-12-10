@@ -1,10 +1,14 @@
 use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::Path;
 use bytes::Bytes;
 use image::EncodableLayout;
+use ring::digest::{Context, SHA256};
+use data_encoding::HEXUPPER;
 
+
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 /// Check if the given file exists
 ///
@@ -27,7 +31,7 @@ use image::EncodableLayout;
 ///     Err(err) => assert!(err.to_string().starts_with("No")),
 /// };
 /// ```
-pub fn check_file(file_path: &str) -> Result<&str, io::Error> {
+pub fn check_file(file_path: &str) -> Result<&str> {
     match fs::metadata(file_path) {
         Ok(_) => Ok(file_path),
         Err(err) => Err(err),
@@ -50,7 +54,15 @@ pub fn get_extension(filename: &str) -> String {
         .and_then(OsStr::to_str)
         .unwrap_or("")
         .to_string()
+}
 
+pub fn remove_extension(filename: &str) -> String {
+   return Path::new(filename)
+      .file_stem()
+      .unwrap()
+      .to_str()
+      .unwrap_or("")
+      .to_string();
 }
 
 pub fn get_file_name(file_path: &String) -> String {
@@ -62,7 +74,7 @@ pub fn get_file_name(file_path: &String) -> String {
         .to_string()
 }
 
-pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<(), io::Error> {
+pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<()> {
     // TODO: auto create sub/directories
     let mut fopen = match OpenOptions::new()
        .append(append)
@@ -78,7 +90,7 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
     }
  }
 
- pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<(), io::Error> {
+ pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<()> {
     // TODO: auto create sub/directories
     let mut fopen = match OpenOptions::new()
        .write(true)
@@ -91,4 +103,22 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
        Ok(_) => Ok(()),
        Err(err) => return Err(err),
     }
+ }
+
+ pub fn sha256(file_path: &String) -> Result<String> {
+   let input = File::open(file_path)?;
+    let mut reader = BufReader::new(input);
+
+   let mut context = Context::new(&SHA256);
+   let mut buffer = [0; 1024];
+
+   loop {
+       let count = reader.read(&mut buffer)?;
+       if count == 0 {
+           break;
+       }
+       context.update(&buffer[..count]);
+   }
+
+   return Ok(HEXUPPER.encode(context.finish().as_ref()));
  }

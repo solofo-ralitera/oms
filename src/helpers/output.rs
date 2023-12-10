@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, fs};
 use colored::Colorize;
 use regex::Regex;
 use std::path::PathBuf;
@@ -22,12 +22,13 @@ pub fn colorize(line: &str, regex: &Regex, color: (u8, u8, u8)) -> Result<String
             break;
         }
     }
-
     Ok(cline)
 }
 
-
 pub fn draw_image(thumb_path: &String, size: (u32, u32)) -> String {
+    if let Err(_) = fs::metadata(thumb_path) {
+        return String::new();
+    }
     let image = ("thumb".to_string(), PathBuf::from(thumb_path));
     let format = ops::guess_format(&image).unwrap();
     let img = ops::load_image(&image, format).unwrap();

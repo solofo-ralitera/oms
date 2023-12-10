@@ -1,5 +1,7 @@
-use std::io::{self, Error, ErrorKind};
+use std::io::{Error, ErrorKind};
 use crate::app::commands::OPTION_SEPARATOR;
+
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 
 pub struct SearchOption {
@@ -28,7 +30,7 @@ impl SearchOption {
         }
     }
 
-    pub fn set_pause(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn set_pause(&mut self, value: &String) -> Result<()> {
         match value.parse::<u64>() {
             Ok(v) => {
                 self.pause = v;
@@ -41,7 +43,7 @@ impl SearchOption {
         }
     }
 
-    pub fn set_display(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn set_display(&mut self, value: &String) -> Result<()> {
         match value.as_str() {
             "file-only" | "debug" => {
                 self.display = value.clone();
@@ -54,22 +56,22 @@ impl SearchOption {
         }
     }
 
-    pub fn extensions_from(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn extensions_from(&mut self, value: &String) -> Result<()> {
         self.extensions = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
         Ok(())
     }
 
-    pub fn exclude_extensions_from(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn exclude_extensions_from(&mut self, value: &String) -> Result<()> {
         self.exclude_extensions = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
         Ok(())
     }
 
-    pub fn files_from(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn files_from(&mut self, value: &String) -> Result<()> {
         self.files = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
         Ok(())
     }
 
-    pub fn exclude_files_from(&mut self, value: &String) -> Result<(), io::Error> {
+    pub fn exclude_files_from(&mut self, value: &String) -> Result<()> {
         self.exclude_files = value.split(OPTION_SEPARATOR).map(|s| s.to_lowercase().to_string()).collect();
         Ok(())
     }

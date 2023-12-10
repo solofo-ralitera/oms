@@ -9,14 +9,15 @@ pub mod read;
 pub mod search;
 pub mod info;
 
-use std::{io::{self, Error, ErrorKind}, collections::HashMap};
+use std::{io::{Error, ErrorKind}, collections::HashMap};
 
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 const OPTION_SEPARATOR: char = ',';
 
 /// All commands must implement this Trait
 pub trait Runnable {
-    fn run(&self) -> Result<(), io::Error>;
+    fn run(&self) -> Result<()>;
 }
 
 /// Parse the comand line
@@ -43,7 +44,7 @@ pub trait Runnable {
 ///     panic!("Should be an Err")
 /// }
 /// ```
-pub fn parse_command(args: &Vec<String>, options: HashMap<String, String>) -> Result<Box<dyn Runnable>, io::Error> {
+pub fn parse_command(args: &Vec<String>, options: HashMap<String, String>) -> Result<Box<dyn Runnable>> {
     let cmd = get_args_parameter(args, 1, "")
         .unwrap_or("help");
     
@@ -79,7 +80,7 @@ pub fn parse_command(args: &Vec<String>, options: HashMap<String, String>) -> Re
 /// let cmd2 = get_args_parameter(&args, 2, "").unwrap_or("index not found");
 /// assert_eq!("index not found", cmd2);
 /// ```
-pub fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str, io::Error> {
+pub fn get_args_parameter<'a>(args: &'a Vec<String>, index:usize, error_message: &str) -> Result<&'a str> {
     let parameter = match args.get(index) {
         Some(v) => v,
         None => return Err(Error::new(

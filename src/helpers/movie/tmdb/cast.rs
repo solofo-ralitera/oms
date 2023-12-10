@@ -2,6 +2,7 @@ use std::io;
 use serde::{Deserialize, Serialize};
 use crate::helpers::http;
 
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TMDbCast {
@@ -18,7 +19,7 @@ pub struct TMDbCastItem {
 }
 
 impl TMDbCast {
-    pub fn casts(access_token: &String, movie_id: usize) -> Result<TMDbCast, io::Error> {
+    pub fn casts(access_token: &String, movie_id: usize) -> Result<TMDbCast> {
         let request_url = format!("https://api.themoviedb.org/3/movie/{movie_id}/credits?language=en-US");
     
         let mut headers = vec![];

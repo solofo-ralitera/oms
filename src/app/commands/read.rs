@@ -1,6 +1,8 @@
-use std::{io::{self, Error}, thread::{self, JoinHandle}, collections::HashMap};
+use std::{io::Error, thread::{self, JoinHandle}, collections::HashMap};
 use super::{get_args_parameter, Runnable};
 use std::fs;
+
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 /// # Read command
 /// 
@@ -27,7 +29,7 @@ pub struct Read {
 
 impl Runnable for Read {
     /// Start processing the command
-    fn run(&self) -> Result<(), io::Error> {
+    fn run(&self) -> Result<()> {
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
             print_usage();
@@ -40,7 +42,7 @@ impl Runnable for Read {
     }
 }
 
-fn read_text_file(file_path: &String) -> JoinHandle<Result<(), io::Error>> {
+fn read_text_file(file_path: &String) -> JoinHandle<Result<()>> {
     let file_path = file_path.clone();
     thread::spawn(move || {
         match fs::read_to_string(file_path) {
@@ -86,7 +88,7 @@ fn print_usage() {
 /// let args = vec!["oms".to_string(), "read".to_string(), "/home/me/text.txt".to_string()];
 /// read::build_cmd(&args, HashMap::new());
 /// ```
-pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result<Read, io::Error> {
+pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result<Read> {
     let file_path = get_args_parameter(
         args,
         args.len() - 1, // Get last agruments

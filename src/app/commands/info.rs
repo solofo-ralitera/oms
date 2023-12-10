@@ -3,7 +3,7 @@ mod movie;
 mod option;
 
 use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, thread, path::Path, sync::mpsc::{self, Sender}};
-use crate::helpers::file::get_extension;
+use crate::helpers::file::{get_extension, get_file_name};
 use super::{Runnable, get_args_parameter};
 use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 
@@ -15,6 +15,9 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 /// ## Usage
 ///
 /// `oms info /home/me/movie.mp4`
+/// 
+/// cargo run -- info --elastic-dsn="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" "/media/solofo/MEDIA/films/"
+/// 
 /// 
 /// ## Features
 /// 
@@ -34,77 +37,103 @@ impl Runnable for Info {
      fn run(&self) -> Result<(), std::io::Error> {
         let (tx, rx) = mpsc::channel();
         let mut info_option = InfoOption::new();
+        let mut file_path = self.file_path.to_string();
 
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
             print_usage();
             return Ok(());
         }
-
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "provider" => info_option.set_provider(value)?,
-                arg => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput, 
-                        format!("\nUnkown argument {}\n", arg)
-                    ));
+                "hide-preview" => info_option.hide_preview(),
+                "elastic-dsn" => info_option.set_elastic(value),
+                "list" => { 
+                    info_option.set_list(value)?; // Files are provided in option
+                    file_path.clear(); // Ignore the file in last option
                 },
+                arg => return Err(Error::new(
+                    ErrorKind::InvalidInput, 
+                    format!("\nUnkown argument {}\n", arg)
+                )),
             };
         }
-
-        match metadata(&self.file_path) {
-            Ok(md) => {
-                if md.is_dir() {
-                    dir_info(&self.file_path, &info_option, tx.clone());
-                }
-                else if md.is_file() {
-                    file_info(&self.file_path, &info_option, tx.clone());
-                }
-            },
-            _ => file_info(&self.file_path, &info_option, tx.clone()),
-        };
         
-        drop(tx);
+        let display_result = info_option.display_preview;
+
+        // Juste one thread to limit api call
+        thread::spawn(move || {
+            // Files list are provided in option
+            if info_option.list.len() > 0 {
+                file_info_from_list(&info_option, tx);
+                return;
+            }
+            match metadata(&file_path) {
+                Ok(md) => {
+                    if md.is_dir() {
+                        dir_info(&file_path, &info_option, tx.clone());
+                    }
+                    else if md.is_file() {
+                        file_info(&file_path, &info_option, tx.clone());
+                    }
+                },
+                _ => file_info(&file_path, &info_option, tx.clone()),
+            };
+        });
+        
         for message in rx {
-            println!("{message}");
+            if display_result == true {
+                println!("{message}");
+            }
         }
+
         Ok(())
     }
 }
 
 fn dir_info(dir_path: &String, info_option: &InfoOption, tx: Sender<String>) {
-    let dir_path = dir_path.clone();
-    let info_option = info_option.clone();
-    thread::spawn(move || {
-        for entry in read_dir(Path::new(&dir_path)).unwrap() {
-            let path = entry.unwrap().path();
-            if path.is_file() {
-                file_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
-            } else if path.is_dir() {
-                dir_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
-            }
+    for entry in read_dir(Path::new(&dir_path)).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            file_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
+        } else if path.is_dir() {
+            dir_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
         }
-    });
+    }
 }
 
 fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>)  {
-    let file_path = file_path.clone();
-    let info_option = info_option.clone();
-    thread::spawn(move || {
-        let extension = get_extension(&file_path).to_lowercase();
-        match extension.as_str() {
-            "pdf" => PdfInfo { file_path: &file_path}.info(tx),
-            "torrent" | "mp4" => MovieInfo { 
-                file_path: &file_path,
-                info_option: &info_option,
-            }.info(tx),
-            _ => MovieInfo { 
-                file_path: &file_path,
-                info_option: &info_option,
-            }.info(tx),
-        }
-    });
+    let extension = get_extension(&file_path).to_lowercase();
+    match extension.as_str() {
+        "pdf" => PdfInfo { file_path: &file_path}.info(tx),
+        "torrent" | "mp4" | "mkv" | "avi" | "flv" | "mpg" | "divx" => MovieInfo { 
+            movie_raw_name: &get_file_name(&file_path),
+            file_path: &file_path,
+            info_option: &info_option,
+        }.info(tx),
+        "db" | "srt" | "nfo" | "idx" | "sub" => (),
+        _ => MovieInfo { 
+            movie_raw_name: &file_path,
+            file_path: &String::new(),
+            info_option: &info_option,
+        }.info(tx),
+    };
+}
+
+fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>) {
+    for file_path in &info_option.list {
+        match metadata(&file_path) {
+            Ok(md) => {
+                if md.is_dir() {
+                    dir_info(file_path, info_option, tx.clone());
+                } else if md.is_file() {
+                    file_info(file_path, info_option, tx.clone());
+                }
+            },
+            _ => (),
+        };
+    }
 }
 
 /// Help message for this command
@@ -113,7 +142,6 @@ pub fn usage() -> &'static str {
 info [file_path]        Display file informations
     --help
     --cache-path=<string>   Cache path, default ./.oms/
-    --provider=<string>     Api provider for movies: tmbd, omdb
 "
 }
 

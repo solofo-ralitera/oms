@@ -1,7 +1,6 @@
 use oms::app::App;
 use std::process;
 
-
 fn main() {
     App::from_env()
         .unwrap_or_else(|err| {

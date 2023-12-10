@@ -10,6 +10,8 @@ use movie::TMDbMovie;
 use genre::TMDbGenre;
 use cast::TMDbCast;
 
+type Result<T> = std::result::Result<T, std::io::Error>;
+
 ///
 /// // Get genre list
 /// https://developer.themoviedb.org/reference/genre-movie-list
@@ -30,7 +32,7 @@ pub struct TMDb {
 }
 
 impl TMDb {
-    pub fn get_token() -> Result<String, Error> {
+    pub fn get_token() -> Result<String> {
         let access_token = env::var("TMDB_ACCESS_TOKEN").unwrap_or_default();
         if access_token.is_empty() {
             return Err(Error::new(
@@ -41,20 +43,20 @@ impl TMDb {
         Ok(access_token)
     }
     
-    pub fn info(param: MovieTitle) -> Result<Vec<MovieResult>, Error> {
+    pub fn info(param: &MovieTitle) -> Result<Vec<MovieResult>> {
         let access_token = Self::get_token()?;
 
         let request_url = format!("https://api.themoviedb.org/3/search/movie");
         let mut params = vec![];
         if !param.title.is_empty() {
-            params.push(("query".to_string(), param.title));
+            params.push(("query".to_string(), param.title.to_string()));
         }
         if !param.year.is_empty() {
             params.push(("primary_release_year".to_string(), param.year.clone()));
             params.push(("year".to_string(), param.year.clone()));
         }
         if !param.language.is_empty() {
-            params.push(("language".to_string(), param.language));
+            params.push(("language".to_string(), param.language.to_string()));
         }
 
         let include_adult = param.adult.to_string();
@@ -82,10 +84,13 @@ impl TMDb {
 
         let mut results = vec![];
         for item in &movies.results {
-            let casts = TMDbCast::casts(&access_token, item.id).unwrap();
-            let casts: Vec<(String, String)> = casts.cast.iter()
+            let casts = TMDbCast::casts(&access_token, item.id).unwrap_or(TMDbCast { 
+                id: 0,
+                cast: vec![],
+            });
+            let casts: Vec<String> = casts.cast.iter()
                 .filter(|cast| cast.popularity > 10.)
-                .map(|cast| (cast.name.clone(), cast.character.clone()))
+                .map(|cast| cast.name.clone())
                 .collect();
 
             let g = genres.genres.iter()
@@ -102,8 +107,17 @@ impl TMDb {
                 date: item.release_date.clone(),
                 thumb_url: thumb_url,
                 thumb: thumb_path,
+                poster_url: format!("http://image.tmdb.org/t/p/w780{}", item.poster_path),
                 genres: g,
                 casts: casts,
+                rating: item.vote_average,
+
+                provider: String::from("tmdb"),
+                provider_id: item.id.to_string(),
+                
+                file_path: String::new(),
+                file_type: String::from("movie"),
+                file_hash: String::new(),
             });
         }
         results

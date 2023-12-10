@@ -6,6 +6,7 @@ pub mod output;
 pub mod input;
 pub mod movie;
 pub mod cache;
+pub mod elastic;
 
 use std::{thread, time::Duration};
 

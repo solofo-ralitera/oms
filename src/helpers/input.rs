@@ -43,15 +43,16 @@ pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {
                         next_value = "".to_string();
                     }
                 }
-    
+                // Common option, ignored in final result
+                if option.eq("cache-path") {
+                    cache::set_base_path(&next_value);
+                    continue;
+                }    
                 options.insert(option.clone(), next_value);
             }
         }
     }
-    // Common option
-    if options.contains_key("cache-path") {
-        cache::set_base_path(options.get("cache-path").unwrap_or(&String::new()));
-    }
+
     return options;
 }
 

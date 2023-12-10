@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, io::{Error, ErrorKind}};
 use crate::helpers::http;
 
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TMDbGenre {
@@ -25,7 +26,7 @@ impl fmt::Display for TMDbGenre {
 }
 
 impl TMDbGenre {
-    pub fn genres(access_token: &String) -> Result<TMDbGenre, Error> {
+    pub fn genres(access_token: &String) -> Result<TMDbGenre> {
         let request_url = format!("https://api.themoviedb.org/3/genre/movie/list?language=en");
     
         let mut headers = vec![];
