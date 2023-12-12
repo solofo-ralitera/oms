@@ -3,7 +3,7 @@ mod movie;
 mod option;
 
 use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, thread, path::Path, sync::mpsc::{self, Sender}};
-use crate::helpers::file::{get_extension, get_file_name};
+use crate::helpers::{file::{get_extension, get_file_name}, db::kvstore::KVStore, cache::base_file_path};
 use super::{Runnable, get_args_parameter};
 use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 
@@ -64,21 +64,25 @@ impl Runnable for Info {
 
         // Juste one thread to limit api call
         thread::spawn(move || {
+            let kv_path = base_file_path(&"oms.cab".to_string());
+            let mut kv_storage = KVStore::new(kv_path);
+
             // Files list are provided in option
             if info_option.list.len() > 0 {
-                file_info_from_list(&info_option, tx);
+                file_info_from_list(&info_option, tx, &mut kv_storage);
                 return;
             }
+
             match metadata(&file_path) {
                 Ok(md) => {
                     if md.is_dir() {
-                        dir_info(&file_path, &info_option, tx.clone());
+                        dir_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
                     }
                     else if md.is_file() {
-                        file_info(&file_path, &info_option, tx.clone());
+                        file_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
                     }
                 },
-                _ => file_info(&file_path, &info_option, tx.clone()),
+                _ => file_info(&file_path, &info_option, tx.clone(), &mut kv_storage),
             };
         });
         
@@ -92,43 +96,39 @@ impl Runnable for Info {
     }
 }
 
-fn dir_info(dir_path: &String, info_option: &InfoOption, tx: Sender<String>) {
+fn dir_info(dir_path: &String, info_option: &InfoOption, tx: Sender<String>, kv: &mut KVStore) {
     for entry in read_dir(Path::new(&dir_path)).unwrap() {
         let path = entry.unwrap().path();
         if path.is_file() {
-            file_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
+            file_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone(), kv)
         } else if path.is_dir() {
-            dir_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
+            dir_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone(), kv)
         }
     }
 }
 
-fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>)  {
+fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>, kv: &mut KVStore)  {
     let extension = get_extension(&file_path).to_lowercase();
     match extension.as_str() {
         "pdf" => PdfInfo { file_path: &file_path}.info(tx),
-        "torrent" | "mp4" | "mkv" | "avi" | "flv" | "mpg" | "divx" => MovieInfo { 
+        "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieInfo { 
             movie_raw_name: &get_file_name(&file_path),
             file_path: &file_path,
             info_option: &info_option,
-        }.info(tx),
+        }.info(tx, kv),
         "db" | "srt" | "nfo" | "idx" | "sub" => (),
-        _ => MovieInfo { 
-            movie_raw_name: &file_path,
-            file_path: &String::new(),
-            info_option: &info_option,
-        }.info(tx),
+        _ => print!("{file_path}: Format not supported"),
     };
 }
 
-fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>) {
+fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>, ks: &mut KVStore) {
     for file_path in &info_option.list {
         match metadata(&file_path) {
             Ok(md) => {
                 if md.is_dir() {
-                    dir_info(file_path, info_option, tx.clone());
+                    dir_info(file_path, info_option, tx.clone(), ks);
                 } else if md.is_file() {
-                    file_info(file_path, info_option, tx.clone());
+                    file_info(file_path, info_option, tx.clone(), ks);
                 }
             },
             _ => (),

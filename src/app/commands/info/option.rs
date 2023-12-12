@@ -1,5 +1,5 @@
 use std::io::{Error, ErrorKind};
-use crate::helpers::{file, elastic::Elastic};
+use crate::helpers::{file, db::elastic::Elastic};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 

@@ -18,7 +18,7 @@ pub fn set_base_path(path: &str) {
     }
 }
 
-fn base_path() -> String {
+pub fn base_path() -> String {
     unsafe {
         let path = match CACHE_PATH.clone() {
             Some(p) => p,
@@ -26,6 +26,14 @@ fn base_path() -> String {
         };
         return path;
     }
+}
+
+pub fn base_file_path(file_name: &String) -> String {
+    let path = base_path().to_string();
+    let cache_path = Path::new(&path);
+    let _ = fs::create_dir_all(&cache_path);
+    let cache_path = cache_path.join(file_name);
+    return cache_path.as_path().display().to_string();
 }
 
 fn get_cache_path(key: &String, subdir: &str) -> String {

@@ -1,7 +1,7 @@
 use std::{sync::mpsc::Sender, io, time::SystemTime};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
-use crate::helpers::{movie::{tmdb::TMDb, format_title, omdb::OMDb, MovieResult}, cache, elastic::Elastic, file};
+use crate::helpers::{movie::{tmdb::TMDb, format_title, omdb::OMDb, MovieResult}, cache, db::{elastic::Elastic, kvstore::KVStore}, file};
 use super::option::InfoOption;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -20,14 +20,10 @@ pub struct MovieInfo<'a> {
 }
 
 impl<'a> MovieInfo<'a> {
-    pub fn info(&self, tx: Sender<String>) {
-        // save_data(&file_hash, &self.info_option.elastic, movie, &self);
-        // tx.send(format!("{movie}")).unwrap_or_default();
+    pub fn info(&self, tx: Sender<String>, kv: &mut KVStore) {
 
-        match self.get_movie_result() {
+        match self.get_movie_result(kv) {
             Ok(movies) => {
-                save_elastic(&movies, &self.info_option.elastic);
-
                 for movie in movies {
                     tx.send(format!("\
 \n------------------------------------------------------------------------
@@ -41,11 +37,19 @@ impl<'a> MovieInfo<'a> {
 
     }
 
-    fn get_movie_result(&self) -> Result<Vec<MovieResult>> {
+    fn get_movie_result(&self, kv: &mut KVStore) -> Result<Vec<MovieResult>> {
         let movie_title = format_title(&self.movie_raw_name);
 
+        let file_hash = match kv.get(&self.file_path) {
+            Some(hash) => hash,
+            None => {
+                let hash = file::sha256(&self.file_path).unwrap_or_default();
+                kv.add(&self.file_path, &hash);
+                hash
+            },
+        };
+
         // Check cache
-        let file_hash = file::sha256(&self.file_path).unwrap_or_default();
         if let Some((_, content)) = cache::get_cache(&file_hash, ".movie") {
             if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
                 return Ok(result);
@@ -55,9 +59,11 @@ impl<'a> MovieInfo<'a> {
         // Find first in tmdb, if not found switch to omdb, otherwise fall in error
         if let Ok(mut result) = TMDb::info(&movie_title) {
             save_data(&file_hash, &mut result, &self);
+            save_elastic(&result, &self.info_option.elastic);
             return Ok(result);
         } else if let Ok(mut result) = OMDb::info(&movie_title) {
             save_data(&file_hash, &mut result, &self);
+            save_elastic(&result, &self.info_option.elastic);
             return Ok(result);
         } else {
             log_error(&self);

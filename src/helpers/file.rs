@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::Path;
+use std::process::{Command, Stdio};
 use bytes::Bytes;
 use image::EncodableLayout;
 use ring::digest::{Context, SHA256};
@@ -106,6 +107,15 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
  }
 
  pub fn sha256(file_path: &String) -> Result<String> {
+   if let Ok(output) = Command::new("sha256sum").arg(file_path).stdout(Stdio::piped()).output() {
+      if let Ok(stdout) = String::from_utf8(output.stdout) {
+         let res = stdout.split("  ").into_iter().next().unwrap_or_default();
+         if !res.is_empty() {
+            return Ok(res.trim().to_string());
+         }
+      }
+   }
+
    let input = File::open(file_path)?;
     let mut reader = BufReader::new(input);
 
