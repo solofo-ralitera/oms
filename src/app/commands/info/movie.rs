@@ -31,7 +31,11 @@ impl<'a> MovieInfo<'a> {
                 }
             },
             Err(err) => {
-                return tx.send(format!("\n{}\n", err.to_string().on_red())).unwrap_or_default();
+                if self.info_option.display_preview == false {
+                    println!("\n{}\n", err.to_string().on_red());
+                } else {
+                    return tx.send(format!("\n{}\n", err.to_string().on_red())).unwrap_or_default();
+                }
             }
         }
 
@@ -39,7 +43,7 @@ impl<'a> MovieInfo<'a> {
 
     fn get_movie_result(&self, kv: &mut KVStore) -> Result<Vec<MovieResult>> {
         let movie_title = format_title(&self.movie_raw_name);
-
+        
         let file_hash = match kv.get(&self.file_path) {
             Some(hash) => hash,
             None => {
@@ -52,7 +56,11 @@ impl<'a> MovieInfo<'a> {
         // Check cache
         if let Some((_, content)) = cache::get_cache(&file_hash, ".movie") {
             if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
-                return Ok(result);
+                if result.len() > 0 {
+                    // save_data(&file_hash, &mut result, &self);
+                    // save_elastic(&result, &self.info_option.elastic);
+                    return Ok(result);
+                }
             }
         }
 
@@ -69,7 +77,7 @@ impl<'a> MovieInfo<'a> {
             log_error(&self);
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput, 
-                format!("Unable to find information abount movie {}", movie_title.title.on_red())
+                format!("Unable to find information about the movie {}", movie_title.title.on_red())
             ));
         }
     }
@@ -78,7 +86,8 @@ impl<'a> MovieInfo<'a> {
 
 fn save_elastic(movies: &Vec<MovieResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
-        for movie in movies {
+        if let Some(movie) = movies.iter().next() {
+            // Save only first result
             el.insert(&movie);
         }
     }    

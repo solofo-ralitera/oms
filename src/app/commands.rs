@@ -8,6 +8,7 @@ pub mod help;
 pub mod read;
 pub mod search;
 pub mod info;
+pub mod mserv;
 
 use std::{io::{Error, ErrorKind}, collections::HashMap};
 
@@ -53,6 +54,7 @@ pub fn parse_command(args: &Vec<String>, options: HashMap<String, String>) -> Re
         "read" => Ok(Box::new(read::build_cmd(args, options)?)),
         "search" => Ok(Box::new(search::build_cmd(args, options)?)),
         "info" => Ok(Box::new(info::build_cmd(args, options)?)),
+        "mserv" => Ok(Box::new(mserv::build_cmd(options)?)),
         _ => Err(Error::new(
             ErrorKind::InvalidInput, 
             format!("'{cmd}' is not a valid command{}", help::help_command())

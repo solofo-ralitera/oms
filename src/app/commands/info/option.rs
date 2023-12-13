@@ -48,7 +48,7 @@ impl InfoOption {
     }
 
     pub fn set_elastic(&mut self, value: &String) {
-        self.elastic = Some(Elastic::new(&"oms", value));
+        self.elastic = Some(Elastic::new(value));
     }
 
 }

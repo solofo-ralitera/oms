@@ -70,7 +70,9 @@ impl TMDb {
         headers.push(("Authorization".to_string(), format!("Bearer {}", access_token)));
 
         if let Ok(result) = http::get::<TMDbMovie>(&request_url, headers, params, true) {
-            return Ok(Self::to_movie_result(&result));
+            if result.results.len() > 0 {
+                return Ok(Self::to_movie_result(&result));
+            }
         }
         return Err(Error::new(
             ErrorKind::NotConnected, 

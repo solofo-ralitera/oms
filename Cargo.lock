@@ -1278,6 +1278,7 @@ dependencies = [
  "dotext",
  "image",
  "lopdf",
+ "mime",
  "pdf",
  "regex",
  "reqwest",
@@ -1287,6 +1288,7 @@ dependencies = [
  "sha256",
  "termimage",
  "typedb",
+ "url",
  "urlencoding",
 ]
 

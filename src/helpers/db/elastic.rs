@@ -1,6 +1,7 @@
 use serde::Serialize;
 use crate::helpers::http::post_body;
 
+const ELASTIC_OMS_INDEX: &'static str = "oms";
 
 pub struct Elastic {
     index: String,
@@ -8,9 +9,9 @@ pub struct Elastic {
 }
 
 impl Elastic {
-    pub fn new(index: &str, url: &String) -> Self {
+    pub fn new(url: &String) -> Self {
         let mut _self = Self {
-            index: index.to_string(),
+            index: ELASTIC_OMS_INDEX.to_string(),
             url: url.to_string(),
         };
         return _self;

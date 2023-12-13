@@ -3,7 +3,7 @@ mod movie;
 mod option;
 
 use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, thread, path::Path, sync::mpsc::{self, Sender}};
-use crate::helpers::{file::{get_extension, get_file_name}, db::kvstore::KVStore, cache::base_file_path};
+use crate::helpers::{file::{get_extension, get_file_name}, db::kvstore::KVStore, cache};
 use super::{Runnable, get_args_parameter};
 use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 
@@ -64,10 +64,10 @@ impl Runnable for Info {
 
         // Juste one thread to limit api call
         thread::spawn(move || {
-            let kv_path = base_file_path(&"oms.cab".to_string());
+            let kv_path = cache::base_file_path(&"oms.cab".to_string());
             let mut kv_storage = KVStore::new(kv_path);
 
-            // Files list are provided in option
+            // if files are provided in option as list
             if info_option.list.len() > 0 {
                 file_info_from_list(&info_option, tx, &mut kv_storage);
                 return;
@@ -111,7 +111,7 @@ fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>, k
     let extension = get_extension(&file_path).to_lowercase();
     match extension.as_str() {
         "pdf" => PdfInfo { file_path: &file_path}.info(tx),
-        "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieInfo { 
+        "" | "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieInfo { 
             movie_raw_name: &get_file_name(&file_path),
             file_path: &file_path,
             info_option: &info_option,
@@ -142,6 +142,9 @@ pub fn usage() -> &'static str {
 info [file_path]        Display file informations
     --help
     --cache-path=<string>   Cache path, default ./.oms/
+    --elastic-dsn=<string>  Elastic search server
+    --hide-preview=<bool>   Mute display
+    --list=<sting>          Paht o a file containing the list of movie file to parse
 "
 }
 
@@ -175,9 +178,16 @@ pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result
     let file_path = get_args_parameter(
         args,
         args.len() - 1, // Get last agruments
-        "\nread error: 'file_path' parameter required\n"
+        "\ninfo error: 'file_path' parameter required\n"
     ).unwrap_or_default();
     
+    if file_path.is_empty() {
+        return Err(Error::new(
+            ErrorKind::InvalidInput, 
+            format!("\ninfo error: 'file_path' parameter required\n")
+        ));
+    }
+
     Ok(Info {
         file_path: file_path.to_string(),
         cmd_options: options,

@@ -1,0 +1,41 @@
+<html>
+<head>
+    <script type="module" src="./assets/js/main.js"></script>
+    <style type="text/css">
+html, body {
+    background-color: rgb(49, 49, 49);
+    font-family: sans-serif;
+}
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
+.summary {
+    background-color: black;
+    color: white;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 2;
+}
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <app-search></app-search>
+    </header>
+    <br><br><br>
+    <div>
+        <app-movies search="*"></app-movies>
+    </div>
+    <br><br><br>
+    <br><br><br>
+    <div class="summary">
+        <app-summary></app-summary>
+    </div>    
+</body>
+</html>

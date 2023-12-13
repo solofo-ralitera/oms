@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use bytes::Bytes;
 use image::EncodableLayout;
+use mime::Mime;
 use ring::digest::{Context, SHA256};
 use data_encoding::HEXUPPER;
 
@@ -49,12 +50,38 @@ pub fn read_lines(file_path: &str) -> io::Lines<io::BufReader<File>> {
     reader.lines()
 }
 
+pub fn read_buf(file_path: &str) -> Bytes {
+   let mut buf = Vec::new();
+   if let Ok(mut file) = File::open(file_path) {
+      file.read_to_end(&mut buf).unwrap(); 
+      return Bytes::from(buf);
+   }
+   return Bytes::from("");
+}
+
 pub fn get_extension(filename: &str) -> String {
     Path::new(filename)
         .extension()
         .and_then(OsStr::to_str)
         .unwrap_or("")
         .to_string()
+}
+
+pub fn get_mimetype(file_path: &str) -> Mime {
+   let parts : Vec<&str> = file_path.split('.').collect();
+   let res = match parts.last() {
+      Some(v) => match *v {
+         "ico" | "png" => mime::IMAGE_PNG,
+         "jpeg" | "jpg" => mime::IMAGE_JPEG,
+         "json" => mime::APPLICATION_JSON,
+         "js" => mime::TEXT_JAVASCRIPT,
+         "pdf" => mime::APPLICATION_PDF,
+         "html" => mime::TEXT_HTML_UTF_8,
+         &_ => mime::TEXT_PLAIN,
+      },
+      None => mime::TEXT_PLAIN,
+   };
+   return res;
 }
 
 pub fn remove_extension(filename: &str) -> String {
