@@ -35,10 +35,8 @@ export class MovieComponent extends HTMLElement {
 <style type="text/css">
 .card {
     color: white;
-    box-shadow: rgba(0, 0, 0, 0.2) 0px 12px 28px 0px, rgba(0, 0, 0, 0.1) 0px 2px 4px 0px, rgba(255, 255, 255, 0.05) 0px 0px 0px 1px inset;
-    margin: 5px 0;
-    width: 300px;
-    height: 456px;
+    background-color: black;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 4px 8px -2px, rgba(9, 30, 66, 0.08) 0px 0px 0px 1px;    height: 456px;
     display: grid;
     grid-template-rows: 2em 1fr;
     position: relative;

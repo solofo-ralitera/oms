@@ -1,13 +1,14 @@
-use crate::helpers::file;
+use crate::helpers::{file, movie};
+use regex::Regex;
 use urlencoding::decode;
-use std::{io, cmp::min};
+use std::{io, cmp::min, thread};
 
 
 ///
 /// Return: status: 200 OK, headers, content
 /// 
 pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    if verb == "OPTION" {
+    if verb == "OPTIONS" {
         return (String::new(), vec![], None, None);
     }
     let path = if path == "/" {
@@ -39,18 +40,15 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
             Some(file::read_buf(&file_path)),
         );
     } else if mime.starts_with("video") {
+        let file_path = get_file(&file_path);
         let file_size = file::file_size(&file_path).unwrap_or_default();
         let buffer: u64 = 1_500_000;
         
-        let mut start_range: u64 = 0;
-        let mut end_range: u64 = 0;
-
-        let range = request_header.iter().filter(|line| line.starts_with("Range:")).next();
-        (start_range, _) = get_range_params(&range, file_size).unwrap_or((start_range, end_range));
-        end_range = min(start_range + buffer, file_size) - 1;
+        let (start_range, _) = get_range_params(&request_header, file_size).unwrap_or((0, buffer));
+        let end_range = min(start_range + buffer, file_size) - 1;
 
         let byte_count = end_range - start_range + 1;
-       
+
         return (
             String::from("206 Partial Content"), 
             vec![
@@ -58,9 +56,6 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
                 (String::from("Accept-Ranges"), String::from("bytes")),
                 (String::from("Content-Range"), format!("bytes {start_range}-{end_range}/{file_size}")),
                 (String::from("Content-Length"), format!("{}", byte_count)),
-
-                // (String::from("Content-Disposition"), format!("inline; filename=\"{}\"", file::get_file_name(&file_path))),
-                //(String::from("Content-type"), String::from("application/octet-stream")), // TODO: fix mime
             ], 
             None,
             Some(file::read_range(&file_path, start_range, byte_count).unwrap()),
@@ -68,7 +63,6 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
     }
     // Text content
     return (
-        // http://127.0.0.1:9200/oms
         String::from("200 OK"), 
         vec![
             (String::from("Content-type"), file::get_mimetype(path).to_string()),
@@ -78,8 +72,27 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
     );
 }
 
+fn get_file(file_path: &String) -> String {
+    if file_path.ends_with(".avi") || file_path.ends_with(".AVI") {
+        let re = Regex::new(r"(?i)\.[a-z]{3}$").unwrap();
+        let mp4_file_path = re.replace(file_path, ".mp4").to_string();
+        match file::check_file(&mp4_file_path) {
+            Ok(f) => return f.to_string(),
+            Err(_) => {
+                // TODO: si avi => re-encode
+                let input = file_path.clone();
+                let output = mp4_file_path.clone();
+                thread::spawn(move || movie::avi_to_mp4(&input, &output));
+                return file_path.to_string();
+            },
+        }
+    }
+    return file_path.clone();
+}
+
 // https://docs.rs/warp-range/latest/src/warp_range/lib.rs.html#1-148
-fn get_range_params(range: &Option<&String>, size: u64)->Result<(u64, u64), io::Error> {
+fn get_range_params(request_header: &Vec<String>, size: u64)->Result<(u64, u64), io::Error> {
+    let range = request_header.iter().filter(|line| line.starts_with("Range:")).next();
     match range {
         Some(range) => {
             let range: Vec<String> = range

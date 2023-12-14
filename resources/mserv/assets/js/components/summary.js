@@ -33,7 +33,7 @@ article {
     position: fixed;
     bottom: 0;
     line-height: 1.5em;
-    padding: 2em;
+    padding: 0.5em;
     background-color: black;
     opacity: 0.7;
 }

@@ -21,7 +21,10 @@ pub struct MovieInfo<'a> {
 
 impl<'a> MovieInfo<'a> {
     pub fn info(&self, tx: Sender<String>, kv: &mut KVStore) {
-
+        if self.file_path.contains(".CD02.") {
+            return;
+        }
+        
         match self.get_movie_result(kv) {
             Ok(movies) => {
                 for movie in movies {
@@ -77,7 +80,7 @@ impl<'a> MovieInfo<'a> {
             log_error(&self);
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput, 
-                format!("Unable to find information about the movie {}", movie_title.title.on_red())
+                format!("Unable to find information about the movie: {}", self.file_path.on_red())
             ));
         }
     }

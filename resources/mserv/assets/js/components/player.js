@@ -49,17 +49,19 @@ export class PLayerComponent extends HTMLElement {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `
-        ${this.css()}
-        <div class="close"><span class="info">${this.movie.title}</span>&nbsp;X</div>
-<video controls class="video-js" poster="${this.movie.thumb_url}">
+        this.root.innerHTML = `${this.css()}        
+<div class="close"><span class="info">${this.movie.title}</span>&nbsp;X</div>
+<video  controls 
+        id="video-player"
+        class="video-js" 
+        data-setup='{"controls": true, "autoplay": "play", "preload": "auto"}'
+        poster="${this.movie.thumb_url}">
     <source src="./movie${this.movie.file_path}" type="video/mp4" />
     <p>
         Your browser doesn't support this video. Here is the path of the file:
         ${this.movie.file_path}
     </p>
-</video>
-        `;
+</video>`;
         this.root.querySelector("#search")?.addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
             const value = e.target.value;
@@ -70,6 +72,9 @@ export class PLayerComponent extends HTMLElement {
         this.root.querySelector(".close")?.addEventListener("click", e => {
             eventBus.fire("play-movie", null);
         });
+
+        // const player = videojs(this.root.querySelector("#video-player"));
+        // console.log(player);
     }
 }
 

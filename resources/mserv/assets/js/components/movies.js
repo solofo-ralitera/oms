@@ -32,11 +32,11 @@ return `
 <style type="text/css">
 :host {
     display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    justify-content: center;
     flex-flow: wrap row;
     align-items: flex-start;
     height: 100vh;
+    gap: 4px;
 }
 </style>
 `;

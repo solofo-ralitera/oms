@@ -2,7 +2,7 @@ pub mod tmdb;
 pub mod omdb;
 
 use core::fmt;
-use std::ops::Deref;
+use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead}};
 use crate::helpers::file::remove_extension;
 use colored::Colorize;
 use regex::Regex;
@@ -50,6 +50,27 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
         language: String::new(),
         adult: false,
     };
+}
+
+//
+//  ffmpeg -i "input.avi" -c:a copy -c:v vp9 -b:v 100K "input.vp9.mp4"
+//  ffmpeg -i new\ romance.AVI new\ romance.mp4
+pub fn avi_to_mp4(file_path: &String, dest_path: &String) {
+    let mut cmd = Command::new("ffmpeg")
+        .args(["-i", file_path, dest_path])
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    {
+        let stdout = cmd.stdout.as_mut().unwrap();
+        let stdout_reader = BufReader::new(stdout);
+        let stdout_lines = stdout_reader.lines();
+
+        for line in stdout_lines {
+            println!("Read: {:?}", line);
+        }
+    }
+    cmd.wait().unwrap();
 }
 
 

@@ -108,15 +108,16 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
         stream.flush().unwrap();
         return;
     }
-    
     // Send empty response
     stream.write_all(b"").unwrap();
+    stream.flush().unwrap();
 }
 
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
 mserv        Launch media server
+You must have ffmpeg installed if you have an .avi file that needs to be re-encoded for streaming
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server
