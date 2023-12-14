@@ -67,6 +67,8 @@ article {
     <span class="info">${this.movie.casts.join(", ")}</span>
     <br>
     <span class="info">${this.movie.genres.join(", ")}</span>
+    <br>
+    <span class="info">${this.movie.file_path}</span>
 </article>
         `;
 

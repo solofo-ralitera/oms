@@ -1,11 +1,10 @@
 use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, BufRead, BufReader, Read, Write};
+use std::io::{self, BufRead, BufReader, Read, Write, Seek, SeekFrom};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use bytes::Bytes;
 use image::EncodableLayout;
-use mime::Mime;
 use ring::digest::{Context, SHA256};
 use data_encoding::HEXUPPER;
 
@@ -40,6 +39,27 @@ pub fn check_file(file_path: &str) -> Result<&str> {
     }
 }
 
+
+pub fn file_size(file_path: &str) -> Result<u64> {
+   match fs::metadata(file_path) {
+      Ok(m) => Ok(m.len()),
+      Err(err) => Err(err),
+  }
+}
+
+// https://stackoverflow.com/questions/68694399/most-idiomatic-way-to-read-a-range-of-bytes-from-a-file
+pub fn read_range(file_path: &str, start: u64, length: u64 ) -> Option<Vec<u8>> {
+   if let Ok(mut f) = File::open(file_path) {
+      if let Ok(_) = f.seek(SeekFrom::Start(start as u64)) {
+         let mut buf = vec![0; length as usize];
+         if  let Ok(_) = f.read_exact(&mut buf) {
+            return Some(buf);
+         }
+      }
+   }
+   return None;
+}
+
 ///
 /// // https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html
 /// // https://linuxhint.com/rust-read-from-file-line-line/
@@ -50,13 +70,13 @@ pub fn read_lines(file_path: &str) -> io::Lines<io::BufReader<File>> {
     reader.lines()
 }
 
-pub fn read_buf(file_path: &str) -> Bytes {
+pub fn read_buf(file_path: &str) -> Vec<u8> {
    let mut buf = Vec::new();
    if let Ok(mut file) = File::open(file_path) {
       file.read_to_end(&mut buf).unwrap(); 
-      return Bytes::from(buf);
+      return buf;
    }
-   return Bytes::from("");
+   return vec![];
 }
 
 pub fn get_extension(filename: &str) -> String {
@@ -67,21 +87,9 @@ pub fn get_extension(filename: &str) -> String {
         .to_string()
 }
 
-pub fn get_mimetype(file_path: &str) -> Mime {
-   let parts : Vec<&str> = file_path.split('.').collect();
-   let res = match parts.last() {
-      Some(v) => match *v {
-         "ico" | "png" => mime::IMAGE_PNG,
-         "jpeg" | "jpg" => mime::IMAGE_JPEG,
-         "json" => mime::APPLICATION_JSON,
-         "js" => mime::TEXT_JAVASCRIPT,
-         "pdf" => mime::APPLICATION_PDF,
-         "html" => mime::TEXT_HTML_UTF_8,
-         &_ => mime::TEXT_PLAIN,
-      },
-      None => mime::TEXT_PLAIN,
-   };
-   return res;
+pub fn get_mimetype(file_path: &str) -> String {
+   let guess = mime_guess::from_path(file_path);
+   return guess.first().unwrap().to_string();
 }
 
 pub fn remove_extension(filename: &str) -> String {

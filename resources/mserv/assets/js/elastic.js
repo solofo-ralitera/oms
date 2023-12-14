@@ -1,3 +1,5 @@
+const ELASTIC_URL = "ELASTIC_URL";
+
 class ElasticMovie {
     constructor() {
 
@@ -5,7 +7,7 @@ class ElasticMovie {
 
     searchAll(query = "*", from = 0, size = 100) {
         if (query === "") query = "*";
-        return fetch("http://127.0.0.1:9200/oms/_search", {
+        return fetch(ELASTIC_URL + "/_search", {
             method: "POST",
             headers: {
                 "Accept": "application/json",

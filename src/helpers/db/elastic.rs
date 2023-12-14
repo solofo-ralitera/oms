@@ -4,8 +4,8 @@ use crate::helpers::http::post_body;
 const ELASTIC_OMS_INDEX: &'static str = "oms";
 
 pub struct Elastic {
-    index: String,
-    url: String,
+    pub index: String,
+    pub url: String,
 }
 
 impl Elastic {
