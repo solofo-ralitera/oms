@@ -42,13 +42,12 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
     } else if mime.starts_with("video") {
         let file_path = get_file(&file_path);
         let file_size = file::file_size(&file_path).unwrap_or_default();
-        let buffer: u64 = 1_500_000;
+        let buffer: u64 = 3_500_000;
         
         let (start_range, _) = get_range_params(&request_header, file_size).unwrap_or((0, buffer));
         let end_range = min(start_range + buffer, file_size) - 1;
 
         let byte_count = end_range - start_range + 1;
-
         return (
             String::from("206 Partial Content"), 
             vec![
