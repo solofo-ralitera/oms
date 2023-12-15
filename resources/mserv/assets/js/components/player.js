@@ -20,11 +20,11 @@ export class PLayerComponent extends HTMLElement {
 :root {
     position: relative;
 }        
-.close {
+.tool {
     position: absolute;
     top: 0;
-    right: 1em;
-    z-index: 2;
+    right: 2em;
+    z-index: 4;
     color: white;
     border-radius: 50%;
     height: 50px;
@@ -34,11 +34,15 @@ export class PLayerComponent extends HTMLElement {
     opacity: 0;   
     transition: opacity 0.3s;
 }
-.close:hover {
+.tool:hover {
     opacity: 1;
 }
 .info {
     font-size: 0.7em;
+}
+video {
+    background-color: black;
+    z-index: 3;
 }
         </style>
         `;
@@ -50,11 +54,15 @@ export class PLayerComponent extends HTMLElement {
             return;
         };
         this.root.innerHTML = `${this.css()}        
-<div class="close"><span class="info">${this.movie.title}</span>&nbsp;X</div>
+<div class="tool">
+    <span class="info">${this.movie.title}</span>
+    &nbsp;
+    <span class="full">&#x26F6;</span>
+    <span class="close">X</span>
+</div>
 <video  controls 
         id="video-player"
-        class="video-js" 
-        data-setup='{"controls": true, "autoplay": "play", "preload": "auto"}'
+        data-size="mini"
         poster="${this.movie.thumb_url}">
     <source src="./movie${this.movie.file_path}" type="video/mp4" />
     <p>
@@ -71,6 +79,29 @@ export class PLayerComponent extends HTMLElement {
         });
         this.root.querySelector(".close")?.addEventListener("click", e => {
             eventBus.fire("play-movie", null);
+        });
+
+        this.root.querySelector(".full")?.addEventListener("click", e => {
+            const player = this.root.querySelector("#video-player");
+            if (player) {
+                switch (player.getAttribute("data-size")) {
+                    case "mini":
+                        player.style.width = "100vw";
+                        player.style.height = "inherit";
+                        player.setAttribute("data-size", "full-width");
+                        break;
+                    case "full-width":
+                            player.style.width = "100vw";
+                            player.style.height = "100vh";
+                            player.setAttribute("data-size", "full");
+                            break;
+                    case "full":
+                            player.style.width = "inherit";
+                            player.style.height = "inherit";
+                            player.setAttribute("data-size", "mini");
+                            break;
+                    }
+            }
         });
 
         // const player = videojs(this.root.querySelector("#video-player"));
