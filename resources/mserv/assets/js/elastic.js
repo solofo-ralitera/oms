@@ -22,7 +22,13 @@ class ElasticMovie {
                 },
                 "size": size,
                 "from": from,
-                "sort": [{"rating": "desc"}]
+                "sort": {
+                    "_script" : { 
+                        "script" : "Math.random()",
+                        "type" : "number",
+                        "order" : "asc"
+                    }
+                }
             })
         })
             .then(r => r.json())

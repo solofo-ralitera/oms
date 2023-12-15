@@ -79,6 +79,7 @@ export class MovieComponent extends HTMLElement {
 }
 .card .card-body .card-body-content {
     z-index: 1;
+    width: 100%;
 }
 .card .card-body .card-body-summary {
     font-size: 0.9em;

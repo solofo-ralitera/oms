@@ -33,12 +33,19 @@ export class PLayerComponent extends HTMLElement {
     cursor: pointer;
     opacity: 0;   
     transition: opacity 0.3s;
+    white-space: nowrap;
 }
 .tool:hover {
     opacity: 1;
 }
-.info {
+.tool .info {
     font-size: 0.7em;
+}
+.tool .full:hover,
+.tool .close:hover {
+    display: inline-block;
+    transform: scale(1.3);
+    font-weight: bold;
 }
 video {
     background-color: black;
@@ -57,8 +64,10 @@ video {
 <div class="tool">
     <span class="info">${this.movie.title}</span>
     &nbsp;
-    <span class="full">&#x26F6;</span>
+    <span class="full"></span>
+    &nbsp;
     <span class="close">X</span>
+    &nbsp;
 </div>
 <video  controls 
         id="video-player"

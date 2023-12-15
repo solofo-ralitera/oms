@@ -71,6 +71,12 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
     );
 }
 
+///
+/// TODO: live re-encoding
+/// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
+/// 
+/// 
+/// 
 fn get_file(file_path: &String) -> String {
     if file_path.ends_with(".avi") || file_path.ends_with(".AVI") {
         let re = Regex::new(r"(?i)\.[a-z]{3}$").unwrap();
