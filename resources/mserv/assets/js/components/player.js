@@ -23,7 +23,7 @@ export class PLayerComponent extends HTMLElement {
 .tool {
     position: absolute;
     top: 0;
-    right: 2em;
+    right: 1em;
     z-index: 4;
     color: white;
     border-radius: 50%;

@@ -40,9 +40,9 @@ impl Runnable for Mserv {
         }
 
         // Serve web
-        match TcpListener::bind(&mserv_option.url.to_string()) {
+        match TcpListener::bind(&mserv_option.urls[..]) {
             Ok(listener) => {
-                println!("Server started at {}", mserv_option.url);
+                println!("Server started at {}", mserv_option.display_urls());
                 for stream in listener.incoming() {
                     if let Ok(tcp_stream) = stream {
                         let mserv_option = mserv_option.clone();
@@ -52,7 +52,7 @@ impl Runnable for Mserv {
             },
             Err(err) => return Err(io::Error::new(
                 io::ErrorKind::AddrNotAvailable, 
-                format!("\nUnable to start server on {}, {}\n", mserv_option.url, err)
+                format!("\nUnable to start server on {}, {}\n", mserv_option.display_urls(), err)
             ))
         }
 

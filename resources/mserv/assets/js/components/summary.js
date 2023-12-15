@@ -40,6 +40,9 @@ article {
 .info {
     font-size: 0.8em;
 }
+.play {
+    cursor: pointer;
+}
 </style>
         `;
     }
@@ -56,7 +59,11 @@ article {
         };
         this.root.innerHTML = `
         ${this.css()}
-<h1 style="text-align:center;padding:0 1em;">${this.movie.title} (${this.movie.date.split("-").shift()})</h1>
+<h1 style="text-align:center;padding:0 1em;">
+    ${this.movie.title} (${this.movie.date.split("-").shift()})
+    &nbsp;&nbsp;
+    <span class="play">▶</div>
+</h1>
 <div style="text-align:center;">
     <img src="${this.movie.poster_url}">
 </div>
@@ -77,6 +84,9 @@ article {
         });
         this.root.querySelector("img").addEventListener("click", () => {
             this.close();
+        });
+        this.root.querySelector(".play")?.addEventListener("click", (e) => {
+            eventBus.fire("play-movie", JSON.parse(JSON.stringify(this.movie)));
         });
     }
 }
