@@ -21,19 +21,30 @@ export class SummaryComponent extends HTMLElement {
         })
     }
     css() {
-        return `
-<style type="text/css">
+        return `<style type="text/css">
 :host {
     position: relative;
+}
+ul {
+    padding: 0;
+}
+ul li {
+    display:inline;
+}
+.item~.item::before {
+    content: ", ";
 }
 img {
     max-width: 55vw;
 }
-article {
+.title {
+    padding: 0 1em;
+}
+.summary {
     position: fixed;
     bottom: 0;
     line-height: 1.5em;
-    padding: 0.5em;
+    padding: 1em;
     background-color: black;
     opacity: 0.7;
 }
@@ -42,9 +53,15 @@ article {
 }
 .play {
     cursor: pointer;
+    vertical-align: middle;
 }
-</style>
-        `;
+.pointer {
+    cursor: pointer;
+}
+.pointer:hover {
+    text-decoration: underline;
+}
+</style>`;
     }
 
     close() {
@@ -57,37 +74,52 @@ article {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `
-        ${this.css()}
-<h1 style="text-align:center;padding:0 1em;">
-    ${this.movie.title} (${this.movie.date.split("-").shift()})
-    &nbsp;&nbsp;
-    <span class="play">▶</div>
-</h1>
-<div style="text-align:center;">
-    <img src="${this.movie.poster_url}">
-</div>
+        this.root.innerHTML = `${this.css()}
 <article>
-    ${this.movie.summary}
-    <br>
-    <br>
-    <span class="info">${this.movie.casts.join(", ")}</span>
-    <br>
-    <span class="info">${this.movie.genres.join(", ")}</span>
-    <br>
-    <span class="info">${this.movie.file_path}</span>
-</article>
-        `;
+    <h2 class="title">
+        <button class="play" role="button">▶</button>
+        &nbsp;&nbsp;
+        ${this.movie.title} (${this.movie.date.split("-").shift()})
+    </h2>
+    <div style="text-align:center;">
+        <img src="${this.movie.poster_url}" alt="${this.movie.title.escape_quote()}">
+    </div>
+    <section class="summary">
+        <p>${this.movie.summary}</p>
+        <ul class="info"><li class="item">${this.movie.casts.join("</li><li class=\"item\">")}</li></ul>
+        <ul class="info"><li class="item">${this.movie.genres.join("</li><li class=\"item\">")}</li></ul>
+        <span class="info pointer movie-path">${this.movie.file_path}</span>
+    </section>
+</article>`;
 
-        this.root.querySelector("h1").addEventListener("click", () => {
+        this.root.querySelector(".title").addEventListener("click", () => {
             this.close();
         });
         this.root.querySelector("img").addEventListener("click", () => {
             this.close();
         });
-        this.root.querySelector(".play")?.addEventListener("click", (e) => {
+        this.root.querySelector(".play")?.addEventListener("click", () => {
             eventBus.fire("play-movie", JSON.parse(JSON.stringify(this.movie)));
         });
+        this.root.querySelector(".movie-path")?.addEventListener("click", () => {
+            const text = this.movie.file_path.split(/\/|\\/).pop();
+            try {
+                navigator.clipboard.writeText(text);
+            } catch (_) {
+                const selBox = window.document.createElement('textarea');
+                selBox.style.position = 'fixed';
+                selBox.style.left = '0';
+                selBox.style.top = '0';
+                selBox.style.opacity = '0';
+                selBox.value = text;
+                document.body.appendChild(selBox);
+                selBox.focus();
+                selBox.select();
+                document.execCommand('copy');
+                document.body.removeChild(selBox);
+            }
+        });
+        
     }
 }
 

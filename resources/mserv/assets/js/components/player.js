@@ -15,8 +15,7 @@ export class PLayerComponent extends HTMLElement {
         });
     }
     css() {
-        return `
-        <style type="text/css">
+        return `<style type="text/css">
 :root {
     position: relative;
 }        
@@ -30,29 +29,28 @@ export class PLayerComponent extends HTMLElement {
     height: 50px;
     line-height: 50px;
     text-align: center;
-    cursor: pointer;
-    opacity: 0;   
     transition: opacity 0.3s;
     white-space: nowrap;
 }
-.tool:hover {
-    opacity: 1;
+.tool > * {
+    all: unset;
+    display: inline-block;
+    margin: 0 0.3em;
+    font-size: 0.9em;
 }
 .tool .info {
-    font-size: 0.7em;
+    opacity: 0;
 }
-.tool .full:hover,
-.tool .close:hover {
-    display: inline-block;
-    transform: scale(1.3);
-    font-weight: bold;
+.tool:hover:info {
+    opacity: 1;
 }
 video {
     background-color: black;
     z-index: 3;
+    max-width: 100vw;
+    max-height: 100vh;
 }
-        </style>
-        `;
+</style>`;
     }
 
     render() {
@@ -63,11 +61,8 @@ video {
         this.root.innerHTML = `${this.css()}        
 <div class="tool">
     <span class="info">${this.movie.title}</span>
-    &nbsp;
-    <span class="full"></span>
-    &nbsp;
-    <span class="close">X</span>
-    &nbsp;
+    <button class="full">&#9633;</button>
+    <button class="close">X</button>
 </div>
 <video  controls 
         id="video-player"

@@ -9,24 +9,22 @@ export class SearchComponent extends HTMLElement {
         this.render();
     }
     css() {
-        return `
-        <style type="text/css">
-        input[type=search] {
-            width: 100%;
-            box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-            border-radius: 5px;
-            padding: 1em;
-        }
-        </style>
-        `;
+        return `<style type="text/css">
+input[type=search] {
+    width: 100%;
+    border-radius: 5px;
+    padding: 1em;
+    font-size: 1.2em;
+}
+</style>`;
     }
 
     render() {
         this.root.innerHTML = `
-            <header>
+            <search>
                 ${this.css()}
                 <input type="search" id="search" placeholder="Search...">
-            </header>
+            </search>
         `;
         this.root.querySelector("#search")?.addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);

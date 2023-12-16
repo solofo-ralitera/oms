@@ -31,8 +31,20 @@ export class MovieComponent extends HTMLElement {
     }
     
     css() {
-        return `
-<style type="text/css">
+        return `<style type="text/css">
+ul {
+    padding: 0;
+}
+ul li {
+    display:inline;
+}
+.item~.item::before {
+    content: ", ";
+}
+h2,h3,h4 {
+    margin: 0;
+    font-weight: normal;
+}
 .card {
     color: white;
     background-color: black;
@@ -41,7 +53,7 @@ export class MovieComponent extends HTMLElement {
     grid-template-rows: 2em 1fr;
     position: relative;
 }
-.card header {
+.card #card-title {
     display: flex;
     align-items:center;
     justify-content: space-between;
@@ -61,8 +73,8 @@ export class MovieComponent extends HTMLElement {
     justify-content: center;
     align-items: center; 
     overflow: hidden;
-    width: 300px;
-    height: 456px;
+    width: 295px;
+    height: 451px;
 }
 .card .card-body-bg {
     position: absolute;
@@ -78,8 +90,16 @@ export class MovieComponent extends HTMLElement {
     z-index: 0;
 }
 .card .card-body .card-body-content {
+    all: unset;
     z-index: 1;
     width: 100%;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+.card .card-body .card-body-content:focus {
+    outline: revert;
 }
 .card .card-body .card-body-summary {
     font-size: 0.9em;
@@ -95,28 +115,37 @@ export class MovieComponent extends HTMLElement {
 .play {
     text-align: center;
     cursor: pointer;
+    vertical-align: middle;
 }
-</style>
-        `;
+</style>`;
     }
 
     renderImage(lazy = true) {
         if (this._movie.thumb_url) {
             if (lazy === true) {
-                return `<img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" data-src="${this._movie.thumb_url}" id="thumb">`;
+                return `<img 
+                    src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
+                    data-src="${this._movie.thumb_url}" 
+                    id="thumb"
+                    alt="${this._movie.title.escape_quote()}">`;
             }
-            return `<img src="${this._movie.thumb_url}" data-src="${this._movie.thumb_url}" id="thumb">`;
+            return `<img 
+                src="${this._movie.thumb_url}" 
+                data-src="${this._movie.thumb_url}" 
+                id="thumb" 
+                alt="${this._movie.title.escape_quote()}">`;
         }
         return this.renderSummary();
     }
 
     playEvent() {
         window.setTimeout(() => {
-            this.root.querySelector(".play")?.addEventListener("click", (e) => {
+            const plays = this.root.querySelectorAll(".play");
+            plays.forEach(play => play.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 eventBus.fire("play-movie", JSON.parse(JSON.stringify(this._movie)));
-            });
+            }));
         }, 250);
     }
 
@@ -124,13 +153,10 @@ export class MovieComponent extends HTMLElement {
         this.playEvent();
 
         return `<article class="card-body-summary">
-            <summary>${this._movie.summary}</summary>
-            <div class="play">▶</div>
-            <br>
+            <p>${this._movie.summary}</p>
             <hr>
-            <span class="info">${this._movie.casts.join(", ")}</span>
-            <br>
-            <span class="info">${this._movie.genres.join(", ")}</span>
+            <ul class="info"><li class="item">${this._movie.casts.join("</li><li class=\"item\">")}</li></ul>
+            <ul class="info"><li class="item">${this._movie.genres.join("</li><li class=\"item\">")}</li></ul>
         </article>`;
     }
 
@@ -143,19 +169,19 @@ export class MovieComponent extends HTMLElement {
         this.root.innerHTML = `
             ${this.css()}
             <article class="card" id="card">
-                <header id="card-title">
+                <h4 id="card-title">
                     <span>
-                        <span class="play">▶</span>
+                        <button class="play" tabindex="1">▶</button>
                         &nbsp;
                         ${this._movie.title}&nbsp;
                     </span>
                     <span class="info">(${this._movie.date?.split("-")?.shift()})</span>
-                </header>
+                </h4>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
-                    <div class="card-body-content">
+                    <button class="card-body-content" tabindex="2" role="button">
                         ${this.renderImage(true)}
-                    </div>
+                    </button>
                 </div>
             </article>
         `;

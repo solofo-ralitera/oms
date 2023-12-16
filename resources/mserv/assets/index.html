@@ -1,6 +1,12 @@
-<html>
+<html lang="en">
 <head>
-    <script type="module" src="./assets/js/main.js"></script>
+    <meta charset="utf-8">
+    <title>Open media server</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="OMS - Media server">
+
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" sizes="16x16">
     <style type="text/css">
 :root {
   color-scheme: dark;
@@ -8,6 +14,9 @@
 html, body {
     background: linear-gradient(to left, #140b03, #000);
     font-family: sans-serif;
+}
+main {
+    margin-top: 5em;
 }
 .main-header {
     position: fixed;
@@ -39,17 +48,15 @@ html, body {
     <header class="main-header">
         <app-search></app-search>
     </header>
-    <br><br><br>
-    <div>
+    <main>
         <app-movies search="*"></app-movies>
-    </div>
-    <br><br><br>
-    <br><br><br>
-    <div class="summary">
+    </main>
+    <aside class="summary">
         <app-summary></app-summary>
-    </div>
-    <div class="player">
+    </aside>
+    <aside class="player">
         <app-player></app-player>
-    </div>
+    </aside>
+    <script type="module" src="./assets/js/main.js"></script>
 </body>
 </html>

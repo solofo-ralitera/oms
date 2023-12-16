@@ -28,8 +28,7 @@ export class MoviesComponent extends HTMLElement {
     }
 
     css() {
-return `
-<style type="text/css">
+return `<style type="text/css">
 :host {
     display: flex;
     justify-content: center;
@@ -38,8 +37,7 @@ return `
     height: 100vh;
     gap: 4px;
 }
-</style>
-`;
+</style>`;
     }
 
     async searchAll() {
