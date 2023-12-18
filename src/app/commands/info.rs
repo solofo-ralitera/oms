@@ -44,11 +44,12 @@ impl Runnable for Info {
             print_usage();
             return Ok(());
         }
+
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "provider" => info_option.set_provider(value)?,
                 "hide-preview" => info_option.hide_preview(),
-                "elastic-dsn" => info_option.set_elastic(value),
+                "elastic-dsn" => info_option.set_elastic(value)?,
                 "list" => { 
                     info_option.set_list(value)?; // Files are provided in option
                     file_path.clear(); // Ignore the file in last option
@@ -74,13 +75,11 @@ impl Runnable for Info {
             }
 
             match metadata(&file_path) {
-                Ok(md) => {
-                    if md.is_dir() {
-                        dir_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
-                    }
-                    else if md.is_file() {
-                        file_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
-                    }
+                Ok(md) if md.is_dir() => {
+                    dir_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
+                },
+                Ok(md) if md.is_file() => {
+                    file_info(&file_path, &info_option, tx.clone(), &mut kv_storage);
                 },
                 _ => file_info(&file_path, &info_option, tx.clone(), &mut kv_storage),
             };
@@ -124,12 +123,11 @@ fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>, k
 fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>, ks: &mut KVStore) {
     for file_path in &info_option.list {
         match metadata(&file_path) {
-            Ok(md) => {
-                if md.is_dir() {
-                    dir_info(file_path, info_option, tx.clone(), ks);
-                } else if md.is_file() {
-                    file_info(file_path, info_option, tx.clone(), ks);
-                }
+            Ok(md) if md.is_dir() => {
+                dir_info(file_path, info_option, tx.clone(), ks);
+            },
+            Ok(md) if md.is_file() => {
+                file_info(file_path, info_option, tx.clone(), ks);
             },
             _ => (),
         };
@@ -144,7 +142,7 @@ info [file_path]        Display file informations
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server
     --hide-preview=<bool>   Mute display
-    --list=<sting>          Paht o a file containing the list of movie file to parse
+    --list=<sting>          Path of a file containing the list of files to parse
 "
 }
 

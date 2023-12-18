@@ -92,18 +92,16 @@ impl Runnable for Search {
         }
 
         match metadata(&self.file_path) {
-            Ok(md) => {
-                if md.is_file() {
-                    search_in_file(&self.file_path, &self.search_term, &search_option, tx.clone());
-                } else if md.is_dir() {
-                    search_in_dir(&self.file_path, &self.search_term, &search_option, tx.clone());
-                } else {
-                    return Err(Error::new(
-                        ErrorKind::InvalidInput, 
-                        format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
-                    ));
-                }
+            Ok(md) if md.is_file() => {
+                search_in_file(&self.file_path, &self.search_term, &search_option, tx.clone());
             },
+            Ok(md) if md.is_dir() => {
+                search_in_dir(&self.file_path, &self.search_term, &search_option, tx.clone());
+            },
+            Ok(_) => return Err(Error::new(
+                ErrorKind::InvalidInput, 
+                format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
+            )),
             Err(err) => {
                 return Err(Error::new(
                     ErrorKind::NotFound, 

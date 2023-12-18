@@ -1,32 +1,46 @@
+use std::io;
+use regex::Regex;
 use serde::Serialize;
-use crate::helpers::http::post_body;
+use url::Url;
+use crate::helpers::http;
 
-const ELASTIC_OMS_INDEX: &'static str = "oms";
 
 pub struct Elastic {
-    pub index: String,
     pub url: String,
 }
 
 impl Elastic {
-    pub fn new(url: &String) -> Self {
-        let mut _self = Self {
-            index: ELASTIC_OMS_INDEX.to_string(),
-            url: url.to_string(),
-        };
-        return _self;
+    pub fn new(url: &String) -> Result<Self, io::Error> {
+        match Url::parse(url) {
+            Ok(elastic_url) if elastic_url.path().is_empty() => return Err(io::Error::new(
+                io::ErrorKind::InvalidInput, 
+                format!("Missing index in the url {url}, ")
+            )),
+            Ok(_) => {
+                let re = Regex::new(r"/$").unwrap();
+                return Ok(Self {
+                    url: re.replace(url, ".").to_string(),
+                });
+            },
+            _ => return Err(io::Error::new(
+                io::ErrorKind::InvalidInput, 
+                format!("Invalid elastic url {url}")
+            ))
+        }
     }
 
     pub fn insert<T: Serialize>(&self, body: &T) {
-        let url = format!("{}/{}/_doc/", self.url, self.index);
-        let _ = post_body(&url, &vec![], body);
+        let _ = http::post_body(
+            &format!("{}/_doc/", self.url), 
+            &vec![], 
+            body
+        );
     }
 }
 
 impl Clone for Elastic {
     fn clone(&self) -> Self {
         Elastic {
-            index: self.index.clone(),
             url: self.url.clone(),
         }
     }

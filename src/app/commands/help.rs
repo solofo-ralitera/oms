@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, collections::HashMap};
 use super::{Runnable, info, read, search};
 
 
@@ -52,6 +52,6 @@ pub fn help_command() -> &'static str {
 /// 
 /// help::build_cmd();
 /// ```
-pub fn build_cmd() -> Result<Help, io::Error> {
+pub fn build_cmd(_: &Vec<String>, _: HashMap<String, String>) -> Result<Help, io::Error> {
     Ok(Help {})
 }

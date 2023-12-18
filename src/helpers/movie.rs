@@ -3,7 +3,7 @@ pub mod omdb;
 
 use core::fmt;
 use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead}};
-use crate::helpers::file::remove_extension;
+use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
     };
 }
 
-//
+//  TODO: refactor into helpers command
 //  ffmpeg -i "input.avi" -c:a copy -c:v vp9 -b:v 100K "input.vp9.mp4"
 //  ffmpeg -i new\ romance.AVI new\ romance.mp4
 pub fn avi_to_mp4(file_path: &String, dest_path: &String) {
@@ -99,9 +99,9 @@ impl fmt::Display for MovieResult {
         let mut str = String::new();
         str.push_str(&format!("Title: {} ({})\n\n", self.title.bold(), self.date));
 
-        // str.push_str(&draw_image(&self.thumb, (75, 75)));
-        str.push_str(&format!("{}\n", self.thumb_url));
-       
+        str.push_str(&helpers::output::draw_image(&self.thumb, (50, 50)));
+        str.push_str(&format!("{}\n", self.poster_url));
+        
         str.push_str(&format!("\n{}\n", self.summary));
         str.push_str(&format!("\nGenre: {}\n", self.genres.join(", ")));
         str.push_str(&format!("\nCast: {}\n", self.casts.join(", ")));

@@ -30,7 +30,7 @@ impl Runnable for Mserv {
         }
         for (option, value) in &self.cmd_options {
             match option.as_str() {
-                "elastic-dsn" => mserv_option.set_elastic(value),
+                "elastic-dsn" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,
                 arg => return Err(io::Error::new(
                     io::ErrorKind::InvalidInput, 
@@ -88,20 +88,21 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
 
         let response = format!("HTTP/1.1 {status}\r\n{s_headers}\r\n");
         stream.write(response.as_bytes()).unwrap();
-        if let Some(o_content) = str_content {
-            for mut l in o_content {
+        if let Some(content) = str_content {
+            for mut l in content {
                 l.push_str("\n");
                 // Replace elastic dsn
-                if let Some(elastic) = option.elastic.as_ref() {
-                    if path.ends_with("elastic.js") {
-                        l = l.replace("\"ELASTIC_URL\"", &format!("\"{}/{}\"", elastic.url, elastic.index));
-                    }
+                match option.elastic.as_ref() {
+                    Some(elastic) if path.ends_with("elastic.js") => {
+                        l = l.replace("\"ELASTIC_URL\"", &format!("\"{}\"", elastic.url));
+                    },
+                    _ => (),
                 }
                 stream.write(l.as_bytes()).unwrap();
             }
         }
-        if let Some(o_bytes) = bytes_content {
-            if let Err(err) = stream.write (&o_bytes) {
+        if let Some(bytes) = bytes_content {
+            if let Err(err) = stream.write (&bytes) {
                 println!("Stream write error: {}", err.to_string());
             }
         }
@@ -129,7 +130,7 @@ fn print_usage() {
     println!("\n{}\n", usage());
 }
 
-pub fn build_cmd(options: HashMap<String, String>) -> Result<Mserv> {
+pub fn build_cmd(_: &Vec<String>, options: HashMap<String, String>) -> Result<Mserv> {
     Ok(Mserv {
         cmd_options: options,
     })

@@ -42,7 +42,7 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
     } else if mime.starts_with("video") {
         let file_path = get_file(&file_path);
         let file_size = file::file_size(&file_path).unwrap_or_default();
-        let buffer: u64 = 3_500_000;
+        let buffer: u64 = 1_500_000;
         
         let (start_range, _) = get_range_params(&request_header, file_size).unwrap_or((0, buffer));
         let end_range = min(start_range + buffer, file_size) - 1;
@@ -72,13 +72,11 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
 }
 
 ///
-/// TODO: live re-encoding
+/// TODO: live re-encoding for other format than mp4 or ts
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
 /// 
-/// 
-/// 
 fn get_file(file_path: &String) -> String {
-    if file_path.ends_with(".avi") || file_path.ends_with(".AVI") {
+    if !file_path.ends_with(".mp4") {
         let re = Regex::new(r"(?i)\.[a-z]{3}$").unwrap();
         let mp4_file_path = re.replace(file_path, ".mp4").to_string();
         match file::check_file(&mp4_file_path) {
@@ -96,7 +94,7 @@ fn get_file(file_path: &String) -> String {
 }
 
 // https://docs.rs/warp-range/latest/src/warp_range/lib.rs.html#1-148
-fn get_range_params(request_header: &Vec<String>, size: u64)->Result<(u64, u64), io::Error> {
+fn get_range_params(request_header: &Vec<String>, size: u64) -> Result<(u64, u64), io::Error> {
     let range = request_header.iter().filter(|line| line.starts_with("Range:")).next();
     match range {
         Some(range) => {

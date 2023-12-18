@@ -50,11 +50,11 @@ pub fn parse_command(args: &Vec<String>, options: HashMap<String, String>) -> Re
         .unwrap_or("help");
     
     match cmd {
-        "help" => Ok(Box::new(help::build_cmd()?)),
+        "help" => Ok(Box::new(help::build_cmd(args, options)?)),
         "read" => Ok(Box::new(read::build_cmd(args, options)?)),
         "search" => Ok(Box::new(search::build_cmd(args, options)?)),
         "info" => Ok(Box::new(info::build_cmd(args, options)?)),
-        "mserv" => Ok(Box::new(mserv::build_cmd(options)?)),
+        "mserv" => Ok(Box::new(mserv::build_cmd(args, options)?)),
         _ => Err(Error::new(
             ErrorKind::InvalidInput, 
             format!("'{cmd}' is not a valid command{}", help::help_command())

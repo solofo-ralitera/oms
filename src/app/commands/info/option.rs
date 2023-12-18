@@ -47,8 +47,14 @@ impl InfoOption {
         Ok(())
     }
 
-    pub fn set_elastic(&mut self, value: &String) {
-        self.elastic = Some(Elastic::new(value));
+    pub fn set_elastic(&mut self, value: &String) -> Result<()> {
+        match Elastic::new(value) {
+            Ok(elastic) => {
+                self.elastic = Some(elastic);
+                Ok(())
+            },
+            Err(err) => Err(err),
+        }
     }
 
 }
