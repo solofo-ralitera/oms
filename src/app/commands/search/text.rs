@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::file;
+use crate::helpers::file::{self, get_file_name};
 use super::{format_file_display, text_contains, format_line_found, SearchOption};
 
 ///
@@ -15,11 +15,18 @@ pub struct TextSearch<'a> {
 
 impl<'a> TextSearch<'a> {
     pub fn search(&self, tx: Sender<String>) {
-
+        // TODO :search in file name
         let mut result = String::new();
+        let file_name = get_file_name(&self.file_path).to_lowercase();
+
+        let mut line_found = false;
+
+        if text_contains(&file_name, &self.search_term) {
+            result.push_str(&format_file_display(&self.file_path));
+            line_found = true;
+        }
 
         let mut lines = file::read_lines(&self.file_path).enumerate();
-        let mut line_found = false;
         while let Some((line_number, result_line)) = lines.next() {
             if let Ok(line_text) = result_line {
                 if text_contains(&line_text, &self.search_term) {

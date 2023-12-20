@@ -1,11 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io, cmp::max};
 use regex::Regex;
 use super::cache;
 
 
 ///
 /// TODO: parse options: https://stackoverflow.com/questions/15619320/how-can-i-access-command-line-parameters-in-rust
-/// 
 pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {
     let mut options = HashMap::new();
     for (index, option) in args.iter().enumerate() {
@@ -52,7 +51,85 @@ pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {
             }
         }
     }
-
     return options;
 }
 
+
+// https://docs.rs/warp-range/latest/src/warp_range/lib.rs.html#1-148
+pub fn get_range_params(request_header: &Vec<String>, size: u64) -> Result<(u64, u64), io::Error> {
+    let range = request_header.iter().filter(|line| line.starts_with("Range:")).next();
+    match range {
+        Some(range) => {
+            let range: Vec<String> = range
+                .replace("Range:", "")
+                .replace("bytes=", "")
+                .trim()
+                .split("-")
+                .filter_map(|n| if n.len() > 0 {Some(n.to_string())} else {None})
+                .collect();
+            let start = if range.len() > 0 { 
+                range[0].parse::<u64>().unwrap_or_default()
+            } else { 
+                0 
+            };
+            let end = if range.len() > 1 {
+                range[1].parse::<u64>().unwrap_or_default()
+            } else {
+                max(0, size - 1)
+            };
+            Ok((start, end))
+        },
+        None => Ok((0, size - 1))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn get_range_params_0() {
+        let headers = vec![
+            "Range: bytes=0-".to_string(),
+        ];
+        match get_range_params(&headers, 1_000_000) {
+            Ok(range) => {
+                assert_eq!((0, 999_999), range);
+            },
+            Err(_) => {
+                panic!("get_range_params should return tulpe");
+
+            }
+        }
+    }
+
+    #[test]
+    fn get_range_params_0_100() {
+        let headers = vec![
+            "Range: bytes=0-100".to_string(),
+        ];
+        match get_range_params(&headers, 1_000_000) {
+            Ok(range) => {
+                assert_eq!((0, 100), range);
+            },
+            Err(_) => {
+                panic!("get_range_params should return tulpe");
+
+            }
+        }
+    }
+
+    #[test]
+    fn get_range_params_nil() {
+        let headers = vec![];
+        match get_range_params(&headers, 1_000_000) {
+            Ok(range) => {
+                assert_eq!((0, 999_999), range);
+            },
+            Err(_) => {
+                panic!("get_range_params should return tulpe");
+
+            }
+        }
+    }
+}

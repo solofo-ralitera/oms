@@ -1,7 +1,7 @@
-use crate::helpers::{file, movie, rtrim_char};
+use crate::helpers::{file, movie, rtrim_char, input::get_range_params};
 use regex::Regex;
 use urlencoding::decode;
-use std::{io, cmp::{min, max}, thread};
+use std::{cmp::min, thread};
 use super::option::MservOption;
 
 pub struct ProcessParam<'a> {
@@ -83,7 +83,6 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
 ///
 /// TODO: live re-encoding for other format than mp4 or ts
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
-/// 
 fn get_file(base_path: &String, file_path: &String) -> String {
     let file_path = rtrim_char(base_path, '/') + file_path;
     if !file_path.ends_with(".mp4") && !file_path.ends_with(".mkv") && !file_path.ends_with(".ts") {
@@ -101,32 +100,4 @@ fn get_file(base_path: &String, file_path: &String) -> String {
         }
     }
     return file_path.clone();
-}
-
-// https://docs.rs/warp-range/latest/src/warp_range/lib.rs.html#1-148
-fn get_range_params(request_header: &Vec<String>, size: u64) -> Result<(u64, u64), io::Error> {
-    let range = request_header.iter().filter(|line| line.starts_with("Range:")).next();
-    match range {
-        Some(range) => {
-            let range: Vec<String> = range
-                .replace("Range:", "")
-                .replace("bytes=", "")
-                .trim()
-                .split("-")
-                .filter_map(|n| if n.len() > 0 {Some(n.to_string())} else {None})
-                .collect();
-            let start = if range.len() > 0 { 
-                range[0].parse::<u64>().unwrap_or_default()
-            } else { 
-                0 
-            };
-            let end = if range.len() > 1 {
-                range[1].parse::<u64>().unwrap_or_default()
-            } else {
-                max(0, size - 1)
-            };
-            Ok((start, end))
-        },
-        None => Ok((0, size - 1))
-    }
 }

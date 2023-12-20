@@ -113,7 +113,6 @@ pub fn get_file_name(file_path: &String) -> String {
 }
 
 pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<()> {
-    // TODO: auto create sub/directories
     let mut fopen = match OpenOptions::new()
        .append(append)
        .write(true)
@@ -129,7 +128,6 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
  }
 
  pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<()> {
-    // TODO: auto create sub/directories
     let mut fopen = match OpenOptions::new()
        .write(true)
        .create(true)

@@ -49,8 +49,9 @@ pub fn help_command() -> &'static str {
 ///
 /// ```
 /// use oms::app::commands::help;
+/// use std::collections::HashMap;
 /// 
-/// help::build_cmd();
+/// help::build_cmd(&vec![], HashMap::new());
 /// ```
 pub fn build_cmd(_: &Vec<String>, _: HashMap<String, String>) -> Result<Help, io::Error> {
     Ok(Help {})

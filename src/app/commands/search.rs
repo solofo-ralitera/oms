@@ -159,6 +159,7 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
     }
     
     thread::spawn(move || {
+        // TODO: search in movies
         match extension.as_str() {
             "pdf" => PdfSearch { 
                     file_path: &file_path, 

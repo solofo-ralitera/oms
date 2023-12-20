@@ -29,7 +29,7 @@ fn format_title_remove_point(title: &str) -> String {
 }
 
 pub fn format_title(raw_title: &String) -> MovieTitle {
-    let re_year = Regex::new(r"^(.{1,})[\.\(]([0-9]{4})(.{0,})\.").unwrap();
+    let re_year = Regex::new(r"^(.{1,})[\.\(]([0-9]{4})(.{0,})").unwrap();
     if let Some((_, [title, year, _])) = re_year.captures(&raw_title).map(|c| c.extract()) {
         let title = format_title_remove_point(title);
 
@@ -52,7 +52,6 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
     };
 }
 
-//  TODO: refactor into helpers command
 //  ffmpeg -i "input.avi" -c:a copy -c:v vp9 -b:v 100K "input.vp9.mp4"
 //  ffmpeg -i new\ romance.AVI new\ romance.mp4
 pub fn avi_to_mp4(file_path: &String, dest_path: &String) {
@@ -115,92 +114,134 @@ mod test {
 
     #[test]
     fn format_title_1() {
-        let content = String::from("10.Jours.Encore.Sans.Maman.2023.FRENCH");
+        let content = String::from("10.AAAAA.BBBBB.1111.CC");
         let format_title = format_title(&content);
 
-        assert_eq!("10 Jours Encore Sans Maman", format_title.title);
-        assert_eq!("2023", format_title.year);
+        assert_eq!("10 AAAAA BBBBB", format_title.title);
+        assert_eq!("1111", format_title.year);
         assert_eq!("en-US", format_title.language);
     }
 
     #[test]
     fn format_title_2() {
-        let content = String::from("Sniper.G.R.I.T.Global.Response.and.Intelligence.Team.2023.FRENCH");
+        let content = String::from("A.B.C.D.EEEE.1111.XXXXXX");
         let format_title = format_title(&content);
 
-        assert_eq!("Sniper G.R.I.T. Global Response and Intelligence Team", format_title.title);
-        assert_eq!("2023", format_title.year);
+        assert_eq!("A.B.C.D. EEEE", format_title.title);
+        assert_eq!("1111", format_title.year);
         assert_eq!("en-US", format_title.language);
     }
 
     #[test]
     fn format_title_3() {
-        let content = String::from("The.Equalizer.3.2023.TRUEFRENCH.WEBRip.x264-ONLYMOViE.mkv");
-        let format_title = format_title(&content);
+        let content_0 = String::from("Aaa.Bbbbbbbb.1.1111.TTTTT.eee");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("The Equalizer 3", format_title.title);
-        assert_eq!("2023", format_title.year);
-        assert_eq!("en-US", format_title.language);
+        assert_eq!("Aaa Bbbbbbbb 1", format_title_0.title);
+        assert_eq!("1111", format_title_0.year);
+        assert_eq!("en-US", format_title_0.language);
+
+        let content_1 = String::from("Aaa.Bbbbbbbb.1.1111.TTTTT");
+        let format_title_1 = format_title(&content_1);
+
+        assert_eq!("Aaa Bbbbbbbb 1", format_title_1.title);
+        assert_eq!("1111", format_title_1.year);
+        assert_eq!("en-US", format_title_1.language);
     }
 
     #[test]
     fn format_title_4() {
-        let content = String::from("American.Pie.3.Marions.les (2003).avi");
-        let format_title = format_title(&content);
+        let content_0 = String::from("Aaa.Bbbbbbbb.1.Cccccc.ddd (1111).eee");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("American Pie 3. Marions les", format_title.title);
-        assert_eq!("2003", format_title.year);
-        assert_eq!("en-US", format_title.language);
+        assert_eq!("Aaa Bbbbbbbb 1. Cccccc ddd", format_title_0.title);
+        assert_eq!("1111", format_title_0.year);
+        assert_eq!("en-US", format_title_0.language);
+
+        let content_1 = String::from("Aaa.Bbbbbbbb.1.Cccccc.ddd (1111)");
+        let format_title_1 = format_title(&content_1);
+
+        assert_eq!("Aaa Bbbbbbbb 1. Cccccc ddd", format_title_1.title);
+        assert_eq!("1111", format_title_1.year);
+        assert_eq!("en-US", format_title_1.language);
     }
 
     #[test]
     fn format_title_5() {
-        let content = String::from("au dela de l'illusion.AVI");
+        let content = String::from("aaa zzzz ee rrrrrrr.AAA");
         let format_title = format_title(&content);
 
-        assert_eq!("au dela de l'illusion", format_title.title);
+        assert_eq!("aaa zzzz ee rrrrrrr", format_title.title);
         assert!(format_title.year.is_empty());
         assert!(format_title.language.is_empty());
     }
 
     #[test]
     fn format_title_6() {
-        let content = String::from("10 000 BC.avi");
-        let format_title = format_title(&content);
+        let content_0 = String::from("00 000 AA.bbb");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("10 000 BC", format_title.title);
-        assert!(format_title.year.is_empty());
-        assert!(format_title.language.is_empty());
+        assert_eq!("00 000 AA", format_title_0.title);
+        assert!(format_title_0.year.is_empty());
+        assert!(format_title_0.language.is_empty());
+
+        let content_1 = String::from("00 000 AA");
+        let format_title_1 = format_title(&content_1);
+
+        assert_eq!("00 000 AA", format_title_1.title);
+        assert!(format_title_1.year.is_empty());
+        assert!(format_title_1.language.is_empty());
     }
 
     #[test]
     fn format_title_7() {
-        let content = String::from("71.2014.avi");
-        let format_title = format_title(&content);
+        let content_0 = String::from("12.3456.avi");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("71", format_title.title);
-        assert_eq!("2014", format_title.year);
-        assert_eq!("en-US", format_title.language);
+        assert_eq!("12", format_title_0.title);
+        assert_eq!("3456", format_title_0.year);
+        assert_eq!("en-US", format_title_0.language);
+
+        let content_1 = String::from("12.3456");
+        let format_title_1 = format_title(&content_1);
+
+        assert_eq!("12", format_title_1.title);
+        assert_eq!("3456", format_title_1.year);
+        assert_eq!("en-US", format_title_1.language);
     }
 
     #[test]
     fn format_title_8() {
-        let content = String::from("1944 (2015).mkv");
-        let format_title = format_title(&content);
+        let content_0 = String::from("1234 (5678).aaa");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("1944", format_title.title);
-        assert_eq!("2015", format_title.year);
-        assert_eq!("en-US", format_title.language);
+        assert_eq!("1234", format_title_0.title);
+        assert_eq!("5678", format_title_0.year);
+        assert_eq!("en-US", format_title_0.language);
+
+        let content_0 = String::from("1234 (5678)");
+        let format_title_0 = format_title(&content_0);
+
+        assert_eq!("1234", format_title_0.title);
+        assert_eq!("5678", format_title_0.year);
+        assert_eq!("en-US", format_title_0.language);
     }
     
     #[test]
     fn format_title_9() {
-        let content = String::from("Chambre 1408.avi");
-        let format_title = format_title(&content);
+        let content_0 = String::from("Azerty 1234.z");
+        let format_title_0 = format_title(&content_0);
 
-        assert_eq!("Chambre 1408", format_title.title);
-        assert!(format_title.year.is_empty());
-        assert!(format_title.language.is_empty());
+        assert_eq!("Azerty 1234", format_title_0.title);
+        assert!(format_title_0.year.is_empty());
+        assert!(format_title_0.language.is_empty());
+
+        let content_1 = String::from("Azerty 1234");
+        let format_title_1 = format_title(&content_1);
+
+        assert_eq!("Azerty 1234", format_title_0.title);
+        assert!(format_title_1.year.is_empty());
+        assert!(format_title_1.language.is_empty());
     }
     
 }
