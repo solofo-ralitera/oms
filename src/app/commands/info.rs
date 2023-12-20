@@ -45,6 +45,7 @@ impl Runnable for Info {
             return Ok(());
         }
 
+        info_option.set_basepath(&file_path)?;
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "provider" => info_option.set_provider(value)?,

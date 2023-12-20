@@ -30,8 +30,20 @@ pub fn draw_image(thumb_path: &String, size: (u32, u32)) -> String {
         return String::new();
     }
     let image = ("thumb".to_string(), PathBuf::from(thumb_path));
-    let format = ops::guess_format(&image).unwrap();
-    let img = ops::load_image(&image, format).unwrap();
+    let format;
+    match ops::guess_format(&image) {
+        Ok(f) => {
+            format = f;
+        },
+        Err(_) => return String::new(),
+    };
+    let img;
+    match ops::load_image(&image, format) {
+        Ok(i) => {
+            img = i;
+        },
+        Err(_) => return String::new(),
+    }
     let img_s = ops::image_resized_size(img.dimensions(), size, true);
     let resized = ops::resize_image(&img, img_s);
 

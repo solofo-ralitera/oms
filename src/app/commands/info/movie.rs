@@ -21,10 +21,6 @@ pub struct MovieInfo<'a> {
 
 impl<'a> MovieInfo<'a> {
     pub fn info(&self, tx: Sender<String>, kv: &mut KVStore) {
-        if self.file_path.contains(".CD02.") {
-            return;
-        }
-        
         match self.get_movie_result(kv) {
             Ok(movies) => {
                 for movie in movies {
@@ -102,9 +98,10 @@ fn save_data(file_hash: &String, movies: &mut Vec<MovieResult>, movie_info: &Mov
     }
     cache::write_cache_json(&file_hash, &movies, ".movie");
     for movie in movies {
-        movie.file_path = movie_info.file_path.clone();
+        let movie_path = movie_info.file_path.replace(&movie_info.info_option.base_path, "");
+        movie.file_path = movie_path;
         movie.file_hash = file_hash.clone();
-    }    
+    }
 }
 
 fn log_error(movie: &MovieInfo) {

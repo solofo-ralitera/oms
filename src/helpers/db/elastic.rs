@@ -1,8 +1,7 @@
 use std::io;
-use regex::Regex;
 use serde::Serialize;
 use url::Url;
-use crate::helpers::http;
+use crate::helpers::{http, rtrim_char};
 
 
 pub struct Elastic {
@@ -16,12 +15,9 @@ impl Elastic {
                 io::ErrorKind::InvalidInput, 
                 format!("Missing index in the url {url}, ")
             )),
-            Ok(_) => {
-                let re = Regex::new(r"/$").unwrap();
-                return Ok(Self {
-                    url: re.replace(url, ".").to_string(),
-                });
-            },
+            Ok(_) => return Ok(Self {
+                url: rtrim_char(url, '/'),
+            }),
             _ => return Err(io::Error::new(
                 io::ErrorKind::InvalidInput, 
                 format!("Invalid elastic url {url}")

@@ -53,9 +53,11 @@ pub fn read_range(file_path: &str, start: u64, length: u64 ) -> Option<Vec<u8>> 
       if let Ok(_) = f.seek(SeekFrom::Start(start as u64)) {
          let mut buf = vec![0; length as usize];
          if  let Ok(_) = f.read_exact(&mut buf) {
+            drop(f);
             return Some(buf);
          }
       }
+      drop(f);
    }
    return None;
 }

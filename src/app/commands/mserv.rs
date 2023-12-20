@@ -4,7 +4,7 @@ mod request;
 use std::{collections::HashMap, io::{BufReader, BufRead, Write, self}, net::{TcpListener, TcpStream}, thread};
 use regex::Regex;
 
-use self::option::MservOption;
+use self::{option::MservOption, request::ProcessParam};
 
 use super::Runnable;
 
@@ -30,6 +30,7 @@ impl Runnable for Mserv {
         }
         for (option, value) in &self.cmd_options {
             match option.as_str() {
+                "base-path" => mserv_option.set_basepath(value)?,
                 "elastic-dsn" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,
                 arg => return Err(io::Error::new(
@@ -37,6 +38,13 @@ impl Runnable for Mserv {
                     format!("\nUnkown argument {}\n", arg)
                 )),
             };
+        }
+
+        if mserv_option.base_path.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput, 
+                format!("\nYou must provide base-path option\n")
+            ));
         }
 
         // Serve web
@@ -79,7 +87,12 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
             headers, 
             str_content, 
             bytes_content
-        ) = request::process(path, verb, &request_headers);
+        ) = request::process(ProcessParam {
+            path: path, 
+            verb: verb, 
+            request_header: &request_headers,
+            serv_option: &option,
+        });
         
         let mut s_headers = String::new();
         for (h_key, h_value) in headers {

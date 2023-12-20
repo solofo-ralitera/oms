@@ -1,9 +1,10 @@
-use std::{io, net::{SocketAddr, ToSocketAddrs}};
-use crate::helpers::db::elastic::Elastic;
+use std::{io, net::{SocketAddr, ToSocketAddrs}, fs};
+use crate::helpers::{db::elastic::Elastic, rtrim_char};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
 pub struct MservOption {
+    pub base_path: String,
     pub urls: Vec<SocketAddr>,
     pub elastic: Option<Elastic>,
 }
@@ -15,6 +16,7 @@ impl MservOption {
 
     pub fn new() -> Self {
         MservOption {
+            base_path: String::new(),
             urls: vec![Self::addr_from_string(&"localhost:7777".to_string())],
             elastic: None,
         }
@@ -46,6 +48,19 @@ impl MservOption {
         }
     }
 
+    pub fn set_basepath(&mut self, value: &String) -> Result<()> {
+        match fs::metadata(value) {
+            Ok(md) if md.is_dir() => {
+                self.base_path = rtrim_char(value, '/').trim().to_string();
+                return Ok(());
+            },
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput, 
+                format!("Base path {value} is not a directory")
+            )),
+        }
+    }
+
     pub fn set_elastic(&mut self, value: &String) -> Result<()> {
         match Elastic::new(value) {
             Ok(elastic) => {
@@ -64,6 +79,7 @@ impl MservOption {
 impl Clone for MservOption {
     fn clone(&self) -> Self {
         MservOption { 
+            base_path: self.base_path.clone(),
             urls: self.urls.clone(),
             elastic: self.elastic.clone(),
         }

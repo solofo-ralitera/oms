@@ -9,7 +9,7 @@ export class MovieComponent extends HTMLElement {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
                     if (this.root.querySelector(".card .card-body-bg")) {
-                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `url("${this._movie.thumb_url}")`;
+                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url}")`;
                     }
                     if (this.root.querySelector("#thumb")) {
                         this.root.querySelector("#thumb").src = this.root.querySelector("#thumb")?.getAttribute('data-src');
@@ -52,6 +52,7 @@ h2,h3,h4 {
     display: grid;
     grid-template-rows: 2em 1fr;
     position: relative;
+    margin-top: 5px;
 }
 .card #card-title {
     display: flex;
@@ -85,8 +86,8 @@ h2,h3,h4 {
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
-    filter: blur(8px) grayscale(100%);
-    -webkit-filter: blur(8px) grayscale(100%);
+    filter: blur(8px) grayscale(85%);
+    -webkit-filter: blur(8px) grayscale(85%);
     z-index: 0;
 }
 .card .card-body .card-body-content {
@@ -116,6 +117,7 @@ h2,h3,h4 {
     text-align: center;
     cursor: pointer;
     vertical-align: middle;
+    margin: 0 0.5em 0 0;
 }
 </style>`;
     }
@@ -127,13 +129,15 @@ h2,h3,h4 {
                     src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
                     data-src="${this._movie.thumb_url}" 
                     id="thumb"
-                    alt="${this._movie.title.escape_quote()}">`;
+                    loading="lazy"
+                    alt="Poster of ${this._movie.title.escape_quote()}">`;
             }
             return `<img 
                 src="${this._movie.thumb_url}" 
                 data-src="${this._movie.thumb_url}" 
                 id="thumb" 
-                alt="${this._movie.title.escape_quote()}">`;
+                loading="lazy"
+                alt="Poster of ${this._movie.title.escape_quote()}">`;
         }
         return this.renderSummary();
     }
@@ -166,25 +170,22 @@ h2,h3,h4 {
             return;
         }
 
-        this.root.innerHTML = `
-            ${this.css()}
+        this.root.innerHTML = `${this.css()}
             <article class="card" id="card">
-                <h4 id="card-title">
+                <header id="card-title">
                     <span>
-                        <button class="play" tabindex="1">▶</button>
-                        &nbsp;
-                        ${this._movie.title}&nbsp;
+                        <button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>
+                        ${this._movie.title}
                     </span>
-                    <span class="info">(${this._movie.date?.split("-")?.shift()})</span>
-                </h4>
+                    <span class="info" aria-label="Year ${this._movie.date?.split("-")?.shift()?.escape_quote()}">(${this._movie.date?.split("-")?.shift()})</span>
+                </header>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
                     <button class="card-body-content" tabindex="2" role="button">
                         ${this.renderImage(true)}
                     </button>
                 </div>
-            </article>
-        `;
+            </article>`;
 
         this.root.querySelector("#card-title").addEventListener("click", (e) => {
             eventBus.fire("current-movie", JSON.parse(JSON.stringify(this._movie)));

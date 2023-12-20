@@ -1,13 +1,21 @@
-use crate::helpers::{file, movie};
+use crate::helpers::{file, movie, rtrim_char};
 use regex::Regex;
 use urlencoding::decode;
-use std::{io, cmp::min, thread};
+use std::{io, cmp::{min, max}, thread};
+use super::option::MservOption;
 
+pub struct ProcessParam<'a> {
+    pub path: &'a str,
+    pub verb: &'a str,
+    pub request_header: &'a Vec<String>,
+    pub serv_option: &'a MservOption,
+}
 
 ///
 /// Return: status: 200 OK, headers, content
 /// 
-pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+// pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessParam) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     if verb == "OPTIONS" {
         return (String::new(), vec![], None, None);
     }
@@ -40,7 +48,8 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
             Some(file::read_buf(&file_path)),
         );
     } else if mime.starts_with("video") {
-        let file_path = get_file(&file_path);
+        // serv_option.base_path;
+        let file_path = &get_file(&serv_option.base_path, &file_path);
         let file_size = file::file_size(&file_path).unwrap_or_default();
         let buffer: u64 = 1_500_000;
         
@@ -75,10 +84,11 @@ pub fn process(path: &str, verb: &str, request_header: &Vec<String>) -> (String,
 /// TODO: live re-encoding for other format than mp4 or ts
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
 /// 
-fn get_file(file_path: &String) -> String {
-    if !file_path.ends_with(".mp4") {
+fn get_file(base_path: &String, file_path: &String) -> String {
+    let file_path = rtrim_char(base_path, '/') + file_path;
+    if !file_path.ends_with(".mp4") && !file_path.ends_with(".mkv") && !file_path.ends_with(".ts") {
         let re = Regex::new(r"(?i)\.[a-z]{3}$").unwrap();
-        let mp4_file_path = re.replace(file_path, ".mp4").to_string();
+        let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
         match file::check_file(&mp4_file_path) {
             Ok(f) => return f.to_string(),
             Err(_) => {
@@ -113,7 +123,7 @@ fn get_range_params(request_header: &Vec<String>, size: u64) -> Result<(u64, u64
             let end = if range.len() > 1 {
                 range[1].parse::<u64>().unwrap_or_default()
             } else {
-                size - 1 
+                max(0, size - 1)
             };
             Ok((start, end))
         },
