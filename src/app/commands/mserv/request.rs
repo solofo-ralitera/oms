@@ -75,7 +75,10 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
         vec![
             (String::from("Content-type"), file::get_mimetype(path).to_string()),
         ], 
-        Some(Box::new(file::read_lines(&file_path).map(|l| l.unwrap_or_default()))),
+        match file::read_lines(&file_path) {
+            Some(lines) => Some(Box::new(lines.map(|l| l.unwrap_or_default()))),
+            None => None,
+        },
         None
     );
 }

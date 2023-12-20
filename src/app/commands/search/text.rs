@@ -26,15 +26,17 @@ impl<'a> TextSearch<'a> {
             line_found = true;
         }
 
-        let mut lines = file::read_lines(&self.file_path).enumerate();
-        while let Some((line_number, result_line)) = lines.next() {
-            if let Ok(line_text) = result_line {
-                if text_contains(&line_text, &self.search_term) {
-                    if line_found == false {
-                        result.push_str(&format_file_display(&self.file_path));
-                        line_found = true;
+        if let Some(lines) = file::read_lines(&self.file_path) {
+            let mut lines = lines.enumerate();
+            while let Some((line_number, result_line)) = lines.next() {
+                if let Ok(line_text) = result_line {
+                    if text_contains(&line_text, &self.search_term) {
+                        if line_found == false {
+                            result.push_str(&format_file_display(&self.file_path));
+                            line_found = true;
+                        }
+                        result.push_str(&format_line_found(&line_number.to_string(), &line_text, &self.search_option));
                     }
-                    result.push_str(&format_line_found(&line_number.to_string(), &line_text, &self.search_option));
                 }
             }
         }

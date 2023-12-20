@@ -11,7 +11,7 @@ pub struct Elastic {
 impl Elastic {
     pub fn new(url: &String) -> Result<Self, io::Error> {
         match Url::parse(url) {
-            Ok(elastic_url) if elastic_url.path().is_empty() => return Err(io::Error::new(
+            Ok(elastic_url) if (elastic_url.path().is_empty() || elastic_url.path().eq("/")) => return Err(io::Error::new(
                 io::ErrorKind::InvalidInput, 
                 format!("Missing index in the url {url}, ")
             )),

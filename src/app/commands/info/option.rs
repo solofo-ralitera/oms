@@ -53,25 +53,24 @@ impl InfoOption {
     }
 
     pub fn set_list(&mut self, value: &String) -> Result<()> {
-        let lines = file::read_lines(value).enumerate();
-        for (_, line) in lines {
-            if let Ok(l) = line {
-                self.list.push(l);
+        if let Some(lines) = file::read_lines(value) {
+            for (_, line) in lines.enumerate() {
+                if let Ok(l) = line {
+                    self.list.push(l);
+                }
             }
+            return Ok(());
         }
-        Ok(())
+        return Err(Error::new(
+            ErrorKind::NotFound, 
+            format!("Unknown value for provider")
+        ));
     }
 
     pub fn set_elastic(&mut self, value: &String) -> Result<()> {
-        match Elastic::new(value) {
-            Ok(elastic) => {
-                self.elastic = Some(elastic);
-                Ok(())
-            },
-            Err(err) => Err(err),
-        }
+        self.elastic = Some(Elastic::new(value)?);
+        return Ok(());
     }
-
 }
 
 impl Clone for InfoOption {

@@ -62,16 +62,8 @@ impl MservOption {
     }
 
     pub fn set_elastic(&mut self, value: &String) -> Result<()> {
-        match Elastic::new(value) {
-            Ok(elastic) => {
-                self.elastic = Some(elastic);
-                return Ok(());
-            },
-            Err(err) => return Err(io::Error::new(
-                io::ErrorKind::InvalidInput, 
-                format!("Invalid elastic url: {err}")
-            ))
-        }
+        self.elastic = Some(Elastic::new(value)?);
+        return Ok(());
     }
 }
 

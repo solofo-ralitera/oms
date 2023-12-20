@@ -65,11 +65,12 @@ pub fn read_range(file_path: &str, start: u64, length: u64 ) -> Option<Vec<u8>> 
 ///
 /// // https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html
 /// // https://linuxhint.com/rust-read-from-file-line-line/
-/// 
-pub fn read_lines(file_path: &str) -> io::Lines<io::BufReader<File>> {
-    let file = File::open(file_path).expect(&format!("Unable to open file {file_path}"));
-    let reader = BufReader::new(file);
-    reader.lines()
+pub fn read_lines(file_path: &str) -> Option<io::Lines<io::BufReader<File>>> {
+   if let Ok(file) = File::open(file_path) {
+      let reader = BufReader::new(file);
+      return Some(reader.lines());
+   }
+   return None;
 }
 
 pub fn read_buf(file_path: &str) -> Vec<u8> {
@@ -167,3 +168,66 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
 
    return Ok(HEXUPPER.encode(context.finish().as_ref()));
  }
+
+
+#[cfg(test)]
+mod test {
+   use super::*;
+
+   #[test]
+   fn file_get_extension_ok() {
+      let file_name = String::from("test.txt");
+      let extension = get_extension(&file_name);
+      assert_eq!("txt", extension);
+
+      let file_name = String::from("test");
+      let extension = get_extension(&file_name);
+      assert_eq!("", extension);
+   }
+
+   #[test]
+   fn file_remove_extension_ok() {
+      let file_name = String::from("test.txt");
+      let extension = remove_extension(&file_name);
+      assert_eq!("test", extension);
+
+      let file_name = String::from("test.1111.txt");
+      let extension = remove_extension(&file_name);
+      assert_eq!("test.1111", extension);
+
+      let file_name = String::from("test");
+      let extension = remove_extension(&file_name);
+      assert_eq!("test", extension);
+   }
+
+   #[test]
+   fn file_get_file_name_ok() {
+      let file_path = String::from("/dummy/dir/test.txt");
+      let extension = get_file_name(&file_path);
+      assert_eq!("test.txt", extension);
+   }
+
+   #[test]
+   fn file_read_lines_ok() {
+      match read_lines("./Cargo.toml") {
+         Some(lines) => {
+            let mut lines = lines.enumerate();
+            if let Some((l, Ok(str))) = lines.next() {
+               assert_eq!(0, l);
+               assert_eq!(String::from("[package]"), str);
+            } else {
+               assert!(false, "file read_line, first line should be [package]");
+            }
+            if let Some((l, Ok(str))) = lines.next() {
+               assert_eq!(1, l);
+               assert_eq!(String::from("name = \"oms\""), str);
+            } else {
+               assert!(false, "file read_line, second line should be name = \"oms\"");
+            }
+         },
+         None => {
+            assert!(false, "file read_line should be ok");
+         }
+      }
+   }
+}
