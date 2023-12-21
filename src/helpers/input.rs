@@ -46,7 +46,7 @@ pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {
                 if option.eq("cache-path") {
                     cache::set_base_path(&next_value);
                     continue;
-                }    
+                }
                 options.insert(option.clone(), next_value);
             }
         }

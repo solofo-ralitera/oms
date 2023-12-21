@@ -47,20 +47,28 @@ where
     };    
 }
 
-pub fn post_body<T>(url: &String, headers: &Vec<(String, String)>, post_body: &T) -> Result<String>
+pub fn post_body<T>(url: &String, method: &str, headers: &Vec<(String, String)>, post_body: &T) -> Result<String>
 where 
     T: Serialize
 {
-    let mut request = reqwest::blocking::Client::new()
-        .post(url)
-        .header("Content-Type", "application/json");
+    let mut request = match method {
+        "PUT" => {
+            reqwest::blocking::Client::new()
+                .put(url)
+                .header("Content-Type", "application/json")            
+        },        
+        _ => {
+            reqwest::blocking::Client::new()
+                .post(url)
+                .header("Content-Type", "application/json")            
+        },
+    };
 
     for (key, value) in headers {
         request = request.header(key, value);
     }
 
     let post_body = serde_json::to_string(&post_body).unwrap();
-
 
     match request.body(post_body).send() {
         Ok(r) => {

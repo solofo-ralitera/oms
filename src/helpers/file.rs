@@ -83,11 +83,11 @@ pub fn read_buf(file_path: &str) -> Vec<u8> {
 }
 
 pub fn get_extension(filename: &str) -> String {
-    Path::new(filename)
-        .extension()
-        .and_then(OsStr::to_str)
-        .unwrap_or("")
-        .to_string()
+   Path::new(filename)
+      .extension()
+      .and_then(OsStr::to_str)
+      .unwrap_or("")
+      .to_string()
 }
 
 pub fn get_mimetype(file_path: &str) -> String {
@@ -105,44 +105,44 @@ pub fn remove_extension(filename: &str) -> String {
 }
 
 pub fn get_file_name(file_path: &String) -> String {
-    Path::new(file_path)
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap_or("")
-        .to_string()
+   Path::new(file_path)
+      .file_name()
+      .unwrap()
+      .to_str()
+      .unwrap_or("")
+      .to_string()
 }
 
 pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<()> {
-    let mut fopen = match OpenOptions::new()
-       .append(append)
-       .write(true)
-       .create(true)
-       .open(file_name) {
-          Ok(file) => file,
-          Err(err) => return Err(err),
-       };
-    match fopen.write(content.as_bytes()) {
-       Ok(_) => Ok(()),
-       Err(err) => return Err(err),
-    }
- }
+   let mut fopen = match OpenOptions::new()
+      .append(append)
+      .write(true)
+      .create(true)
+      .open(file_name) {
+         Ok(file) => file,
+         Err(err) => return Err(err),
+      };
+   match fopen.write(content.as_bytes()) {
+      Ok(_) => Ok(()),
+      Err(err) => return Err(err),
+   }
+}
 
- pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<()> {
-    let mut fopen = match OpenOptions::new()
-       .write(true)
-       .create(true)
-       .open(file_name) {
-          Ok(file) => file,
-          Err(err) => return Err(err),
-       };
-    match fopen.write(&content.as_bytes()) {
-       Ok(_) => Ok(()),
-       Err(err) => return Err(err),
-    }
- }
+pub fn write_file_bytes(file_name: &Path, content: &Bytes) -> Result<()> {
+   let mut fopen = match OpenOptions::new()
+      .write(true)
+      .create(true)
+      .open(file_name) {
+         Ok(file) => file,
+         Err(err) => return Err(err),
+      };
+   match fopen.write(&content.as_bytes()) {
+      Ok(_) => Ok(()),
+      Err(err) => return Err(err),
+   }
+}
 
- pub fn sha256(file_path: &String) -> Result<String> {
+pub fn sha256(file_path: &String) -> Result<String> {
    if let Ok(output) = Command::new("sha256sum").arg(file_path).stdout(Stdio::piped()).output() {
       if let Ok(stdout) = String::from_utf8(output.stdout) {
          let res = stdout.split("  ").into_iter().next().unwrap_or_default();
@@ -153,17 +153,17 @@ pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Resu
    }
 
    let input = File::open(file_path)?;
-    let mut reader = BufReader::new(input);
+   let mut reader = BufReader::new(input);
 
    let mut context = Context::new(&SHA256);
    let mut buffer = [0; 1024];
 
    loop {
-       let count = reader.read(&mut buffer)?;
-       if count == 0 {
-           break;
-       }
-       context.update(&buffer[..count]);
+      let count = reader.read(&mut buffer)?;
+      if count == 0 {
+         break;
+      }
+      context.update(&buffer[..count]);
    }
 
    return Ok(HEXUPPER.encode(context.finish().as_ref()));

@@ -2,11 +2,15 @@ pub mod tmdb;
 pub mod omdb;
 
 use core::fmt;
-use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead}};
+use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead, self}};
 use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+use self::{tmdb::TMDb, omdb::OMDb};
+
+use super::{cache, file};
 
 
 ///
@@ -105,6 +109,52 @@ impl fmt::Display for MovieResult {
         str.push_str(&format!("\nGenre: {}\n", self.genres.join(", ")));
         str.push_str(&format!("\nCast: {}\n", self.casts.join(", ")));
         write!(f, "{str}")
+    }
+}
+
+pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String) -> Result<Vec<MovieResult>, io::Error> {
+    let movie_title = format_title(raw_title);
+    
+    let file_hash = match cache::get(&file_path) {
+        Some(hash) => hash,
+        None => {
+            let hash = file::sha256(&file_path).unwrap_or_default();
+            cache::add(&file_path, &hash);
+            hash
+        },
+    };
+
+    // Check cache
+    if let Some((_, content)) = cache::get_cache(&file_hash, ".movie") {
+        if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
+            if result.len() > 0 {
+                return Ok(result);
+            }
+        }
+    }
+
+    // Find first in tmdb, if not found switch to omdb, otherwise fall in error
+    let movies = if let Ok(result) = TMDb::info(&movie_title) {
+        Some(result)
+    } else if let Ok(result) = OMDb::info(&movie_title) {
+        Some(result)
+    } else {
+        None
+    };
+
+    match movies {
+        Some(mut movies) => {
+            for movie in &mut movies {
+                movie.file_path = file_path.replace(base_path, "");
+                movie.file_hash = file_hash.clone();
+            }
+            cache::write_cache_json(&file_hash, &movies, ".movie");
+            return Ok(movies);
+        },
+        None => return Err(io::Error::new(
+            io::ErrorKind::InvalidInput, 
+            format!("Unable to find information about the movie: {}", file_path.on_red())
+        )),
     }
 }
 

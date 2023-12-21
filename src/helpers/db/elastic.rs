@@ -25,12 +25,22 @@ impl Elastic {
         }
     }
 
-    pub fn insert<T: Serialize>(&self, body: &T) {
-        let _ = http::post_body(
-            &format!("{}/_doc/", self.url), 
-            &vec![], 
-            body
-        );
+    pub fn insert<T: Serialize>(&self, id: &String, body: &T) {
+        if id.is_empty() {
+            let _ = http::post_body(
+                &format!("{}/_doc/", self.url), 
+                "POST",
+                &vec![], 
+                body
+            );
+        } else {
+            let _ = http::post_body(
+                &format!("{}/_doc/{id}", self.url), 
+                "PUT",
+                &vec![], 
+                body
+            );
+        }
     }
 }
 

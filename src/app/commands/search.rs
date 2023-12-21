@@ -2,6 +2,7 @@ pub mod option;
 pub mod text;
 pub mod pdf;
 pub mod ms;
+pub mod movie;
 
 
 use std::collections::HashMap;
@@ -10,6 +11,8 @@ use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::{thread, cmp};
+
+use self::movie::MovieSearch;
 
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
 use crate::helpers::output::colorize;
@@ -170,7 +173,12 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
                     file_path: &file_path, 
                     search_term: &search_term, 
                     search_option: &search_option,
-                }.search(tx),    
+                }.search(tx),
+            "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieSearch {
+                file_path: &file_path, 
+                search_term: &search_term, 
+                search_option: &search_option,
+            }.search(tx),
             _ => TextSearch {
                     file_path: &file_path,
                     search_term: &search_term,
