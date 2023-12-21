@@ -189,11 +189,6 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
     sleep(pause);
 }
 
-fn text_contains(text: &String, search_term: &String) -> bool {
-    // search_trem already lowercased and diacritics safe
-    remove_diacritics(&text.to_lowercase()).contains(search_term)
-}
-
 fn text_reg_contains(content: &String, search_term: &String) -> Option<Vec<String>> {
     let str_re = format!(r"(?im)(.{{0,100}}{}.{{0,100}})", search_term);
     let re = Regex::new(str_re.as_str()).unwrap();

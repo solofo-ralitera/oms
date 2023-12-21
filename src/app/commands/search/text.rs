@@ -1,6 +1,6 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::file::{self, get_file_name};
-use super::{format_file_display, text_contains, format_line_found, SearchOption};
+use crate::helpers::{file::{self, get_file_name}, string::text_contains};
+use super::{format_file_display, format_line_found, SearchOption};
 
 ///
 /// 

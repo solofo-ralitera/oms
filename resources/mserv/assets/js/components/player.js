@@ -19,36 +19,42 @@ export class PLayerComponent extends HTMLElement {
 :root {
     position: relative;
 }        
+.video-container {
+    position: relative;
+    background-color: black;
+    z-index: 3;
+    max-width: 100vw;
+    max-height: 100vh;
+}
 .tool {
-    position: absolute;
-    top: 0;
-    right: 1em;
-    z-index: 4;
+    display: grid;
+    grid-template-columns: 1fr 35px 35px 1em;
     color: white;
-    border-radius: 50%;
     height: 50px;
     line-height: 50px;
     text-align: center;
     transition: opacity 0.3s;
     white-space: nowrap;
 }
-.tool > * {
-    all: unset;
-    display: inline-block;
-    margin: 0 0.3em;
-    font-size: 0.9em;
-}
 .tool .info {
-    opacity: 0;
+    text-align: left;
+    font-size: 0.8em;
+    color: grey;
+    padding-left: 1em;
 }
-.tool:hover:info {
-    opacity: 1;
+.tool > button {
+    all: unset;
+    width: 35px;
+    height: 50px;
+    line-height: 50px;
+    cursor: pointer;
+}
+.tool > button:hover {
+    font-weight: bold;
 }
 video {
-    background-color: black;
-    z-index: 3;
-    max-width: 100vw;
-    max-height: 100vh;
+    width: 100%;
+    height: calc(100% - 50px);
 }
 </style>`;
     }
@@ -59,21 +65,22 @@ video {
             return;
         };
         this.root.innerHTML = `${this.css()}        
-<div class="tool">
-    <span class="info">${this.movie.title}</span>
-    <button class="full">&#9633;</button>
-    <button class="close">X</button>
-</div>
-<video  controls 
-        id="video-player"
-        data-size="mini"
+<div class="video-container" data-size="mini">
+    <div class="tool">
+        <span class="info">${this.movie.title}</span>
+        <button class="full" arial-label="Extend player">&#9634;</button>
+        <button class="close" arial-label="Close video player">x</button>
+        <span></span>
+    </div>
+    <video controls 
         poster="${this.movie.thumb_url}">
-    <source src="./movie${this.movie.file_path}" type="video/mp4" />
-    <p>
-        Your browser doesn't support this video. Here is the path of the file:
-        ${this.movie.file_path}
-    </p>
-</video>`;
+        <source src="./movie${this.movie.file_path}" type="video/mp4" />
+        <p>
+            Your browser doesn't support this video. Here is the path of the file:
+            ${this.movie.file_path}
+        </p>
+    </video>
+</div>`;
         this.root.querySelector("#search")?.addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
             const value = e.target.value;
@@ -86,7 +93,7 @@ video {
         });
 
         this.root.querySelector(".full")?.addEventListener("click", e => {
-            const player = this.root.querySelector("#video-player");
+            const player = this.root.querySelector(".video-container");
             if (player) {
                 switch (player.getAttribute("data-size")) {
                     case "mini":
@@ -107,9 +114,6 @@ video {
                     }
             }
         });
-
-        // const player = videojs(this.root.querySelector("#video-player"));
-        // console.log(player);
     }
 }
 

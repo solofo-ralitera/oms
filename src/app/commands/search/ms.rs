@@ -1,9 +1,9 @@
-use std::{sync::mpsc::Sender};
+use std::sync::mpsc::Sender;
 use dotext::*;
 use std::io::Read;
-use crate::helpers::file::{get_extension, get_file_name};
+use crate::helpers::{file::{get_extension, get_file_name}, string::text_contains};
 
-use super::{SearchOption, text_contains, format_line_found, format_file_display, text_reg_contains};
+use super::{SearchOption, format_line_found, format_file_display, text_reg_contains};
 
 /// 
 /// cargo run -- search /home/solofo/Downloads FA

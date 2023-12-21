@@ -11,7 +11,7 @@
 //!     * [x] .docx
 //!     * [x] .xlsx
 //!     * [x] .pptx
-//!     * [ ] movie
+//!     * [x] movie (need cache-path)
 //! * [ ] Read (output) content of file or an external source
 //!     * [x] text file
 //!     * [ ] pdf (extract content)

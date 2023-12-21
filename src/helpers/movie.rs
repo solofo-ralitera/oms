@@ -10,11 +10,11 @@ use serde::{Deserialize, Serialize};
 
 use self::{tmdb::TMDb, omdb::OMDb};
 
-use super::{cache, file};
+use super::{cache, file, string::text_contains};
 
 
 ///
-/// cargo run -- info --provider=tmdb --cache-path="/media/solofo/r256/v/.oms" "/media/solofo/r256/v"
+/// cargo run -- info --cache-path="/media/solofo/MEDIA/.oms" "/media/solofo/MEDIA/films/"
 /// 
 pub struct MovieTitle {
     pub title: String,
@@ -112,6 +112,25 @@ impl fmt::Display for MovieResult {
     }
 }
 
+impl MovieResult {
+    pub fn search(&self, term: &String) -> Vec<(&str, String)> {
+        let mut result = vec![];
+        if text_contains(&self.title, term) {
+            result.push(("Title", self.title.to_string()));
+        }
+        if text_contains(&self.summary, term) {
+            result.push(("Summary", self.summary.to_string()));
+        }
+        if text_contains(&self.genres.join(", "), term) {
+            result.push(("Genres", self.genres.join(", ")));
+        }
+        if text_contains(&self.casts.join(", "), term) {
+            result.push(("Casts", self.casts.join(", ")));
+        }
+        return result;
+    }
+}
+
 pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String) -> Result<Vec<MovieResult>, io::Error> {
     let movie_title = format_title(raw_title);
     
@@ -148,7 +167,9 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
                 movie.file_path = file_path.replace(base_path, "");
                 movie.file_hash = file_hash.clone();
             }
-            cache::write_cache_json(&file_hash, &movies, ".movie");
+            if !base_path.is_empty() {
+                cache::write_cache_json(&file_hash, &movies, ".movie");
+            }
             return Ok(movies);
         },
         None => return Err(io::Error::new(

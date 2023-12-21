@@ -1,8 +1,9 @@
 use std::sync::mpsc::Sender;
 
-use super::{format_file_display, text_contains, format_line_found, SearchOption, text_reg_contains};
+use super::{format_file_display, format_line_found, SearchOption, text_reg_contains};
 use crate::helpers::pdf::PdfInfo;
 use crate::helpers::file::get_file_name;
+use crate::helpers::string::text_contains;
 
 
 ///
@@ -72,7 +73,6 @@ impl<'a> PdfSearch<'a> {
                 result.push_str(&format_file_display(&self.file_path));
                 found.iter().for_each(|(item, text)| {
                     result.push_str(&format_line_found(&item.to_string(), &text, &self.search_option));
-
                 });
             }
         }

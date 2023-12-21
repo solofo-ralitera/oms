@@ -1,3 +1,5 @@
+use diacritics::remove_diacritics;
+
 /// Find each line of content content containing query
 /// 
 /// # Arguments
@@ -33,6 +35,9 @@ pub fn search_lines<'a>(content: &'a String, query: &'a str) -> impl Iterator<It
         .map(|(index, line)| (index + 1, line.trim()))
 }
 
+pub fn text_contains(text: &String, search_term: &String) -> bool {
+    remove_diacritics(&text.to_lowercase()).contains(&search_term.to_lowercase())
+}
 
 #[cfg(test)]
 mod tests {
