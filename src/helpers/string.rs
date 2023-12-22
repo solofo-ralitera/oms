@@ -36,7 +36,7 @@ pub fn search_lines<'a>(content: &'a String, query: &'a str) -> impl Iterator<It
 }
 
 pub fn text_contains(text: &String, search_term: &String) -> bool {
-    remove_diacritics(&text.to_lowercase()).contains(&search_term.to_lowercase())
+    remove_diacritics(&text.to_lowercase()).contains(&remove_diacritics(&search_term.to_lowercase()))
 }
 
 #[cfg(test)]
@@ -74,5 +74,12 @@ mod tests {
         assert_eq!(Some((2 as usize, "Are you nobody, too?")), iter.next());
         assert_eq!(Some((4 as usize, "They'd banish us, you know.")), iter.next());
         assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn text_contains_ok() {
+        assert!(text_contains(&String::from("Hello world"), &String::from("orl")));
+        assert!(text_contains(&String::from("Héllo world"), &String::from("ell")));
+        assert!(text_contains(&String::from("Héllo wôrld!"), &String::from("hello wörld")));
     }
 }

@@ -28,10 +28,7 @@ impl InfoOption {
                 self.base_path = rtrim_char(value, '/').trim().to_string();
                 return Ok(());
             },
-            _ => Err(Error::new(
-                ErrorKind::InvalidInput, 
-                format!("Base path {value} is not a directory")
-            )),
+            _ => Ok(()),
         }
     }
 

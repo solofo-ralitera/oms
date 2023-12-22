@@ -54,7 +54,10 @@ export class PLayerComponent extends HTMLElement {
 }
 video {
     width: 100%;
-    height: calc(100% - 50px);
+    height: calc(100% - 50px - 10px);
+}
+.footer {
+    height: 10px;
 }
 </style>`;
     }
@@ -64,7 +67,7 @@ video {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `${this.css()}        
+        this.root.innerHTML = `${this.css()}
 <div class="video-container" data-size="mini">
     <div class="tool">
         <span class="info">${this.movie.title}</span>
@@ -80,6 +83,7 @@ video {
             ${this.movie.file_path}
         </p>
     </video>
+    <footer class="footer">&nbsp;</footer>
 </div>`;
         this.root.querySelector("#search")?.addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
