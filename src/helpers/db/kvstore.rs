@@ -28,7 +28,7 @@ impl KVStore {
     pub fn get(&mut self, key: &String) -> Option<String>{
         match self.store.as_mut() {
             None => None,
-            Some(store) => return match store.get(key) {
+            Some(store) => match store.get(key) {
                 Ok(v) => v,
                 Err(_) => None,
             }

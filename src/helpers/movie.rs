@@ -6,11 +6,12 @@ use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead, self}}
 use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
+use sha256::digest;
 use serde::{Deserialize, Serialize};
 
 use self::{tmdb::TMDb, omdb::OMDb};
 
-use super::{cache, file, string::text_contains};
+use super::{cache, string::text_contains};
 
 
 ///
@@ -21,6 +22,18 @@ pub struct MovieTitle {
     pub year: String,
     pub language: String,
     pub adult: bool,
+}
+
+impl MovieTitle {
+    pub fn normalized(&self) -> String {
+        let mut res = String::new();
+        res.push_str(&self.title);
+        res.push(' ');
+        res.push('(');
+        res.push_str(&self.year);
+        res.push(')');
+        return res;
+    }
 }
 
 fn format_title_remove_point(title: &str) -> String {
@@ -94,7 +107,7 @@ pub struct MovieResult {
 
     pub file_path: String,
     pub file_type: String,
-    pub file_hash: String,
+    pub hash: String,
 }
 
 impl fmt::Display for MovieResult {
@@ -133,18 +146,10 @@ impl MovieResult {
 
 pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String) -> Result<Vec<MovieResult>, io::Error> {
     let movie_title = format_title(raw_title);
-    
-    let file_hash = match cache::get(&file_path) {
-        Some(hash) => hash,
-        None => {
-            let hash = file::sha256(&file_path).unwrap_or_default();
-            cache::add(&file_path, &hash);
-            hash
-        },
-    };
+    let movie_hash = digest(movie_title.normalized());
 
     // Check cache
-    if let Some((_, content)) = cache::get_cache(&file_hash, ".movie") {
+    if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
         if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
             if result.len() > 0 {
                 return Ok(result);
@@ -165,10 +170,10 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         Some(mut movies) => {
             for movie in &mut movies {
                 movie.file_path = file_path.replace(base_path, "");
-                movie.file_hash = file_hash.clone();
+                movie.hash = movie_hash.clone();
             }
             if !base_path.is_empty() {
-                cache::write_cache_json(&file_hash, &movies, ".movie");
+                cache::write_cache_json(&movie_hash, &movies, ".movie");
             }
             return Ok(movies);
         },

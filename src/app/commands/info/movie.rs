@@ -45,7 +45,7 @@ fn save_elastic(movies: &Vec<MovieResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
         if let Some(movie) = movies.iter().next() {
             // Save only first result
-            el.insert(&movie.file_hash, &movie);
+            el.insert(&movie.hash, &movie);
         }
     }    
 }

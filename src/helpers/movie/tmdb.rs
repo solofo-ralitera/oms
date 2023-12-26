@@ -119,7 +119,7 @@ impl TMDb {
                 
                 file_path: String::new(),
                 file_type: String::from("movie"),
-                file_hash: String::new(),
+                hash: String::new(),
             });
         }
         results
