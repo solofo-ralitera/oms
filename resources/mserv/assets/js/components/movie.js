@@ -76,6 +76,8 @@ h2,h3,h4 {
     overflow: hidden;
     width: 295px;
     height: 451px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 .card .card-body-bg {
     position: absolute;
