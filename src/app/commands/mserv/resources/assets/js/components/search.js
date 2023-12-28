@@ -33,7 +33,7 @@ input[type=search]:focus {
     render() {
         this.root.innerHTML = `${this.css()}
             <search>
-                <input placeholder="huhuhuh" type="search" id="search" aria-label="Search" autofocus>
+                <input placeholder="Search" type="search" id="search" aria-label="Search" autofocus>
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
