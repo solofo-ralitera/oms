@@ -1,4 +1,4 @@
-import {eventBus} from '../helpers/EventBus.js';
+import {eventBus} from '../services/EventBus.js';
 
 export class SearchComponent extends HTMLElement {
     keyuptimer = 0;
@@ -33,12 +33,16 @@ input[type=search]:focus {
     render() {
         this.root.innerHTML = `${this.css()}
             <search>
-                <input type="search" id="search" aria-label="Search" autofocus>
+                <input placeholder="huhuhuh" type="search" id="search" aria-label="Search" autofocus>
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
             const value = e.target.value;
             this.keyuptimer = window.setTimeout(() => {
+                if (value === ":config") {
+                    eventBus.fire("display-config", null);
+                    return;
+                }
                 eventBus.fire("movie-search", value);
             }, 350);
         });

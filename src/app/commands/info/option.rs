@@ -5,7 +5,6 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 
 pub struct InfoOption {
     pub base_path: String,
-    pub provider: String,
     pub list: Vec<String>,
     pub display_preview: bool,
     pub elastic: Option<Elastic>,
@@ -15,7 +14,6 @@ impl InfoOption {
     pub fn new() -> Self {
         InfoOption {
             base_path: String::new(),
-            provider: "local".to_string(),
             list: vec![],
             display_preview: true,
             elastic: None,
@@ -29,19 +27,6 @@ impl InfoOption {
                 return Ok(());
             },
             _ => Ok(()),
-        }
-    }
-
-    pub fn set_provider(&mut self, value: &String) -> Result<()> {
-        match value.as_str() {
-            "local" | "tmdb" | "omdb" => {
-                self.provider = value.clone();
-                Ok(())
-            },
-            _ => Err(Error::new(
-                ErrorKind::NotFound, 
-                format!("Unknown value for provider")
-            ))
         }
     }
 
@@ -74,7 +59,6 @@ impl Clone for InfoOption {
     fn clone(&self) -> Self {
         InfoOption { 
             base_path: self.base_path.clone(),
-            provider: self.provider.clone(),
             list: self.list.clone(),
             display_preview: self.display_preview.clone(),
             elastic: self.elastic.clone(),

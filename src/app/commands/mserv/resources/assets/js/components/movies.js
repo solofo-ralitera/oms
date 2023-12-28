@@ -1,6 +1,7 @@
 import { MovieComponent } from "./movie.js";
-import {eventBus} from '../helpers/EventBus.js';
-import {elasticMovie} from '../elastic.js';
+import { ConfigComponent } from "./config.js";
+import {eventBus} from '../services/EventBus.js';
+import {elasticMovie} from '../services/elastic.js';
 
 export class MoviesComponent extends HTMLElement {
     static observedAttributes = ["search"];
@@ -15,6 +16,10 @@ export class MoviesComponent extends HTMLElement {
 
         eventBus.register("movie-search", ({detail}) => {
             this.setAttribute("search", detail);
+        });
+
+        eventBus.register("display-config", () => {
+            this.renderConfig();
         });
     }
 
@@ -65,6 +70,11 @@ return `<style type="text/css">
         } finally {
             this.isRendering = false;
         }
+    }
+
+    renderConfig() {
+        this.root.innerHTML = this.css();
+        this.root.append(new ConfigComponent());
     }
 }
 

@@ -39,6 +39,27 @@ pub fn text_contains(text: &String, search_term: &String) -> bool {
     remove_diacritics(&text.to_lowercase()).contains(&remove_diacritics(&search_term.to_lowercase()))
 }
 
+pub fn bytes_replace<T>(source: &[T], from: &[T], to: &[T]) -> Vec<T>
+where
+    T: Clone + PartialEq
+{
+    let mut result = source.to_vec();
+    let from_len = from.len();
+    let to_len = to.len();
+
+    let mut i = 0;
+    while i + from_len <= result.len() {
+        if result[i..].starts_with(from) {
+            result.splice(i..i + from_len, to.iter().cloned());
+            i += to_len;
+        } else {
+            i += 1;
+        }
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

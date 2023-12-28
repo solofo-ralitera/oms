@@ -104,13 +104,6 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
         if let Some(content) = str_content {
             for mut l in content {
                 l.push_str("\n");
-                // Replace elastic dsn
-                match option.elastic.as_ref() {
-                    Some(elastic) if path.ends_with("elastic.js") => {
-                        l = l.replace("\"ELASTIC_URL\"", &format!("\"{}\"", elastic.url));
-                    },
-                    _ => (),
-                }
                 stream.write(l.as_bytes()).unwrap();
             }
         }
@@ -130,8 +123,9 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
-mserv        Launch media server
-You must have ffmpeg installed if you have an .avi file that needs to be re-encoded for streaming
+mserv --elastic-dsn=<string> --url=<string>  --cache-path=<string> --base-path=<string>
+    Launch media server
+    You must have ffmpeg installed if you need to re-encod video files
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server

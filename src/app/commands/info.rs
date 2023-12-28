@@ -27,28 +27,40 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 /// 
 pub struct Info {
     /// the path of the file
-    file_path: String,
+    pub file_path: String,
     /// Command options
-    cmd_options: HashMap<String, String>,
+    pub cmd_options: HashMap<String, String>,
 }
+
+static mut INFO_RUNNING: bool = false;
 
 impl Runnable for Info {
       /// Start processing the command
      fn run(&self) -> Result<(), std::io::Error> {
+        unsafe {
+            if INFO_RUNNING == true {
+                return Err(Error::new(
+                    ErrorKind::AddrInUse, 
+                    format!("\nInfo is already running\n")
+                ));
+            }
+            INFO_RUNNING = true;
+        }
         let (tx, rx) = mpsc::channel();
         let mut info_option = InfoOption::new();
         let mut file_path = self.file_path.to_string();
-
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
             print_usage();
+            unsafe {
+                INFO_RUNNING = false;
+            }
             return Ok(());
         }
 
         info_option.set_basepath(&file_path)?;
         for (option, value) in &self.cmd_options {
             match option.as_str() {
-                "provider" => info_option.set_provider(value)?,
                 "hide-preview" => info_option.hide_preview(),
                 "elastic-dsn" => info_option.set_elastic(value)?,
                 "list" => { 
@@ -89,6 +101,9 @@ impl Runnable for Info {
             }
         }
 
+        unsafe {
+            INFO_RUNNING = false;
+        }
         Ok(())
     }
 }
@@ -135,12 +150,15 @@ fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>) {
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
-info [file_path]        Display file informations
+info [file_path/dir_path]
+    Display/get file informations
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse
+
+    For movies: info --elastic-dsn=<string> --cache-path=<string> [dir_path]
 "
 }
 

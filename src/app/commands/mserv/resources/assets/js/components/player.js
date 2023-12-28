@@ -1,4 +1,4 @@
-import {eventBus} from '../helpers/EventBus.js';
+import {eventBus} from '../services/EventBus.js';
 
 export class PLayerComponent extends HTMLElement {
     keyuptimer = 0;
