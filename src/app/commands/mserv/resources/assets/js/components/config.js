@@ -1,8 +1,14 @@
-import {app} from '../services/app.js';
+import { ScanDir } from "./config/scandir.js";
+import { Summary } from "./config/summary.js";
 
 export class ConfigComponent extends HTMLElement {
     css = `<style type="text/css">
-
+:host {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2em;
+}
     </style>`;
 
     constructor() {
@@ -13,14 +19,9 @@ export class ConfigComponent extends HTMLElement {
 
     render() {
         this.root.innerHTML = `${this.css}
-<section>
-    <button id="scan-dir">Scan directory</button>
-</section>        
+<app-config-summary></app-config-summary>
+<app-config-scan-dir></app-config-scan-dir>
         `;
-
-        this.root.querySelector("#scan-dir").addEventListener("click", () => {
-            app.scanDir();
-        });
     }
 }
 

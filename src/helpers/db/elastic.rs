@@ -25,21 +25,26 @@ impl Elastic {
         }
     }
 
-    pub fn insert<T: Serialize>(&self, id: &String, body: &T) {
+    pub fn insert<T: Serialize>(&self, id: &String, body: &T) -> String {
+        let query;
         if id.is_empty() {
-            let _ = http::post_body(
+            query = http::post_body(
                 &format!("{}/_doc/", self.url), 
                 "POST",
                 &vec![], 
                 body
             );
         } else {
-            let _ = http::post_body(
+            query = http::post_body(
                 &format!("{}/_doc/{id}", self.url), 
                 "PUT",
                 &vec![], 
                 body
             );
+        }
+        match query {
+            Ok(result) => result,
+            Err(err) => err.to_string(),
         }
     }
 }

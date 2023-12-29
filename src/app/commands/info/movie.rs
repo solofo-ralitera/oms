@@ -20,8 +20,8 @@ pub struct MovieInfo<'a> {
 impl<'a> MovieInfo<'a> {
     pub fn info(&self, tx: Sender<String>) {
         match movie::get_movie_result(&self.movie_raw_name, &self.file_path, &self.info_option.base_path) {
-            Ok(movies) => {
-                save_elastic(&movies, &self.info_option.elastic);
+            Ok(mut movies) => {
+                save_elastic(&mut movies, &self.info_option.elastic);
                 for movie in movies {
                     tx.send(format!("\
 \n------------------------------------------------------------------------
@@ -40,14 +40,16 @@ impl<'a> MovieInfo<'a> {
     }
 }
 
-
-fn save_elastic(movies: &Vec<MovieResult>, elastic: &Option<Elastic>) {
+fn save_elastic(movies: &mut Vec<MovieResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
-        if let Some(movie) = movies.iter().next() {
-            // Save only first result
-            el.insert(&movie.hash, &movie);
+        // Get and save only first result
+        if let Some(movie) = movies.iter_mut().next() {
+            // Save only year
+            movie.date = movie.date.trim().get(0..=3).unwrap_or("").to_string();
+            let res = el.insert(&movie.hash, &movie);
+            println!("{res}");
         }
-    }    
+    }
 }
 
 fn log_error(movie: &MovieInfo) {

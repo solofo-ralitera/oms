@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write, Seek, SeekFrom};
@@ -167,8 +168,55 @@ pub fn sha256(file_path: &String) -> Result<String> {
    }
 
    return Ok(HEXUPPER.encode(context.finish().as_ref()));
- }
+}
 
+/// Scan the target path and count all the files.
+/// https://github.com/yinguobing/count-files/blob/master/src/lib.rs
+pub fn scan(
+   path: &String,
+   record: &mut Vec<String>,
+) -> Result<()> {
+   // Loop the entries.
+   let entries = fs::read_dir(path)?;
+   for entry in entries {
+       let entry = entry?;
+       let path = entry.path();
+
+       // The entry is a directory or a file?
+       if path.is_dir() {
+           let _ = scan(&path.as_path().to_string_lossy().to_string(), record);
+       } else if let Ok(cpath) = fs::canonicalize(&path) {
+           record.push(cpath.to_string_lossy().to_string());
+       }
+   }
+   Ok(())
+}
+
+// Scan the target path and count all the files.
+pub fn scan_count_by_extension(
+   path: &String,
+   record: &mut HashMap<String, usize>,
+) -> Result<()> {
+   let entries = fs::read_dir(path)?;
+   for entry in entries {
+       let entry = entry?;
+       let path = entry.path();
+
+       // The entry is a directory or a file?
+       if path.is_dir() {
+           let _ = scan_count_by_extension(&path.as_path().to_string_lossy().to_string(), record);
+       } else if let Some(extension) = path.extension() {
+           let extension = extension.to_str().unwrap().to_string();
+           let counter = record
+               .get(&extension)
+               .copied()
+               .unwrap_or(0) + 1;
+           // Increment extension number
+           record.insert(extension.to_string(), counter);
+       }
+   }
+   Ok(())
+}
 
 #[cfg(test)]
 mod test {

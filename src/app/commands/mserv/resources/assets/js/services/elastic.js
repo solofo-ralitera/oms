@@ -1,8 +1,18 @@
 const ELASTIC_URL = "ELASTIC_URL";
 
 class ElasticMovie {
-    constructor() {
+    
+    totalCount() {
+        return fetch(ELASTIC_URL + "/_count")
+            .then(r => r.json())
+            .then(r => r?.count ?? 0)
+            .catch(() => 0);
+    }
 
+    getAll() {
+        return this.totalCount()
+            .then(count => this.searchAll("*:*", 0, count))
+            .catch(() => []);
     }
 
     searchAll(query = "*", from = 0, size = 100) {
@@ -32,7 +42,8 @@ class ElasticMovie {
             })
         })
             .then(r => r.json())
-            .then(r => r.hits.hits.map(hit => hit._source))
+            .then(r => r?.hits?.hits?.map(hit => hit._source) ?? [])
+            .catch(() => []);
     }
 
 }

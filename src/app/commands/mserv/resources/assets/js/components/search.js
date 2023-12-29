@@ -39,7 +39,7 @@ input[type=search]:focus {
             window.clearTimeout(this.keyuptimer);
             const value = e.target.value;
             this.keyuptimer = window.setTimeout(() => {
-                if (value === ":config") {
+                if (value.startsWith(":setting")) {
                     eventBus.fire("display-config", null);
                     return;
                 }

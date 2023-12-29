@@ -129,7 +129,7 @@ fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>)  
             info_option: &info_option,
         }.info(tx),
         "db" | "srt" | "nfo" | "idx" | "sub" | "bup" | "ifo" | "vob" | "sfv" => (),
-        _ => print!("{file_path}: Format not supported"),
+        _ => print!("\n{file_path}: Format not supported\n"),
     };
 }
 

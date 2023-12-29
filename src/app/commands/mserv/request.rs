@@ -1,3 +1,5 @@
+mod summary;
+
 use crate::{helpers::{file, movie, rtrim_char, input::get_range_params, string}, app::commands::{info::Info, Runnable}};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -18,12 +20,15 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     static_resources.insert("/favicon.ico", ("image/x-icon", include_bytes!("./resources/assets/favicon.ico")));
     static_resources.insert("/assets/js/main.js", ("text/javascript", include_bytes!("./resources/assets/js/main.js")));
     
-    static_resources.insert("/assets/js/components/config.js", ("text/javascript", include_bytes!("./resources/assets/js/components/config.js")));
     static_resources.insert("/assets/js/components/movie.js", ("text/javascript", include_bytes!("./resources/assets/js/components/movie.js")));
     static_resources.insert("/assets/js/components/movies.js", ("text/javascript", include_bytes!("./resources/assets/js/components/movies.js")));
     static_resources.insert("/assets/js/components/player.js", ("text/javascript", include_bytes!("./resources/assets/js/components/player.js")));
     static_resources.insert("/assets/js/components/search.js", ("text/javascript", include_bytes!("./resources/assets/js/components/search.js")));
     static_resources.insert("/assets/js/components/summary.js", ("text/javascript", include_bytes!("./resources/assets/js/components/summary.js")));
+
+    static_resources.insert("/assets/js/components/config.js", ("text/javascript", include_bytes!("./resources/assets/js/components/config.js")));
+    static_resources.insert("/assets/js/components/config/scandir.js", ("text/javascript", include_bytes!("./resources/assets/js/components/config/scandir.js")));
+    static_resources.insert("/assets/js/components/config/summary.js", ("text/javascript", include_bytes!("./resources/assets/js/components/config/summary.js")));
 
     static_resources.insert("/assets/js/services/app.js", ("text/javascript", include_bytes!("./resources/assets/js/services/app.js")));
     static_resources.insert("/assets/js/services/elastic.js", ("text/javascript", include_bytes!("./resources/assets/js/services/elastic.js")));
@@ -42,17 +47,29 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
     match STATIC_RESOURCES.get(path) {
         None => (),
         Some((content_type, content)) => {
-            match serv_option.elastic.as_ref() {
-                Some(elastic) if path.ends_with("elastic.js") => return (
+            if path.ends_with("elastic.js") {
+                match serv_option.elastic.as_ref() {
+                    Some(elastic) => return (
+                        String::from("200 OK"), 
+                        vec![
+                            (String::from("Content-type"), content_type.to_string()),
+                        ], 
+                        None,
+                        Some(string::bytes_replace(content, b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes())),
+                    ),
+                    _ => (),
+                };
+            }
+            if path.ends_with("summary.js") {
+                return (
                     String::from("200 OK"), 
                     vec![
                         (String::from("Content-type"), content_type.to_string()),
                     ], 
                     None,
-                    Some(string::bytes_replace(content, b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes())),
-                ),
-                _ => (),
-            };
+                    Some(string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes())),
+                );
+            }
             return (
                 String::from("200 OK"), 
                 vec![
@@ -77,6 +94,16 @@ fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (S
         "/scan-dir" => {
             scan_movie_dir(serv_option);
             return (String::from("200 OK"), vec![], None, None);
+        },
+        "/summary" => {
+            let summary = serde_json::to_string(&summary::movies_summary(serv_option)).unwrap_or(String::new());
+            return (String::from("200 OK"), vec![], None, Some(summary.as_bytes().to_vec()));
+        },
+        "/all-files-path" => {
+            let mut files: Vec<String> = vec![];
+            let _ = file::scan(&serv_option.base_path, &mut files);
+            let files = serde_json::to_string(&files).unwrap_or(String::new());
+            return (String::from("200 OK"), vec![], None, Some(files.as_bytes().to_vec()));
         },
         _ => {
             return (String::from("404 Not Found"), vec![], None, None);
