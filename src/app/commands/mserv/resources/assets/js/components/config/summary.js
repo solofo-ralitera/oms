@@ -44,7 +44,7 @@ export class Summary extends HTMLElement {
                 this.root.querySelector("#summary-detail-content").innerHTML = `
                     <br>
                     <br>
-                    File not indexed:
+                    Files not indexed:
                     <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
                 `;
             })
@@ -57,8 +57,10 @@ export class Summary extends HTMLElement {
             app.summary(),
         ])
             .then(([elasticCount, dirSummary]) => this.root.innerHTML = `${this.css}
-<section>
-<header>${BASE_URL}</header>
+<article>
+<header>
+    <u>Directory summary</u>: ${BASE_URL}
+</header>
 <p>
     Number of files / indexed files: <span class="summary-detail-link">${dirSummary.files_count} / ${elasticCount}</span>
     <span id="summary-detail-content"></span>
@@ -67,7 +69,7 @@ export class Summary extends HTMLElement {
     Number of files by extension: 
     <ul>${this.renderCountByExtension(dirSummary.files_extension)}</ul>
 </p>
-</section>        
+</article>        
             `)
             .then(() => {
                 this.root.querySelector(".summary-detail-link")?.addEventListener("click", () => {

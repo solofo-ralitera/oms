@@ -59,7 +59,7 @@ impl OMDb {
         results.push(MovieResult {
             title: movie.Title.clone(),
             summary: movie.Plot.clone(),
-            date: movie.Year.clone(),
+            year: movie.Year.trim().get(0..=3).unwrap_or("").to_string(),
             thumb_url: movie.Poster.clone(),
             thumb: get_image(&format!("{}", movie.Poster)).unwrap_or_default(),
             poster_url: movie.Poster.clone(),            
@@ -73,6 +73,8 @@ impl OMDb {
             file_path: String::new(),
             file_type: String::from("movie"),
             hash: String::new(),
+            modification_time: 0,
+            duration: 0,
         });
         return results;
     }

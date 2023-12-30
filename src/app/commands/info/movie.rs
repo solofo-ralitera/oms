@@ -44,10 +44,7 @@ fn save_elastic(movies: &mut Vec<MovieResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
         // Get and save only first result
         if let Some(movie) = movies.iter_mut().next() {
-            // Save only year
-            movie.date = movie.date.trim().get(0..=3).unwrap_or("").to_string();
-            let res = el.insert(&movie.hash, &movie);
-            println!("{res}");
+            el.insert(&movie.hash, &movie);
         }
     }
 }

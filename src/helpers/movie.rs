@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use self::{tmdb::TMDb, omdb::OMDb};
 
-use super::{cache, string::text_contains};
+use super::{cache, string::text_contains, file};
 
 
 ///
@@ -89,12 +89,25 @@ pub fn avi_to_mp4(file_path: &String, dest_path: &String) {
     cmd.wait().unwrap();
 }
 
+pub fn movie_duration(file_path: &String) -> usize {
+    // ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 input_file
+    let mut command = Command::new("ffprobe");
+    command.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::piped());
+    if let Ok(output) = command.output() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return stdout.trim().parse::<f64>().unwrap().round() as usize;
+    }
+    return 0;
+}
+
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MovieResult {
     pub title: String,
     pub summary: String,
-    pub date: String,
+    pub year: String,
     pub genres: Vec<String>,
     pub casts: Vec<String>,
     pub thumb_url: String,
@@ -108,12 +121,14 @@ pub struct MovieResult {
     pub file_path: String,
     pub file_type: String,
     pub hash: String,
+    pub modification_time: u64,
+    pub duration: usize,
 }
 
 impl fmt::Display for MovieResult {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut str = String::new();
-        str.push_str(&format!("Title: {} ({})\n\n", self.title.bold(), self.date));
+        str.push_str(&format!("Title: {} ({})\n\n", self.title.bold(), self.year));
 
         str.push_str(&helpers::output::draw_image(&self.thumb, (50, 50)));
         str.push_str(&format!("{}\n", self.poster_url));
@@ -148,6 +163,7 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
     let movie_title = format_title(raw_title);
     let movie_hash = digest(movie_title.normalized());
 
+
     // Check cache
     if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
         if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
@@ -166,11 +182,15 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         None
     };
 
+    let file_time = file::get_creation_time(file_path);
+    let file_duration = movie_duration(&file_path);
     match movies {
         Some(mut movies) => {
             for movie in &mut movies {
                 movie.file_path = file_path.replace(base_path, "");
                 movie.hash = movie_hash.clone();
+                movie.modification_time = file_time;
+                movie.duration = file_duration;
             }
             if !base_path.is_empty() {
                 cache::write_cache_json(&movie_hash, &movies, ".movie");

@@ -46,7 +46,7 @@ return `<style type="text/css">
     }
 
     async searchAll() {
-        const movies = await elasticMovie.searchAll(this.searchTerm, this.currentFrom, this.pageSize);
+        const movies = await elasticMovie.search(this.searchTerm, this.currentFrom, this.pageSize);
         movies.forEach(movie => {
             const appMovie = new MovieComponent();
             appMovie.movie = movie;

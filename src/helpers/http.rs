@@ -35,15 +35,23 @@ where
         }
     }
     
-    match request.send().unwrap().json::<T>() {
-        Ok(result) => {
-            cache::write_cache_string(&cache_key, &serde_json::to_string(&result).unwrap().to_string(), CACHE_SUBDIR);
-            return Ok(result);
+    match request.send() {
+        Ok(result) => match result.json::<T>() {
+            Ok(json) => {
+                if let Ok(str_json) = &serde_json::to_string(&json) {
+                    cache::write_cache_string(&cache_key, str_json, CACHE_SUBDIR);
+                }
+                return Ok(json);
+            },
+            Err(err) => return Err(io::Error::new(
+                io::ErrorKind::NotConnected, 
+                format!("Request error (json<T>): {err}")
+            )),
         },
         Err(err) => return Err(io::Error::new(
             io::ErrorKind::NotConnected, 
-            format!("Request error (json<T>): {err}")
-        )),
+            format!("Request send error: {err}")
+        ))
     };    
 }
 

@@ -1,13 +1,18 @@
 import { ScanDir } from "./config/scandir.js";
 import { Summary } from "./config/summary.js";
+import { Genres } from "./config/genres.js";
 
 export class ConfigComponent extends HTMLElement {
     css = `<style type="text/css">
 :host {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2em;
+    gap: 1em;
+    width: 100%;
+    flex-wrap: wrap;
+}
+:host > * {
+    box-shadow: inset 0 0 10px green;
+    padding: 1em;
 }
     </style>`;
 
@@ -19,8 +24,9 @@ export class ConfigComponent extends HTMLElement {
 
     render() {
         this.root.innerHTML = `${this.css}
-<app-config-summary></app-config-summary>
-<app-config-scan-dir></app-config-scan-dir>
+        <app-config-genres></app-config-genres>
+        <app-config-scan-dir></app-config-scan-dir>
+        <app-config-summary></app-config-summary>
         `;
     }
 }

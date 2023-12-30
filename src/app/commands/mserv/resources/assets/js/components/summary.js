@@ -1,27 +1,7 @@
 import {eventBus} from '../services/EventBus.js';
 
 export class SummaryComponent extends HTMLElement {
-    keyuptimer = 0;
-    movie = null;
-
-    constructor() {
-        super();
-        this.root = this.attachShadow({mode: "closed"});
-        this.render();
-
-        eventBus.register("current-movie", e => {
-            this.movie = e.detail;
-            this.render();
-        });
-
-        document.addEventListener("keyup", e => {
-            if (e.code === "Escape") {
-                this.close();
-            }
-        })
-    }
-    css() {
-        return `<style type="text/css">
+    css = `<style type="text/css">
 :host {
     position: relative;
 }
@@ -61,7 +41,29 @@ img {
 .pointer:hover {
     text-decoration: underline;
 }
+time {
+    font-size: 0.8em;
+}
 </style>`;
+
+    keyuptimer = 0;
+    movie = null;
+
+    constructor() {
+        super();
+        this.root = this.attachShadow({mode: "closed"});
+        this.render();
+
+        eventBus.register("current-movie", e => {
+            this.movie = e.detail;
+            this.render();
+        });
+
+        document.addEventListener("keyup", e => {
+            if (e.code === "Escape") {
+                this.close();
+            }
+        })
     }
 
     close() {
@@ -74,21 +76,25 @@ img {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `${this.css()}
+        this.root.innerHTML = `${this.css}
 <article>
     <h2 class="title">
         <button class="play" role="button">▶</button>
         &nbsp;&nbsp;
-        ${this.movie.title} (${this.movie.date.split("-").shift()})
+        ${this.movie.title} (${this.movie.year})
     </h2>
     <div style="text-align:center;">
         <img src="${this.movie.poster_url}" alt="${this.movie.title.escape_quote()}">
     </div>
     <section class="summary">
         <p>${this.movie.summary}</p>
-        <ul class="info"><li class="item">${this.movie.casts.join("</li><li class=\"item\">")}</li></ul>
-        <ul class="info"><li class="item">${this.movie.genres.join("</li><li class=\"item\">")}</li></ul>
-        <span class="info pointer movie-path">${this.movie.file_path}</span>
+        <ul class="info"><li class="item cast pointer">${this.movie.casts.join("</li><li class=\"item cast pointer\">")}</li></ul>
+        <ul class="info"><li class="item genre pointer">${this.movie.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
+        <footer>
+            <span class="info pointer movie-path">${this.movie.file_path}</span>
+            <br>
+            <time>${this.movie.duration?.secondsToHMS() ?? ''}</time>
+        </footer>
     </section>
 </article>`;
 
@@ -101,6 +107,12 @@ img {
         this.root.querySelector(".play")?.addEventListener("click", () => {
             eventBus.fire("play-movie", JSON.parse(JSON.stringify(this.movie)));
         });
+        this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
+            eventBus.fire("navigate-search", `:genre ${e.target.innerHTML.trim()}`);
+        }));
+        this.root.querySelectorAll("li.cast").forEach(li => li.addEventListener("click", e => {
+            eventBus.fire("navigate-search", `:cast ${e.target.innerHTML.trim()}`);
+        }));
         this.root.querySelector(".movie-path")?.addEventListener("click", () => {
             const text = this.movie.file_path.split(/\/|\\/).pop();
             try {

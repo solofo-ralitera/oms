@@ -106,7 +106,7 @@ impl TMDb {
             results.push(MovieResult {
                 title: item.title.clone(),
                 summary: item.overview.clone(),
-                date: item.release_date.clone(),
+                year: item.release_date.trim().get(0..=3).unwrap_or("").to_string(),
                 thumb_url: thumb_url,
                 thumb: thumb_path,
                 poster_url: format!("http://image.tmdb.org/t/p/w780{}", item.poster_path),
@@ -120,6 +120,8 @@ impl TMDb {
                 file_path: String::new(),
                 file_type: String::from("movie"),
                 hash: String::new(),
+                modification_time: 0,
+                duration: 0,
             });
         }
         results

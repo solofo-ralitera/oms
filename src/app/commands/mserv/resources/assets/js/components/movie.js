@@ -1,39 +1,10 @@
 import {eventBus} from '../services/EventBus.js';
 
 export class MovieComponent extends HTMLElement {
-    constructor() {
-        super();
-        this.root = this.attachShadow({mode: "closed"});
-        
-        this.observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
-                    if (this.root.querySelector(".card .card-body-bg")) {
-                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url}")`;
-                    }
-                    if (this.root.querySelector("#thumb")) {
-                        this.root.querySelector("#thumb").src = this.root.querySelector("#thumb")?.getAttribute('data-src');
-                    }
-                }
-            });
-        }, {
-            root: window.document,
-            rootMargin: "0px",
-            threshold: 0.1,
-        });
-
-        this.render();
-    }
-
-    set movie(movie) {
-        this._movie = movie;
-        this.render();
-    }
-    
-    css() {
-        return `<style type="text/css">
+    css = `<style type="text/css">
 ul {
     padding: 0;
+    margin: 0;
 }
 ul li {
     display:inline;
@@ -115,6 +86,15 @@ h2,h3,h4 {
 .info {
     font-size: 0.8em;
 }
+ul.genres {
+    margin-top: 0.5em;
+}
+li.genre, li.cast {
+    cursor: pointer;
+}
+li.genre:hover, li.cast:hover {
+    text-decoration: underline;
+}
 .play {
     text-align: center;
     cursor: pointer;
@@ -122,10 +102,39 @@ h2,h3,h4 {
     margin: 0 0.5em 0 0;
 }
 </style>`;
+    _movie = null;
+
+    constructor() {
+        super();
+        this.root = this.attachShadow({mode: "closed"});
+        
+        this.observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
+                    if (this.root.querySelector(".card .card-body-bg")) {
+                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url}")`;
+                    }
+                    if (this.root.querySelector("#thumb")) {
+                        this.root.querySelector("#thumb").src = this.root.querySelector("#thumb")?.getAttribute('data-src');
+                    }
+                }
+            });
+        }, {
+            root: window.document,
+            rootMargin: "0px",
+            threshold: 0.1,
+        });
+
+        this.render();
     }
 
+    set movie(movie) {
+        this._movie = movie;
+        this.render();
+    }
+    
     renderImage(lazy = true) {
-        if (this._movie.thumb_url) {
+        if (this._movie?.thumb_url) {
             if (lazy === true) {
                 return `<img 
                     src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
@@ -156,13 +165,32 @@ h2,h3,h4 {
     }
 
     renderSummary() {
+        if (!this._movie) {
+            return "";
+        }
         this.playEvent();
+
+        window.setTimeout(() => {
+            this.root.querySelectorAll("li.genre").forEach(li => {
+                li.addEventListener("click", e => {
+                    eventBus.fire("navigate-search", `:genre ${e.target.innerHTML.trim()}`);
+                });
+            });
+            this.root.querySelectorAll("li.cast").forEach(li => {
+                li.addEventListener("click", e => {
+                    eventBus.fire("navigate-search", `:cast ${e.target.innerHTML.trim()}`);
+                });
+            });
+        }, 500);
 
         return `<article class="card-body-summary">
             <p>${this._movie.summary}</p>
             <hr>
-            <ul class="info"><li class="item">${this._movie.casts.join("</li><li class=\"item\">")}</li></ul>
-            <ul class="info"><li class="item">${this._movie.genres.join("</li><li class=\"item\">")}</li></ul>
+            <ul class="info"><li class="item cast">${this._movie.casts.join("</li><li class=\"item cast\">")}</li></ul>
+            <ul class="info genres">
+                <li class="item"><time>${this._movie.duration?.secondsToHMS() ?? ''}</time></li>
+                <li class="item genre">${this._movie.genres.join("</li><li class=\"item genre\">")}</li>
+            </ul>
         </article>`;
     }
 
@@ -172,14 +200,14 @@ h2,h3,h4 {
             return;
         }
 
-        this.root.innerHTML = `${this.css()}
+        this.root.innerHTML = `${this.css}
             <article class="card" id="card">
                 <header id="card-title">
                     <span>
                         <button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>
                         ${this._movie.title}
                     </span>
-                    <span class="info" aria-label="Year ${this._movie.date?.split("-")?.shift()?.escape_quote()}">(${this._movie.date?.split("-")?.shift()})</span>
+                    <span class="info" aria-label="Year ${this._movie.year?.escape_quote()}">(${this._movie.year})</span>
                 </header>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
@@ -207,7 +235,6 @@ h2,h3,h4 {
         this.playEvent();
 
         this.observer.observe(this.root.querySelector("#card"));
-
     }
 }
 

@@ -4,6 +4,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write, Seek, SeekFrom};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::time::UNIX_EPOCH;
 use bytes::Bytes;
 use image::EncodableLayout;
 use ring::digest::{Context, SHA256};
@@ -94,6 +95,17 @@ pub fn get_extension(filename: &str) -> String {
 pub fn get_mimetype(file_path: &str) -> String {
    let guess = mime_guess::from_path(file_path);
    return guess.first().unwrap().to_string();
+}
+
+pub fn get_creation_time(file_path: &str) -> u64 {
+   if let Ok(metadata) = fs::metadata(file_path) {
+      if let Ok(time) = metadata.modified() {
+         if let Ok(d) = time.duration_since(UNIX_EPOCH) {
+            return d.as_secs();
+         }
+      }
+   }
+   return 0;
 }
 
 pub fn remove_extension(filename: &str) -> String {
