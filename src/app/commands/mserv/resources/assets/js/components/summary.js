@@ -1,4 +1,5 @@
 import {eventBus} from '../services/EventBus.js';
+import {history} from '../services/history.js';
 
 export class SummaryComponent extends HTMLElement {
     css = `<style type="text/css">
@@ -54,8 +55,9 @@ time {
         this.root = this.attachShadow({mode: "closed"});
         this.render();
 
-        eventBus.register("current-movie", e => {
-            this.movie = e.detail;
+        eventBus.register("current-movie", ({detail}) => {
+            this.movie = detail.movie;
+            history.pushHistory("current-movie", detail);
             this.render();
         });
 
@@ -108,10 +110,16 @@ time {
             eventBus.fire("play-movie", JSON.parse(JSON.stringify(this.movie)));
         });
         this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
-            eventBus.fire("navigate-search", `:genre ${e.target.innerHTML.trim()}`);
+            eventBus.fire("navigate-search", {
+                term: `:genre ${e.target.innerHTML.trim()}`,
+            });
+            this.close();
         }));
         this.root.querySelectorAll("li.cast").forEach(li => li.addEventListener("click", e => {
-            eventBus.fire("navigate-search", `:cast ${e.target.innerHTML.trim()}`);
+            eventBus.fire("navigate-search", {
+                term: `:cast ${e.target.innerHTML.trim()}`,
+            });
+            this.close();
         }));
         this.root.querySelector(".movie-path")?.addEventListener("click", () => {
             const text = this.movie.file_path.split(/\/|\\/).pop();

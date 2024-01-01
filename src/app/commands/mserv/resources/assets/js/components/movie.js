@@ -173,12 +173,16 @@ li.genre:hover, li.cast:hover {
         window.setTimeout(() => {
             this.root.querySelectorAll("li.genre").forEach(li => {
                 li.addEventListener("click", e => {
-                    eventBus.fire("navigate-search", `:genre ${e.target.innerHTML.trim()}`);
+                    eventBus.fire("navigate-search", {
+                        term: `:genre ${e.target.innerHTML.trim()}`,
+                    });
                 });
             });
             this.root.querySelectorAll("li.cast").forEach(li => {
                 li.addEventListener("click", e => {
-                    eventBus.fire("navigate-search", `:cast ${e.target.innerHTML.trim()}`);
+                    eventBus.fire("navigate-search", {
+                        term: `:cast ${e.target.innerHTML.trim()}`,
+                    });
                 });
             });
         }, 500);
@@ -218,10 +222,14 @@ li.genre:hover, li.cast:hover {
             </article>`;
 
         this.root.querySelector("#card-title").addEventListener("click", (e) => {
-            eventBus.fire("current-movie", JSON.parse(JSON.stringify(this._movie)));
+            eventBus.fire("current-movie", {
+                movie: JSON.parse(JSON.stringify(this._movie))
+            });
         });
         this.root.querySelector(".card-body-bg").addEventListener("click", (e) => {
-            eventBus.fire("current-movie", JSON.parse(JSON.stringify(this._movie)));
+            eventBus.fire("current-movie", {
+                movie: JSON.parse(JSON.stringify(this._movie))
+            });
         });
 
         this.root.querySelector("#thumb").addEventListener("error", (e) => {

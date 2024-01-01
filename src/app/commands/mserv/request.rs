@@ -34,6 +34,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     static_resources.insert("/assets/js/services/app.js", ("text/javascript", include_bytes!("./resources/assets/js/services/app.js")));
     static_resources.insert("/assets/js/services/elastic.js", ("text/javascript", include_bytes!("./resources/assets/js/services/elastic.js")));
     static_resources.insert("/assets/js/services/EventBus.js", ("text/javascript", include_bytes!("./resources/assets/js/services/EventBus.js")));
+    static_resources.insert("/assets/js/services/history.js", ("text/javascript", include_bytes!("./resources/assets/js/services/history.js")));
 
     return static_resources;
 });

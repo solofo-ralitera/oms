@@ -25,7 +25,7 @@ li.genre~li.genre::before {
         this.root.innerHTML = `${this.css}
             <article>
                 <header>
-                    <u>Gernes</u>
+                    <u>Genres</u>
                 </header>
                 <ul>
                 ${elasticMovie.getGenres().map(genre => {
@@ -37,7 +37,9 @@ li.genre~li.genre::before {
             li.preventDefault();
             const genre = li.target.getAttribute('data-genre');
             if (genre) {
-                eventBus.fire("navigate-search", `:genre ${genre}`);
+                eventBus.fire("navigate-search", {
+                    term: `:genre ${genre}`,
+                });
             }
         }))
     }

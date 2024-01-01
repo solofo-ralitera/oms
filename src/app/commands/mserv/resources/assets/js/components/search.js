@@ -1,36 +1,15 @@
 import {eventBus} from '../services/EventBus.js';
+import {history} from '../services/history.js';
 
 export class SearchComponent extends HTMLElement {
-    keyuptimer = 0;
-    termsHistory = [];
-
-    constructor() {
-        super();
-        this.root = this.attachShadow({mode: "closed"});
-        this.render();
-        this.pushHistory("");
-
-        eventBus.register("navigate-search", ({detail}) => {
-            this.setValue(detail);
-        });
-    }
-    css() {
-        return `<style type="text/css">
+    css = `<style type="text/css">
 search {
     position: relative;
     display: grid;
-    grid-template-columns: 37px 1fr;   
+    grid-template-columns: 1fr;   
     opacity: 0.91;
     border-bottom: 1px solid #5f6368;
     border-top: 0px;
-}
-button.back {
-    width: 100%;
-    height: 100%;
-    border: none;
-    outline: none;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
 }
 input[type=search] {
     width: 100%;
@@ -46,44 +25,39 @@ input[type=search]:focus {
     opacity: 1;
 }
 </style>`;
+    keyuptimer = 0;
+
+    constructor() {
+        super();
+        this.root = this.attachShadow({mode: "closed"});
+        this.render();
+
+        history.pushHistory("navigate-search", {
+            term: "",
+        });
+
+        eventBus.register("navigate-search", ({detail}) => {
+            this.setValue(detail);
+        });
     }
 
-    setValue(term) {
-        this.root.querySelector("#search").value = term;
-        this.search();
+    setValue(data) {
+        this.root.querySelector("#search").value = data.term;
+        this.search(data);
     }
 
-    pushHistory(term) {
-        if (!this.termsHistory.length) {
-            this.termsHistory.push(term);
-        } else if (this.termsHistory.length && this.termsHistory[this.termsHistory.length - 1] !== term) {
-            this.termsHistory.push(term);
-        }
-        this.dsplayHistoryBtn();
-    }
-
-    popHistory() {
-        this.termsHistory.pop();
-        this.dsplayHistoryBtn();
-        if (this.termsHistory.length) {
-            return this.termsHistory[this.termsHistory.length - 1];
-        }
-        return undefined;
-    }
-
-    dsplayHistoryBtn() {
-        if (this.termsHistory.length <= 1) {
-            this.root.querySelector(".back").disabled = true;
-        } else {
-            this.root.querySelector(".back").disabled = false;
-        }
-    }
-
-    search() {
+    search(data = {}) {
         const term = this.root.querySelector("#search").value;
+        if (typeof data.term === "undefined") data.term = term;
         window.clearTimeout(this.keyuptimer);
         this.keyuptimer = window.setTimeout(() => {
-            this.pushHistory(term);
+            history.pushHistory("navigate-search", data);
+
+            eventBus.fire("current-movie", {
+                movie: null,
+                fromHistory: true,
+            });
+
             if (term.startsWith(":setting")) {
                 eventBus.fire("display-config", null);
                 return;
@@ -92,17 +66,9 @@ input[type=search]:focus {
         }, 350);
     }
 
-    back() {
-        const term = this.popHistory();
-        if (typeof term !== "undefined") {
-            this.setValue(term);
-        }
-    }
-
     render() {
-        this.root.innerHTML = `${this.css()}
+        this.root.innerHTML = `${this.css}
             <search>
-                <button class="back" aria-label="History back">⬅</button>
                 <input placeholder="Search" type="search" id="search" aria-label="Search" autofocus>
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => {
@@ -112,9 +78,6 @@ input[type=search]:focus {
             if (e.code === "Enter") {
                 this.search();
             }
-        });
-        this.root.querySelector(".back").addEventListener("click", () => {
-            this.back();
         });
     }
 }
