@@ -1,5 +1,5 @@
 use std::{io, collections::HashMap};
-use super::{Runnable, info, read, search, mserv};
+use super::{Runnable, info, read, search, mserv, transcode};
 
 
 /// # Help command
@@ -24,12 +24,14 @@ Available commands:
 {}
 {}
 {}
+{}
 ",
         self::usage(),
         info::usage(),
         read::usage(),
         search::usage(),
         mserv::usage(),
+        transcode::usage(),
 );
         Ok(())
     }

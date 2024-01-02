@@ -1,6 +1,6 @@
 mod summary;
 
-use crate::{helpers::{file, movie, rtrim_char, input::get_range_params, string}, app::commands::{info::Info, Runnable}};
+use crate::{helpers::{file, rtrim_char, input::get_range_params, string}, app::commands::{info::Info, Runnable}};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use urlencoding::decode;
@@ -53,9 +53,7 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
                 match serv_option.elastic.as_ref() {
                     Some(elastic) => return (
                         String::from("200 OK"), 
-                        vec![
-                            (String::from("Content-type"), content_type.to_string()),
-                        ], 
+                        vec![(String::from("Content-type"), content_type.to_string())], 
                         None,
                         Some(string::bytes_replace(content, b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes())),
                     ),
@@ -65,13 +63,12 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
             if path.ends_with("summary.js") {
                 return (
                     String::from("200 OK"), 
-                    vec![
-                        (String::from("Content-type"), content_type.to_string()),
-                    ], 
+                    vec![(String::from("Content-type"), content_type.to_string())], 
                     None,
                     Some(string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes())),
                 );
             }
+            
             return (
                 String::from("200 OK"), 
                 vec![
@@ -120,6 +117,8 @@ fn scan_movie_dir(serv_option: &MservOption) {
     }
     let mut option = HashMap::new();
     option.insert(String::from("hide-preview"), String::new());
+    option.insert(String::from("thread"), String::from("5"));
+
     match serv_option.elastic.as_ref() {
         Some(elastic) => {
             option.insert(String::from("elastic-dsn"), elastic.url.to_string());
@@ -161,18 +160,11 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
 fn get_file(base_path: &String, file_path: &String) -> String {
     let file_path = rtrim_char(base_path, '/') + file_path;
-    if !file_path.ends_with(".mp4") && !file_path.ends_with(".mkv") && !file_path.ends_with(".ts") {
-        let re = Regex::new(r"(?i)\.[a-z]{3}$").unwrap();
+    if !file_path.ends_with(".mp4") {
+        let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
         let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
-        match file::check_file(&mp4_file_path) {
-            Ok(f) => return f.to_string(),
-            Err(_) => {
-                // TODO: si avi => re-encode
-                let input = file_path.clone();
-                let output = mp4_file_path.clone();
-                thread::spawn(move || movie::avi_to_mp4(&input, &output));
-                return file_path.to_string();
-            },
+        if let Ok(f) = file::check_file(&mp4_file_path) {
+            return f.to_string();
         }
     }
     return file_path.clone();

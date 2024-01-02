@@ -5,7 +5,7 @@
 //! ## Features
 //! 
 //! * [x] Help documentation
-//! * [ ] Search for a term in a file or directory or an external source
+//! * [x] Search for a term in a file or directory or an external source
 //!     * [x] text file
 //!     * [x] pdf
 //!     * [x] .docx
@@ -25,6 +25,7 @@
 //!         * [x] Info from OMDb
 //!     * [ ] Images (may be image description from IA)
 //!     * [ ] link
+//! * [x] Transcode video file for streamming (to mp4 H.264)
 //! * [x] Media server (like Universal Media Server)
 //!     * [x] process all media files contained in a directory
 //!     * [x] provided a web application to search and play media files

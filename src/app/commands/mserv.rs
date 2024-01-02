@@ -125,7 +125,10 @@ pub fn usage() -> &'static str {
     "\
 mserv --elastic-dsn=<string> --url=<string>  --cache-path=<string> --base-path=<string>
     Launch media server
-    You must have ffmpeg installed if you need to re-encod video files
+    Prerequisites:
+        - Transocde your video files into a streamable format (like H.264)
+        - Elsastic search for indexing
+        - [Optional] ffmpeg and ffprobe, for video duration
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server

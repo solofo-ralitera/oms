@@ -10,13 +10,14 @@ use std::io::{Error, ErrorKind};
 use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
-use std::{thread, cmp};
+use std::cmp;
 
 use self::movie::MovieSearch;
 
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
 use crate::helpers::output::colorize;
-use crate::helpers::{file::{get_file_name, get_extension}, sleep};
+use crate::helpers::threadpool::ThreadPool;
+use crate::helpers::file::{self, get_file_name, get_extension};
 use colored::Colorize;
 use diacritics::remove_diacritics;
 use option::SearchOption;
@@ -41,21 +42,18 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 /// * [o] Search in file
 ///     * [x] text file
 ///     * [o] pdf: TODO: ?Identity-H Unimplemented?
-///     * [o] office file
+///     * [x] office file
 ///         * [x] docx
 ///         * [x] xlsx
 ///         * [x] pptx
-///     * [ ] Search in movie
+///     * [x] Search in movie
 /// * [x] Search in directory
-/// * [ ] Search in link
-/// * [ ] Search arguments
+/// * [o] Search arguments
 ///     * [x] extensions
-///     * [ ] exlude directories
-///     * [ ] exlude file
-///     * [ ] display
-///         * [x] file-only
-///         * [ ] debug
-/// 
+///     * [x] exlude file
+///     * [x] exlude extension
+///     * [x] display file-only
+///     * [x] thread
 pub struct Search {
     /// path of the file to search in
     file_path: String,
@@ -80,7 +78,7 @@ impl Runnable for Search {
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "display" => search_option.set_display(value)?,
-                "pause" => search_option.set_pause(value)?,
+                "t" | "thread" => search_option.set_thread(value)?,
                 "e" | "extensions" => search_option.extensions_from(value)?,
                 "exclude-extensions" => search_option.exclude_extensions_from(value)?, 
                 "f" | "files" => search_option.files_from(value)?, 
@@ -94,12 +92,14 @@ impl Runnable for Search {
             };
         }
 
+        let thread_pool = ThreadPool::new(search_option.thread);
+
         match metadata(&self.file_path) {
             Ok(md) if md.is_file() => {
-                search_in_file(&self.file_path, &self.search_term, &search_option, tx.clone());
+                search_in_file(&self.file_path, &self.search_term, &search_option, &thread_pool, tx.clone());
             },
             Ok(md) if md.is_dir() => {
-                search_in_dir(&self.file_path, &self.search_term, &search_option, tx.clone());
+                search_in_dir(&self.file_path, &self.search_term, &search_option, &thread_pool, tx.clone());
             },
             Ok(_) => return Err(Error::new(
                 ErrorKind::InvalidInput, 
@@ -122,28 +122,25 @@ impl Runnable for Search {
 }
 
 
-fn search_in_dir(dir_path: &String, search_term: &String, search_option: &SearchOption, tx: Sender<String>) {
+fn search_in_dir(dir_path: &String, search_term: &String, search_option: &SearchOption, thread_pool: &ThreadPool, tx: Sender<String>) {
     let dir_path = dir_path.clone();
     let search_term = search_term.clone();
     let search_option = search_option.clone();
 
-    thread::spawn(move || {
-        for entry in read_dir(Path::new(&dir_path)).unwrap() {
-            let path = entry.unwrap().path();
-            if path.is_file() {
-                search_in_file(&path.to_str().unwrap().to_string(), &search_term, &search_option, tx.clone())
-            } else if path.is_dir() {
-                search_in_dir(&path.to_str().unwrap().to_string(), &search_term, &search_option, tx.clone())
-            }
+    for entry in read_dir(Path::new(&dir_path)).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            search_in_file(&path.to_str().unwrap().to_string(), &search_term, &search_option, thread_pool, tx.clone())
+        } else if path.is_dir() {
+            search_in_dir(&path.to_str().unwrap().to_string(), &search_term, &search_option, thread_pool, tx.clone())
         }
-    });
+    }
 }
 
-fn search_in_file(file_path: &String, search_term: &String, search_option: &SearchOption, tx: Sender<String>) {
+fn search_in_file(file_path: &String, search_term: &String, search_option: &SearchOption, thread_pool: &ThreadPool, tx: Sender<String>) {
     let file_path = file_path.clone();
     let search_term = remove_diacritics(&search_term.to_lowercase().clone());
     let search_option = search_option.clone();
-    let pause = search_option.pause;
 
     let extension = get_extension(&file_path).to_lowercase();
     let file_name = get_file_name(&file_path).to_lowercase();
@@ -161,32 +158,37 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
         return ();
     }
     
-    thread::spawn(move || {
-        // TODO: search in movies
-        match extension.as_str() {
-            "pdf" => PdfSearch { 
-                    file_path: &file_path, 
-                    search_term: &search_term, 
-                    search_option: &search_option,
-                }.search(tx),
-            "doc" | "docx" | "odp" | "odt" | "pptx" | "xlsx" => MsSearch { 
-                    file_path: &file_path, 
-                    search_term: &search_term, 
-                    search_option: &search_option,
-                }.search(tx),
-            "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieSearch {
+    thread_pool.execute(move || {
+        let extension = extension.as_str();
+        if file::PDF_EXTENSIONS.contains(&extension) {
+            PdfSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
-            }.search(tx),
-            _ => TextSearch {
-                    file_path: &file_path,
-                    search_term: &search_term,
-                    search_option: &search_option,
-                }.search(tx),
+            }.search(tx);
+        }
+        else if file::VIDEO_EXTENSIONS.contains(&extension) {
+            MovieSearch {
+                file_path: &file_path, 
+                search_term: &search_term, 
+                search_option: &search_option,
+            }.search(tx);
+        }
+        else if file::MS_EXTENSIONS.contains(&extension) {
+            MsSearch { 
+                file_path: &file_path, 
+                search_term: &search_term, 
+                search_option: &search_option,
+            }.search(tx);
+        }
+        else {
+            TextSearch {
+                file_path: &file_path,
+                search_term: &search_term,
+                search_option: &search_option,
+            }.search(tx);
         }
     });
-    sleep(pause);
 }
 
 fn text_reg_contains(content: &String, search_term: &String) -> Option<Vec<String>> {
@@ -231,7 +233,7 @@ search [options] <file_path|directory_path> <query>
     -f <> --files=<string>  Search only in these file names
     --exclude-files=<string>    exlude these files, separated by '{OPTION_SEPARATOR}'
     --display=<string>  file-only|debug
-    --pause<int>    Pause between each file, in millis
+    -t <int> --thread=<int>    Max thread number, default 1
 ")
 }
 

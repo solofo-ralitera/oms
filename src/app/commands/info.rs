@@ -2,8 +2,8 @@ mod pdf;
 mod movie;
 mod option;
 
-use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, thread, path::Path, sync::mpsc::{self, Sender}};
-use crate::helpers::file::{get_extension, get_file_name};
+use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, path::Path, sync::mpsc::{self, Sender}};
+use crate::helpers::{file::{get_extension, get_file_name, self}, threadpool::ThreadPool};
 use super::{Runnable, get_args_parameter};
 use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 
@@ -16,7 +16,7 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
 ///
 /// `oms info /home/me/movie.mp4`
 /// 
-/// cargo run -- info --elastic-dsn="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" "/media/solofo/MEDIA/films/"
+/// cargo run -- info --elastic-dsn="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" --thread=5 "/media/solofo/MEDIA/films/"
 /// 
 /// 
 /// ## Features
@@ -63,6 +63,7 @@ impl Runnable for Info {
             match option.as_str() {
                 "hide-preview" => info_option.hide_preview(),
                 "elastic-dsn" => info_option.set_elastic(value)?,
+                "t" | "thread" => info_option.set_thread(value)?,
                 "list" => { 
                     info_option.set_list(value)?; // Files are provided in option
                     file_path.clear(); // Ignore the file in last option
@@ -74,29 +75,27 @@ impl Runnable for Info {
             };
         }
         
-        let display_result = info_option.display_preview;
+        let thread_pool = ThreadPool::new(info_option.thread);
 
-        // Juste one thread to limit api call
-        thread::spawn(move || {
-            // if files are provided in option as list
-            if info_option.list.len() > 0 {
-                file_info_from_list(&info_option, tx);
-                return;
-            }
+        // if files are provided in option as list
+        if info_option.list.len() > 0 {
+            file_info_from_list(&info_option, &thread_pool, tx);
+            return Ok(());
+        }
 
-            match metadata(&file_path) {
-                Ok(md) if md.is_dir() => {
-                    dir_info(&file_path, &info_option, tx.clone());
-                },
-                Ok(md) if md.is_file() => {
-                    file_info(&file_path, &info_option, tx.clone());
-                },
-                _ => file_info(&file_path, &info_option, tx.clone()),
-            };
-        });
-        
+        match metadata(&file_path) {
+            Ok(md) if md.is_dir() => {
+                dir_info(&file_path, &info_option, &thread_pool, tx.clone());
+            },
+            Ok(md) if md.is_file() => {
+                file_info(&file_path, &info_option, &thread_pool, tx.clone());
+            },
+            _ => file_info(&file_path, &info_option, &thread_pool, tx.clone()),
+        };
+
+        drop(tx);
         for message in rx {
-            if display_result == true {
+            if info_option.display_preview == true {
                 println!("{message}");
             }
         }
@@ -108,39 +107,50 @@ impl Runnable for Info {
     }
 }
 
-fn dir_info(dir_path: &String, info_option: &InfoOption, tx: Sender<String>) {
+fn dir_info(dir_path: &String, info_option: &InfoOption, thread_pool: &ThreadPool, tx: Sender<String>) {
     for entry in read_dir(Path::new(&dir_path)).unwrap() {
         let path = entry.unwrap().path();
         if path.is_file() {
-            file_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
+            file_info(&path.to_str().unwrap().to_string(), &info_option, thread_pool, tx.clone())
         } else if path.is_dir() {
-            dir_info(&path.to_str().unwrap().to_string(), &info_option, tx.clone())
+            dir_info(&path.to_str().unwrap().to_string(), &info_option, thread_pool, tx.clone())
         }
     }
 }
 
-fn file_info(file_path: &String, info_option: &InfoOption, tx: Sender<String>)  {
-    let extension = get_extension(&file_path).to_lowercase();
-    match extension.as_str() {
-        "pdf" => PdfInfo { file_path: &file_path}.info(tx),
-        "" | "mp4" | "mkv" | "avi" | "flv" | "mpg" | "mpeg" | "divx" => MovieInfo { 
-            movie_raw_name: &get_file_name(&file_path),
-            file_path: &file_path,
-            info_option: &info_option,
-        }.info(tx),
-        "db" | "srt" | "nfo" | "idx" | "sub" | "bup" | "ifo" | "vob" | "sfv" => (),
-        _ => print!("\n{file_path}: Format not supported\n"),
-    };
+fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadPool, tx: Sender<String>)  {
+    let file_path = file_path.clone();
+    let info_option = info_option.clone();
+    thread_pool.execute(move || {
+        let extension = get_extension(&file_path).to_lowercase();
+        let extension = extension.as_str();
+        
+        if file::PDF_EXTENSIONS.contains(&extension) {
+            PdfInfo { file_path: &file_path}.info(tx);
+        } 
+        else if file::VIDEO_EXTENSIONS.contains(&extension) || extension.is_empty() {
+            MovieInfo { 
+                movie_raw_name: &get_file_name(&file_path),
+                file_path: &file_path,
+                info_option: &info_option,
+            }.info(tx);
+        }
+        else if file::VIDEO_EXTENSIONS_IGNORED.contains(&extension) {
+            ();
+        } else {
+            print!("\n{file_path}: Format not supported\n");
+        }
+    });
 }
 
-fn file_info_from_list(info_option: &InfoOption, tx: Sender<String>) {
+fn file_info_from_list(info_option: &InfoOption, thread_pool: &ThreadPool, tx: Sender<String>) {
     for file_path in &info_option.list {
         match metadata(&file_path) {
             Ok(md) if md.is_dir() => {
-                dir_info(file_path, info_option, tx.clone());
+                dir_info(file_path, info_option, thread_pool, tx.clone());
             },
             Ok(md) if md.is_file() => {
-                file_info(file_path, info_option, tx.clone());
+                file_info(file_path, info_option, thread_pool, tx.clone());
             },
             _ => (),
         };

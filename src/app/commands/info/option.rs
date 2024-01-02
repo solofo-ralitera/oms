@@ -8,6 +8,7 @@ pub struct InfoOption {
     pub list: Vec<String>,
     pub display_preview: bool,
     pub elastic: Option<Elastic>,
+    pub thread: usize,
 }
 
 impl InfoOption {
@@ -17,6 +18,7 @@ impl InfoOption {
             list: vec![],
             display_preview: true,
             elastic: None,
+            thread: 5,
         }
     }
 
@@ -53,6 +55,19 @@ impl InfoOption {
         self.elastic = Some(Elastic::new(value)?);
         return Ok(());
     }
+
+    pub fn set_thread(&mut self, value: &String) -> Result<()> {
+        match value.parse::<usize>() {
+            Ok(v) => {
+                self.thread = v;
+                Ok(())
+            },
+            _ => Err(Error::new(
+                ErrorKind::NotFound, 
+                format!("Invalid value for thread")
+            ))
+        }
+    }
 }
 
 impl Clone for InfoOption {
@@ -62,6 +77,7 @@ impl Clone for InfoOption {
             list: self.list.clone(),
             display_preview: self.display_preview.clone(),
             elastic: self.elastic.clone(),
+            thread: self.thread,
         }
     }
 }

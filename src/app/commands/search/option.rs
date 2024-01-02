@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind};
+use std::{io::{Error, ErrorKind}, cmp::max};
 use crate::app::commands::OPTION_SEPARATOR;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -8,7 +8,7 @@ pub struct SearchOption {
     pub search_term: String,
 
     pub display: String,
-    pub pause: u64,
+    pub thread: usize,
 
     pub extensions: Vec<String>,
     pub exclude_extensions: Vec<String>,
@@ -22,7 +22,7 @@ impl SearchOption {
         SearchOption {
             search_term: search_term,
             display: String::from("all"),
-            pause: 100,
+            thread: 1,
             extensions: vec![],
             exclude_extensions: vec![],
             files: vec![],
@@ -30,10 +30,10 @@ impl SearchOption {
         }
     }
 
-    pub fn set_pause(&mut self, value: &String) -> Result<()> {
-        match value.parse::<u64>() {
+    pub fn set_thread(&mut self, value: &String) -> Result<()> {
+        match value.parse::<usize>() {
             Ok(v) => {
-                self.pause = v;
+                self.thread = max(1, v);
                 Ok(())
             },
             _ => Err(Error::new(
@@ -80,7 +80,7 @@ impl SearchOption {
         if self.extensions.len() == 0 {
             return true;
         }
-        self.extensions.contains(extension)
+        self.extensions.contains(&extension.to_lowercase())
     }
 
     pub fn is_extension_excluded(&self, extension: &String) -> bool {
@@ -119,7 +119,7 @@ impl Clone for SearchOption {
         SearchOption { 
             search_term: self.search_term.clone(),
             display: self.display.clone(),
-            pause: self.pause,
+            thread: self.thread,
             extensions: self.extensions.clone(),
             exclude_extensions: self.exclude_extensions.clone(),
             files: self.files.clone(),

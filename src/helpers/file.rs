@@ -13,6 +13,11 @@ use data_encoding::HEXUPPER;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
+pub static VIDEO_EXTENSIONS: [&str; 9] = ["mp4", "mkv", "avi", "flv", "mpg", "mpeg", "divx", "wmv", "dat"];
+pub static VIDEO_EXTENSIONS_IGNORED: [&str; 9] = ["db", "srt", "nfo", "idx", "sub", "bup", "ifo", "vob", "sfv"];
+pub static PDF_EXTENSIONS: [&str; 1] = ["pdf"];
+pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xlsx"];
+
 /// Check if the given file exists
 ///
 /// # Arguments

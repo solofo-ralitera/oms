@@ -2,7 +2,7 @@ pub mod tmdb;
 pub mod omdb;
 
 use core::fmt;
-use std::{ops::Deref, process::{Command, Stdio}, io::{BufReader, BufRead, self}};
+use std::{ops::Deref, process::Command, io};
 use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use self::{tmdb::TMDb, omdb::OMDb};
 
-use super::{cache, string::text_contains, file};
+use super::{cache, string::text_contains, file, command};
 
 
 ///
@@ -69,37 +69,44 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
     };
 }
 
-//  ffmpeg -i "input.avi" -c:a copy -c:v vp9 -b:v 100K "input.vp9.mp4"
-//  ffmpeg -i new\ romance.AVI new\ romance.mp4
-pub fn avi_to_mp4(file_path: &String, dest_path: &String) {
-    let mut cmd = Command::new("ffmpeg")
-        .args(["-i", file_path, dest_path])
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    {
-        let stdout = cmd.stdout.as_mut().unwrap();
-        let stdout_reader = BufReader::new(stdout);
-        let stdout_lines = stdout_reader.lines();
+//  ffmpeg -i input.avi input.mp4
+pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<String, io::Error> {
+    let dest_path = match dest_path {
+        None => {
+            let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
+            re.replace(file_path.as_str(), ".mp4").to_string()
+        },
+        Some(d) => d.to_string(),
+    };
 
-        for line in stdout_lines {
-            println!("Read: {:?}", line);
-        }
+    if file_path.eq(&dest_path) {
+        return Ok(dest_path);
     }
-    cmd.wait().unwrap();
+    
+    if let Ok(_) = file::check_file(&dest_path) {
+        return Ok(dest_path);
+    }
+
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-i", file_path, &dest_path]);
+    command::exec(&mut cmd);
+
+    return match file::check_file(&dest_path) {
+        Ok(_) => Ok(dest_path),
+        _ => Err(io::Error::new(
+            io::ErrorKind::WriteZero, 
+            format!("to_mp4: {dest_path} not created")
+        )),
+    };
 }
 
 pub fn movie_duration(file_path: &String) -> usize {
     // ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 input_file
-    let mut command = Command::new("ffprobe");
-    command.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
-    command.stdout(Stdio::piped());
-    command.stderr(Stdio::piped());
-    if let Ok(output) = command.output() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return stdout.trim().parse::<f64>().unwrap().round() as usize;
-    }
-    return 0;
+    let mut cmd = Command::new("ffprobe");
+    cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
+
+    let output = command::exec(&mut cmd);
+    return output.parse::<f64>().unwrap_or(0.).round() as usize;
 }
 
 

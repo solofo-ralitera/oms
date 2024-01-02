@@ -7,6 +7,8 @@ pub mod input;
 pub mod movie;
 pub mod cache;
 pub mod db;
+pub mod threadpool;
+pub mod command;
 
 use std::{thread, time::Duration};
 
