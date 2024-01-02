@@ -1,7 +1,7 @@
 mod option;
 
 use std::{collections::HashMap, fs::{metadata, read_dir, self}, io, path::Path};
-use crate::helpers::{file::get_extension, threadpool::ThreadPool, movie};
+use crate::helpers::{file::{get_extension, self}, threadpool::ThreadPool, movie};
 use colored::Colorize;
 use self::option::TranscodeOption;
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
@@ -78,17 +78,21 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
     if !transcode_option.has_extension(&extension) {
         return ();
     }
+    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+        return ();
+    }
 
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
     thread_pool.execute(move || {
-        println!("Transcoding start {file_path}");
         match movie::to_mp4(&file_path, None) {
-            Ok(_) if delete_after => match fs::remove_file(&file_path) {
+            Ok(dest_mp4) if dest_mp4.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Err(err) => {
                     println!("{}", err.to_string().on_red());
                 },
-                _ => (),
+                _ => {
+                    println!("File deleted {}", dest_mp4.unwrap_or(String::new()));
+                },
             },
             Err(err) => {
                 println!("{}", err.to_string().on_red())

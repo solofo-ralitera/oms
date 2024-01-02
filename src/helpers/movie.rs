@@ -2,7 +2,7 @@ pub mod tmdb;
 pub mod omdb;
 
 use core::fmt;
-use std::{ops::Deref, process::Command, io};
+use std::{ops::Deref, process::Command, io, fs};
 use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
@@ -70,7 +70,13 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
 }
 
 //  ffmpeg -i input.avi input.mp4
-pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<String, io::Error> {
+pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<String>, io::Error> {
+    let extension = file::get_extension(file_path).to_lowercase();
+
+    if extension.eq("mp4") {
+        return Ok(None);
+    }
+
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
@@ -80,19 +86,23 @@ pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<String, 
     };
 
     if file_path.eq(&dest_path) {
-        return Ok(dest_path);
+        return Ok(None);
     }
     
     if let Ok(_) = file::check_file(&dest_path) {
-        return Ok(dest_path);
+        return Ok(None);
     }
 
+    println!("Transcoding start {file_path}");
+    
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-i", file_path, &dest_path]);
     command::exec(&mut cmd);
 
-    return match file::check_file(&dest_path) {
-        Ok(_) => Ok(dest_path),
+    return match fs::metadata(&dest_path) {
+        Ok(metadata) if metadata.is_file() && metadata.len() > 0 => {
+            Ok(Some(dest_path))
+        },
         _ => Err(io::Error::new(
             io::ErrorKind::WriteZero, 
             format!("to_mp4: {dest_path} not created")
