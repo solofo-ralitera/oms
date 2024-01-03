@@ -207,8 +207,8 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         }
     }
 
-    // Find first in tmdb, if not found switch to omdb, otherwise fall in error
     let movies = match provider.as_str() {
+        //  firstly search in tmdb, if not found switch to omdb, otherwise fall in error
         "api" => if let Ok(result) = TMDb::info(&movie_title) {
             Some(result)
         } else if let Ok(result) = OMDb::info(&movie_title) {

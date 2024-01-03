@@ -3,6 +3,10 @@ export const app = new class {
         return fetch("./scan-dir");
     }
 
+    async transcodeDir(extension = "") {
+        return fetch(`./transcode-dir/${extension}`);
+    }
+
     async getAllFiles() {
         return fetch("./all-files-path")
             .then(r => r.json())

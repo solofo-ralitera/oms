@@ -1,11 +1,14 @@
 mod pdf;
 mod movie;
+mod image;
 mod option;
 
-use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs::{metadata, read_dir}, path::Path, sync::mpsc::{self, Sender}};
+use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs, path::Path, sync::{mpsc::{self, Sender}, Arc, Mutex}};
+use once_cell::sync::Lazy;
+
 use crate::helpers::{file::{get_extension, get_file_name, self}, threadpool::ThreadPool};
 use super::{Runnable, get_args_parameter};
-use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption};
+use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption, image::ImageInfo};
 
 
 /// # Info command
@@ -32,29 +35,31 @@ pub struct Info {
     pub cmd_options: HashMap<String, String>,
 }
 
-static mut INFO_RUNNING: bool = false;
+static INFO_RUNNING: Lazy<Arc<Mutex<bool>>> = Lazy::new(|| {
+    return Arc::new(Mutex::new(false));
+});
 
 impl Runnable for Info {
       /// Start processing the command
      fn run(&self) -> Result<(), std::io::Error> {
-        unsafe {
-            if INFO_RUNNING == true {
-                return Err(Error::new(
-                    ErrorKind::AddrInUse, 
-                    format!("\nInfo is already running\n")
-                ));
-            }
-            INFO_RUNNING = true;
+        let b_isrunning = Arc::clone(&INFO_RUNNING);
+        let mut b_isrunning = b_isrunning.lock().unwrap();
+
+        if *b_isrunning == true {
+            return Err(Error::new(
+                ErrorKind::AddrInUse, 
+                format!("\nInfo is already running\n")
+            ));
         }
+        *b_isrunning = true;
+
         let (tx, rx) = mpsc::channel();
         let mut info_option = InfoOption::new();
         let mut file_path = self.file_path.to_string();
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
+            *b_isrunning = false;
             print_usage();
-            unsafe {
-                INFO_RUNNING = false;
-            }
             return Ok(());
         }
 
@@ -69,10 +74,13 @@ impl Runnable for Info {
                     info_option.set_list(value)?; // Files are provided in option
                     file_path.clear(); // Ignore the file in last option
                 },
-                arg => return Err(Error::new(
-                    ErrorKind::InvalidInput, 
-                    format!("\nUnkown argument {}\n", arg)
-                )),
+                arg => {
+                    *b_isrunning = false;
+                    return Err(Error::new(
+                        ErrorKind::InvalidInput, 
+                        format!("\nUnkown argument {}\n", arg)
+                    ));                    
+                },
             };
         }
         
@@ -81,10 +89,11 @@ impl Runnable for Info {
         // if files are provided in option as list
         if info_option.list.len() > 0 {
             file_info_from_list(&info_option, &thread_pool, tx);
+            *b_isrunning = false;
             return Ok(());
         }
 
-        match metadata(&file_path) {
+        match fs::metadata(&file_path) {
             Ok(md) if md.is_dir() => {
                 dir_info(&file_path, &info_option, &thread_pool, tx.clone());
             },
@@ -101,15 +110,13 @@ impl Runnable for Info {
             }
         }
 
-        unsafe {
-            INFO_RUNNING = false;
-        }
+        *b_isrunning = false;
         Ok(())
     }
 }
 
 fn dir_info(dir_path: &String, info_option: &InfoOption, thread_pool: &ThreadPool, tx: Sender<String>) {
-    for entry in read_dir(Path::new(&dir_path)).unwrap() {
+    for entry in fs::read_dir(Path::new(&dir_path)).unwrap() {
         let path = entry.unwrap().path();
         if path.is_file() {
             file_info(&path.to_str().unwrap().to_string(), &info_option, thread_pool, tx.clone())
@@ -128,7 +135,13 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
         
         if file::PDF_EXTENSIONS.contains(&extension) {
             PdfInfo { file_path: &file_path}.info(tx);
-        } 
+        }
+        else if file::IMAGE_EXTENSIONS.contains(&extension) {
+            ImageInfo {
+                file_path: &file_path,
+                info_option: &info_option,
+            }.info(tx);
+        }
         else if file::VIDEO_EXTENSIONS.contains(&extension) || extension.is_empty() {
             MovieInfo { 
                 movie_raw_name: &get_file_name(&file_path),
@@ -146,7 +159,7 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
 
 fn file_info_from_list(info_option: &InfoOption, thread_pool: &ThreadPool, tx: Sender<String>) {
     for file_path in &info_option.list {
-        match metadata(&file_path) {
+        match fs::metadata(&file_path) {
             Ok(md) if md.is_dir() => {
                 dir_info(file_path, info_option, thread_pool, tx.clone());
             },

@@ -131,11 +131,17 @@ li.genre:hover, li.cast:hover {
     set movie(movie) {
         this._movie = movie;
         if (this._movie) {
-            if (!this._movie?.thumb_url) {
+            if (!this._movie.thumb_url) {
                 this._movie.thumb_url = `/thumb${this._movie.file_path}`;
             }
-            if (!this._movie?.poster_url) {
+            if (!this._movie.poster_url) {
                 this._movie.poster_url = `/poster${this._movie.file_path}`;
+            }
+            if (!this._movie.casts) {
+                this._movie.casts = [];
+            }
+            if (!this._movie.genres) {
+                this._movie.genres = [];
             }
         }
         this.render();

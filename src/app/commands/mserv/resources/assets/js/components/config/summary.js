@@ -8,10 +8,10 @@ export class Summary extends HTMLElement {
 #summary-detail-content {
     font-size: .8em;
 }
-.summary-detail-link {
-    cursor: pointer;
+.pointer {
+    cursor: pointer
 }
-.summary-detail-link:hover {
+.pointer:hover {
     text-decoration: underline;
 }
     </style>`;
@@ -25,7 +25,7 @@ export class Summary extends HTMLElement {
     renderCountByExtension(files_extension) {
         let str = '';
         Object.entries(files_extension).forEach(([extension, count]) => {
-            str += `<li>${extension}: ${count}</li>`;
+            str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files">${extension}: ${count}</li>`;
         });
         return str;
     }
@@ -62,7 +62,7 @@ export class Summary extends HTMLElement {
     <u>Directory summary</u>: ${BASE_URL}
 </header>
 <p>
-    Number of files / indexed files: <span class="summary-detail-link">${dirSummary.files_count} / ${elasticCount}</span>
+    Number of files / indexed files: <span class="summary-detail-link pointer">${dirSummary.files_count} / ${elasticCount}</span>
     <span id="summary-detail-content"></span>
 </p>
 <p>
@@ -75,6 +75,9 @@ export class Summary extends HTMLElement {
                 this.root.querySelector(".summary-detail-link")?.addEventListener("click", () => {
                     this.summaryDetail();
                 });
+                this.root.querySelectorAll("li.extension").forEach(li => li.addEventListener("click", e => {
+                    app.transcodeDir(e.target.getAttribute("data-extension"));
+                }));
             })
             .catch(() => {
                 this.root.innerHTML = '...error...';

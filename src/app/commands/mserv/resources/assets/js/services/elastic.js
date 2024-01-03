@@ -195,7 +195,9 @@ class ElasticMovie {
             .then(r => r.json())
             .then(r => r?.hits?.hits?.map(hit => hit._source) ?? [])
             .then(movies => {
-                movies.map(m => m.genres).flat().forEach(g => this.genres.add(g));
+                movies.map(m => m.genres).flat().forEach(g => {
+                    if (g) this.genres.add(g)
+                });
                 return movies;
             })
             .catch(() => []);

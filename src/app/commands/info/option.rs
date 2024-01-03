@@ -1,4 +1,4 @@
-use std::{io::{Error, ErrorKind}, fs, cmp::max};
+use std::{io::{Error, ErrorKind}, cmp::max};
 use crate::helpers::{file, db::elastic::Elastic, rtrim_char};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -38,8 +38,8 @@ impl InfoOption {
     }
 
     pub fn set_basepath(&mut self, value: &String) -> Result<()> {
-        match fs::metadata(value) {
-            Ok(md) if md.is_dir() => {
+        match file::check_dir(value) {
+            Ok(_) => {
                 self.base_path = rtrim_char(value, '/').trim().to_string();
                 return Ok(());
             },

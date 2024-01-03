@@ -17,6 +17,7 @@ pub static VIDEO_EXTENSIONS: [&str; 24] = ["mpe", "mpv", "m2v", "m4v", "3gp", "3
 pub static VIDEO_EXTENSIONS_IGNORED: [&str; 9] = ["db", "srt", "nfo", "idx", "sub", "bup", "ifo", "vob", "sfv"];
 pub static PDF_EXTENSIONS: [&str; 1] = ["pdf"];
 pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xlsx"];
+pub static IMAGE_EXTENSIONS: [&str; 10] = ["avif", "apng", "gif", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "webp"];
 
 /// Check if the given file exists
 ///
@@ -40,10 +41,25 @@ pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xls
 /// };
 /// ```
 pub fn check_file(file_path: &str) -> Result<&str> {
-    match fs::metadata(file_path) {
-        Ok(_) => Ok(file_path),
-        Err(err) => Err(err),
-    }
+   match fs::metadata(file_path) {
+      Ok(m) if m.is_file() => Ok(file_path),
+      Err(err) => Err(err),
+      _ => Err(io::Error::new(
+         io::ErrorKind::WriteZero, 
+         format!("{file_path} is not a file")
+      ))
+   }
+}
+
+pub fn check_dir(dir_path: &str) -> Result<&str> {
+   match fs::metadata(dir_path) {
+      Ok(m) if m.is_dir() => Ok(dir_path),
+      Err(err) => Err(err),
+      _ => Err(io::Error::new(
+         io::ErrorKind::WriteZero, 
+         format!("{dir_path} is not a directory")
+      ))
+   }
 }
 
 

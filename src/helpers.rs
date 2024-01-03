@@ -47,6 +47,14 @@ pub fn rtrim_char(str: &String, char: char) -> String {
     return re.replace(str, "").to_string();
 }
 
+pub fn ltrim_char(str: &String, char: char) -> String {
+    let mut re_string = String::new();
+    re_string.push('^');
+    re_string.push(char);
+    let re = Regex::new(re_string.as_str()).unwrap();
+    return re.replace(str, "").to_string();
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

@@ -30,6 +30,7 @@ impl Runnable for Mserv {
         }
         for (option, value) in &self.cmd_options {
             match option.as_str() {
+                "p" | "provider" => mserv_option.set_provider(value)?,
                 "base-path" => mserv_option.set_basepath(value)?,
                 "elastic-dsn" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,

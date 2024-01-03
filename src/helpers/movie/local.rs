@@ -21,8 +21,8 @@ impl Local {
             year: movie_param.movie_title.year.clone(),
             casts: vec![],
             genres: vec![],
-            thumb_url: format!("/thumb{}", &movie_param.file_path),           
-            poster_url: format!("/poster{}", &movie_param.file_path),
+            thumb_url: String::new(),
+            poster_url: String::new(),
             rating: 1.,
             
             thumb: String::new(), 

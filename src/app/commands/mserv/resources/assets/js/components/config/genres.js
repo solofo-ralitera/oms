@@ -29,7 +29,7 @@ li.genre~li.genre::before {
                 </header>
                 <ul>
                 ${elasticMovie.getGenres().map(genre => {
-                    return `<li class="genre" data-genre="${genre.escape_quote()}">${genre}</li>`;
+                    return `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`;
                 }).join("")}
                 </ul>
             </article>`;

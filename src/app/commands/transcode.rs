@@ -1,10 +1,11 @@
 mod option;
 
-use std::{collections::HashMap, fs::{metadata, read_dir, self}, io, path::Path};
+use std::{collections::HashMap, fs, io, path::Path, sync::{Arc, Mutex}};
 use crate::helpers::{file::{get_extension, self}, threadpool::ThreadPool, movie};
 use colored::Colorize;
 use self::option::TranscodeOption;
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
+use once_cell::sync::Lazy;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
@@ -18,17 +19,33 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 /// 
 pub struct Transcode {
     /// path of the file/dir to transcode
-    file_path: String,
+    pub file_path: String,
     /// Command options
-    cmd_options: HashMap<String, String>,
+    pub cmd_options: HashMap<String, String>,
 }
+
+static TRANSCODE_RUNNING: Lazy<Arc<Mutex<bool>>> = Lazy::new(|| {
+    return Arc::new(Mutex::new(false));
+});
 
 impl Runnable for Transcode {
     fn run(&self) -> Result<()> {
-        let mut transcode_option = TranscodeOption::new();
+        let b_isrunning = Arc::clone(&TRANSCODE_RUNNING);
+        let mut b_isrunning = b_isrunning.lock().unwrap();
 
+        if *b_isrunning == true {
+            return Err(io::Error::new(
+                io::ErrorKind::AddrInUse, 
+                format!("\nTranscode is already running\n")
+            ));
+        }
+        *b_isrunning = true;
+        
+        let mut transcode_option = TranscodeOption::new();
+        println!("Transcode running");
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
+            *b_isrunning = false;
             println!("\n{}\n", usage());
             return Ok(());
         }
@@ -39,6 +56,7 @@ impl Runnable for Transcode {
                 "t" | "thread" => transcode_option.set_thread(value)?,
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
                 arg => {
+                    *b_isrunning = false;
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidInput, 
                         format!("\nUnkown argument {}\n", arg)
@@ -49,25 +67,29 @@ impl Runnable for Transcode {
 
         let thread_pool = ThreadPool::new(transcode_option.thread);
 
-        match metadata(&self.file_path) {
+        match fs::metadata(&self.file_path) {
             Ok(md) if md.is_file() => {
                 transcode_file(&self.file_path, &transcode_option, &thread_pool)
             },
             Ok(md) if md.is_dir() => {
                 transcode_dir(&self.file_path, &transcode_option, &thread_pool)
             },
-            Ok(_) => return Err(io::Error::new(
-                io::ErrorKind::InvalidInput, 
-                format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
-            )),
+            Ok(_) => {
+                *b_isrunning = false;
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
+                ));
+            },
             Err(err) => {
+                *b_isrunning = false;
                 return Err(io::Error::new(
                     io::ErrorKind::NotFound, 
                     format!("\n{}\nread error: {}\n\n", self.file_path, err)
                 ));
             }            
         }
-
+        *b_isrunning = false;
         Ok(())
     }
 }
@@ -107,7 +129,7 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
 }
 
 fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
-    for entry in read_dir(Path::new(&dir_path)).unwrap() {
+    for entry in fs::read_dir(Path::new(&dir_path)).unwrap() {
         let path = entry.unwrap().path();
         if path.is_file() {
             transcode_file(&path.to_str().unwrap().to_string(), transcode_option, thread_pool)

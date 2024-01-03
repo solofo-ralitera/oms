@@ -7,7 +7,7 @@ pub mod movie;
 
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use std::fs::{metadata, read_dir};
+use std::fs;
 use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::cmp;
@@ -94,7 +94,7 @@ impl Runnable for Search {
 
         let thread_pool = ThreadPool::new(search_option.thread);
 
-        match metadata(&self.file_path) {
+        match fs::metadata(&self.file_path) {
             Ok(md) if md.is_file() => {
                 search_in_file(&self.file_path, &self.search_term, &search_option, &thread_pool, tx.clone());
             },
@@ -127,7 +127,7 @@ fn search_in_dir(dir_path: &String, search_term: &String, search_option: &Search
     let search_term = search_term.clone();
     let search_option = search_option.clone();
 
-    for entry in read_dir(Path::new(&dir_path)).unwrap() {
+    for entry in fs::read_dir(Path::new(&dir_path)).unwrap() {
         let path = entry.unwrap().path();
         if path.is_file() {
             search_in_file(&path.to_str().unwrap().to_string(), &search_term, &search_option, thread_pool, tx.clone())

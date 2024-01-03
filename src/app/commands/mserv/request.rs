@@ -1,11 +1,11 @@
 mod summary;
 
-use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie}, app::commands::{info::Info, Runnable}};
+use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sha256::digest;
 use urlencoding::decode;
-use std::{cmp::min, thread, collections::HashMap};
+use std::{cmp::min, thread, collections::HashMap, fs};
 use super::option::MservOption;
 use rand::Rng;
 
@@ -101,24 +101,26 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
 }
 
 fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    match path {
-        "/scan-dir" => {
-            scan_movie_dir(serv_option);
-            return (String::from("200 OK"), vec![], None, None);
-        },
-        "/summary" => {
-            let summary = serde_json::to_string(&summary::movies_summary(serv_option)).unwrap_or(String::new());
-            return (String::from("200 OK"), vec![], None, Some(summary.as_bytes().to_vec()));
-        },
-        "/all-files-path" => {
-            let mut files: Vec<String> = vec![];
-            let _ = file::scan(&serv_option.base_path, &mut files);
-            let files = serde_json::to_string(&files).unwrap_or(String::new());
-            return (String::from("200 OK"), vec![], None, Some(files.as_bytes().to_vec()));
-        },
-        _ => {
-            return (String::from("404 Not Found"), vec![], None, None);
-        }
+    if path.starts_with("/scan-dir") {
+        scan_movie_dir(serv_option);
+        return (String::from("200 OK"), vec![], None, None);
+    }
+    else if path.starts_with("/transcode-dir") {
+        transcode_movie_dir(path, serv_option);
+        return (String::from("200 OK"), vec![], None, None);
+    }
+    else if path.eq("/summary") {
+        let summary = serde_json::to_string(&summary::movies_summary(serv_option)).unwrap_or(String::new());
+        return (String::from("200 OK"), vec![], None, Some(summary.as_bytes().to_vec()));
+    }
+    else if path.eq("/all-files-path") {
+        let mut files: Vec<String> = vec![];
+        let _ = file::scan(&serv_option.base_path, &mut files);
+        let files = serde_json::to_string(&files).unwrap_or(String::new());
+        return (String::from("200 OK"), vec![], None, Some(files.as_bytes().to_vec()));
+    }
+    else {
+        return (String::from("404 Not Found"), vec![], None, None);
     }
 }
 
@@ -130,6 +132,7 @@ fn scan_movie_dir(serv_option: &MservOption) {
     let mut option = HashMap::new();
     option.insert(String::from("hide-preview"), String::new());
     option.insert(String::from("thread"), String::from("5"));
+    option.insert(String::from("provider"), serv_option.provider.clone());
 
     match serv_option.elastic.as_ref() {
         Some(elastic) => {
@@ -144,9 +147,34 @@ fn scan_movie_dir(serv_option: &MservOption) {
     thread::spawn(move || info.run());
 }
 
+fn transcode_movie_dir(path: &str, serv_option: &MservOption) {
+    let extension = ltrim_char(&path.replace("/transcode-dir", ""), '/');
+
+    let file_path = serv_option.base_path.to_string();
+    if file_path.is_empty() {
+        return;
+    }
+    let mut option = HashMap::new();
+    option.insert(String::from("d"), String::new());
+    option.insert(String::from("thread"), String::from("1"));
+    if !extension.is_empty() {
+        option.insert(String::from("extensions"), extension);
+    }
+
+    let transcode = Transcode {
+        file_path: file_path.to_string(),
+        cmd_options: option,
+    };
+    thread::spawn(move || transcode.run());    
+}
+
 fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    // serv_option.base_path;
-    let file_path = &get_file(&serv_option.base_path, file_path);
+    let extension = file::get_extension(&file_path);
+    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+        return (String::from("204 No Content"), vec![], None, None);
+    }
+
+    let file_path = &get_video_file(&serv_option.base_path, file_path);
     let file_size = file::file_size(&file_path).unwrap_or_default();
     let buffer: u64 = 1_500_000;
     
@@ -157,7 +185,7 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
     return (
         String::from("206 Partial Content"), 
         vec![
-            (String::from("Content-type"), format!("video/{}", file::get_extension(&file_path))),
+            (String::from("Content-type"), format!("video/{extension}")),
             (String::from("Accept-Ranges"), String::from("bytes")),
             (String::from("Content-Range"), format!("bytes {start_range}-{end_range}/{file_size}")),
             (String::from("Content-Length"), format!("{}", byte_count)),
@@ -172,7 +200,14 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
     let mut rng = rand::thread_rng();
     let at = rng.gen_range(0.05..=0.5);
 
-    let file_path = rtrim_char(&serv_option.base_path, '/') + file_path;
+    let file_path = match file::check_file(file_path) {
+        Ok(_) => file_path.to_string(),
+        _ => {
+            let base_path = rtrim_char(&serv_option.base_path, '/');
+            format!("{base_path}{file_path}")
+        }
+    };
+
     let cache_key = digest(&format!("{size}-{file_path}"));
     match cache::get_cache_bytes(&cache_key, ".thumb") {
         Some((_, content)) => return (
@@ -189,6 +224,11 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
             let cache_path = cache::get_cache_path(&cache_key, ".thumb");
             let content = if file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
                 movie::generate_thumb(&file_path, &cache_path, size, at)
+            } else if file::IMAGE_EXTENSIONS.contains(&extension.as_str()) {
+                match fs::read(&file_path) {
+                    Ok(content) => content,
+                    _ => b"".to_vec()
+                }
             } else {
                 // TODO other format (pdf, ms files...)
                 // TODO write cache
@@ -213,7 +253,7 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
 ///
 /// TODO: live re-encoding for other format than mp4 or ts
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
-fn get_file(base_path: &String, file_path: &String) -> String {
+fn get_video_file(base_path: &String, file_path: &String) -> String {
     let file_path = rtrim_char(base_path, '/') + file_path;
     if !file_path.ends_with(".mp4") {
         let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
