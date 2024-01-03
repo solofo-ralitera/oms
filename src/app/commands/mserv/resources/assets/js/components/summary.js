@@ -86,7 +86,12 @@ time {
         ${this.movie.title} (${this.movie.year})
     </h2>
     <div style="text-align:center;">
-        <img src="${this.movie.poster_url}" alt="${this.movie.title.escape_quote()}">
+        <img 
+            id="poster" 
+            data-attempt="0" 
+            data-filepath="${this.movie.file_path.escape_quote()}"
+            src="${this.movie.poster_url}" 
+            alt="${this.movie.title.escape_quote()}">
     </div>
     <section class="summary">
         <p>${this.movie.summary}</p>
@@ -137,6 +142,20 @@ time {
                 selBox.select();
                 document.execCommand('copy');
                 document.body.removeChild(selBox);
+            }
+        });
+        this.root.querySelector("#poster").addEventListener("error", e => {
+            let attempt = parseInt(e.target.getAttribute("data-attempt"));
+            if (isNaN(attempt)) attempt = 0;
+            if (attempt > 0) {
+                e.target.src = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
+            } else {
+                attempt++;
+                e.target.setAttribute("data-attempt", attempt);
+
+                const thumb = `/poster${e.target.getAttribute("data-filepath")}`;
+                this.movie.poster_url = thumb;
+                e.target.src = thumb;
             }
         });
         

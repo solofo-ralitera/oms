@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind};
+use std::{io::{Error, ErrorKind}, cmp::max};
 use crate::app::commands::OPTION_SEPARATOR;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -13,7 +13,7 @@ impl TranscodeOption {
     pub fn new() -> Self {
         TranscodeOption {
             extensions: vec![],
-            thread: 1,
+            thread: max(1, num_cpus::get() - 1),
             delete: false,
         }
     }

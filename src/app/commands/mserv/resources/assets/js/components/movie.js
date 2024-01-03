@@ -130,6 +130,14 @@ li.genre:hover, li.cast:hover {
 
     set movie(movie) {
         this._movie = movie;
+        if (this._movie) {
+            if (!this._movie?.thumb_url) {
+                this._movie.thumb_url = `/thumb${this._movie.file_path}`;
+            }
+            if (!this._movie?.poster_url) {
+                this._movie.poster_url = `/poster${this._movie.file_path}`;
+            }
+        }
         this.render();
     }
     
@@ -139,6 +147,8 @@ li.genre:hover, li.cast:hover {
                 return `<img 
                     src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
                     data-src="${this._movie.thumb_url}" 
+                    data-filepath="${this._movie.file_path.escape_quote()}" 
+                    data-attempt="0"
                     id="thumb"
                     loading="lazy"
                     alt="Poster of ${this._movie.title.escape_quote()}">`;
@@ -146,6 +156,8 @@ li.genre:hover, li.cast:hover {
             return `<img 
                 src="${this._movie.thumb_url}" 
                 data-src="${this._movie.thumb_url}" 
+                data-filepath="${this._movie.file_path.escape_quote()}" 
+                data-attempt="0"
                 id="thumb" 
                 loading="lazy"
                 alt="Poster of ${this._movie.title.escape_quote()}">`;
@@ -159,7 +171,7 @@ li.genre:hover, li.cast:hover {
             plays.forEach(play => play.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                eventBus.fire("play-movie", JSON.parse(JSON.stringify(this._movie)));
+                eventBus.fire("play-movie", this._movie);
             }));
         }, 250);
     }
@@ -221,22 +233,33 @@ li.genre:hover, li.cast:hover {
                 </div>
             </article>`;
 
-        this.root.querySelector("#card-title").addEventListener("click", (e) => {
+        this.root.querySelector("#card-title").addEventListener("click", () => {
             eventBus.fire("current-movie", {
-                movie: JSON.parse(JSON.stringify(this._movie))
+                movie: this._movie
             });
         });
-        this.root.querySelector(".card-body-bg").addEventListener("click", (e) => {
+        this.root.querySelector(".card-body-bg").addEventListener("click", () => {
             eventBus.fire("current-movie", {
-                movie: JSON.parse(JSON.stringify(this._movie))
+                movie: this._movie
             });
         });
 
-        this.root.querySelector("#thumb").addEventListener("error", (e) => {
-            this.root.querySelector(".card-body-content").innerHTML = this.renderSummary();
+        this.root.querySelector("#thumb").addEventListener("error", e => {
+            let attempt = parseInt(e.target.getAttribute("data-attempt"));
+            if (isNaN(attempt)) attempt = 0;
+            if (attempt > 1) {
+                this.root.querySelector(".card-body-content").innerHTML = this.renderSummary();
+            } else {
+                attempt++;
+                e.target.setAttribute("data-attempt", attempt);
+                const thumb = `/thumb${e.target.getAttribute("data-filepath")}`;
+                console.log(thumb);
+                this._movie.thumb_url = thumb;
+                e.target.src = thumb;
+            }
         });
 
-        this.root.querySelector(".card-body-content").addEventListener("click", (e) => {
+        this.root.querySelector(".card-body-content").addEventListener("click", () => {
             const content = this.root.querySelector(".card-body-content").innerHTML;
             this.root.querySelector(".card-body-content").innerHTML = content.includes("<img") ? this.renderSummary() : this.renderImage(false);
         });

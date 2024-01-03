@@ -85,14 +85,18 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
     thread_pool.execute(move || {
+        if extension.eq("mp4") {
+            return;
+        }
         match movie::to_mp4(&file_path, None) {
             Ok(dest_mp4) if dest_mp4.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Err(err) => {
                     println!("{}", err.to_string().on_red());
                 },
-                _ => {
-                    println!("File deleted {}", dest_mp4.unwrap_or(String::new()));
-                },
+                _ => (),
+            },
+            Ok(dest_mp4) if dest_mp4.is_none() => {
+                println!("{} already exists", file_path.blue());
             },
             Err(err) => {
                 println!("{}", err.to_string().on_red())

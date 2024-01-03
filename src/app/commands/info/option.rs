@@ -1,4 +1,4 @@
-use std::{io::{Error, ErrorKind}, fs};
+use std::{io::{Error, ErrorKind}, fs, cmp::max};
 use crate::helpers::{file, db::elastic::Elastic, rtrim_char};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -18,7 +18,7 @@ impl InfoOption {
             list: vec![],
             display_preview: true,
             elastic: None,
-            thread: 5,
+            thread: max(1, num_cpus::get() - 1),
         }
     }
 

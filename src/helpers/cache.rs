@@ -87,6 +87,15 @@ impl Cache {
         return None;
     }
     
+
+    pub fn get_cache_bytes(&self, key: &String, subdir: &str) -> Option<(String, Vec<u8>)> {
+        let cache_path = self.get_cache_path(key, subdir);
+        if let Ok(contents) = fs::read(&cache_path) {
+            return Some((cache_path, contents));
+        }
+        return None;
+    }
+
     pub fn write_cache_string(&self, key: &String, content: &String, subdir: &str) -> Option<String> {
         let cache_path = self.get_cache_path(key, subdir);
         if let Ok(_) = write_file_content(&Path::new(&cache_path), content,false) {
@@ -140,6 +149,12 @@ pub fn get_cache(key: &String, subdir: &str) -> Option<(String, String)> {
     }
 }
 
+pub fn get_cache_bytes(key: &String, subdir: &str) -> Option<(String, Vec<u8>)> {
+    unsafe {
+        return CACHE.get_cache_bytes(key, subdir);
+    }
+}
+
 pub fn get(key: &String) -> Option<String> {
     unsafe {
         return CACHE.kv_get(key);
@@ -149,6 +164,12 @@ pub fn get(key: &String) -> Option<String> {
 pub fn add(key: &String, value: &String) {
     unsafe {
         CACHE.kv_add(key, value);
+    }
+}
+
+pub fn get_cache_path(key: &String, subdir: &str) -> String {
+    unsafe {
+        return CACHE.get_cache_path(key, subdir);
     }
 }
 

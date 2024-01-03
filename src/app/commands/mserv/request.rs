@@ -1,11 +1,13 @@
 mod summary;
 
-use crate::{helpers::{file, rtrim_char, input::get_range_params, string}, app::commands::{info::Info, Runnable}};
+use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie}, app::commands::{info::Info, Runnable}};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use sha256::digest;
 use urlencoding::decode;
 use std::{cmp::min, thread, collections::HashMap};
 use super::option::MservOption;
+use rand::Rng;
 
 pub struct ProcessParam<'a> {
     pub path: &'a str,
@@ -84,6 +86,16 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
         let file_path = decode(path).unwrap_or_default().replace("/movie/", "/");
         return process_video(&file_path, &request_header, &serv_option);
     }
+    // Thumb files (width=300)
+    if path.starts_with("/thumb/") {
+        let file_path = decode(path).unwrap_or_default().replace("/thumb/", "/");
+        return process_thumb(&file_path, &serv_option, "300:-1");
+    }
+    // Poster files (no resize)
+    if path.starts_with("/poster/") {
+        let file_path = decode(path).unwrap_or_default().replace("/poster/", "/");
+        return process_thumb(&file_path, &serv_option, "-1:-1");
+    }    
     // Other processes
     return process_command(path, &request_header, &serv_option);
 }
@@ -145,7 +157,7 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
     return (
         String::from("206 Partial Content"), 
         vec![
-            (String::from("Content-type"), format!("video/{}", file::get_extension(&file_path))), // TODO: fix mime
+            (String::from("Content-type"), format!("video/{}", file::get_extension(&file_path))),
             (String::from("Accept-Ranges"), String::from("bytes")),
             (String::from("Content-Range"), format!("bytes {start_range}-{end_range}/{file_size}")),
             (String::from("Content-Length"), format!("{}", byte_count)),
@@ -153,6 +165,49 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
         None,
         Some(file::read_range(&file_path, start_range, byte_count).unwrap()),
     );
+}
+
+fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+    // Pick imag at random time of video
+    let mut rng = rand::thread_rng();
+    let at = rng.gen_range(0.05..=0.5);
+
+    let file_path = rtrim_char(&serv_option.base_path, '/') + file_path;
+    let cache_key = digest(&format!("{size}-{file_path}"));
+    match cache::get_cache_bytes(&cache_key, ".thumb") {
+        Some((_, content)) => return (
+            String::from("200 OK"), 
+            vec![
+                (String::from("Content-type"), String::from("image/jpeg")),
+                (String::from("Cache-Control"), String::from("public, max-age=31536000, s-maxage=31536000, immutable")),
+            ], 
+            None,
+            Some(content),
+        ),
+        None => {
+            let extension = file::get_extension(&file_path).to_lowercase();
+            let cache_path = cache::get_cache_path(&cache_key, ".thumb");
+            let content = if file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+                movie::generate_thumb(&file_path, &cache_path, size, at)
+            } else {
+                // TODO other format (pdf, ms files...)
+                // TODO write cache
+                b"".to_vec()
+            };
+            if content.is_empty() {
+                return (String::from("404 Not Found"), vec![], None, None);
+            }
+            return (
+                String::from("200 OK"), 
+                vec![
+                    (String::from("Content-type"), String::from("image/jpeg")),
+                    (String::from("Cache-Control"), String::from("public, max-age=31536000, s-maxage=31536000, immutable")),
+                ], 
+                None,
+                Some(content),
+            );
+        }
+    }
 }
 
 ///

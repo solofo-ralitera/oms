@@ -71,12 +71,6 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
 
 //  ffmpeg -i input.avi input.mp4
 pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<String>, io::Error> {
-    let extension = file::get_extension(file_path).to_lowercase();
-
-    if extension.eq("mp4") {
-        return Ok(None);
-    }
-
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
@@ -111,12 +105,35 @@ pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<S
 }
 
 pub fn movie_duration(file_path: &String) -> usize {
-    // ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=noprint_wrappers=1:nokey=1 input_file
     let mut cmd = Command::new("ffprobe");
     cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
 
     let output = command::exec(&mut cmd);
     return output.parse::<f64>().unwrap_or(0.).round() as usize;
+}
+
+/// size: in format width:height, e.g. 600:300, 300:-1 (-1 to keep ratio)
+/// at: pick image at x% of video duration, and resize to size
+pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32) -> Vec<u8> {
+    // Format duration (s) to hh:mm:ss, :0>2 to keep the leading 0
+    let duration = (movie_duration(src_path) as f32 * at).round() as usize;
+    let duration = format!("{:0>2}:{:0>2}:{:0>2}", (duration / 60) / 60, (duration / 60) % 60, duration % 60);
+    
+    // ffmpeg need extenstion in output
+    let dest_with_extension = format!("{dest_path}.jpeg");
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-ss", &duration, "-i", src_path, "-vf", &format!("scale={size}"), "-frames:v", "1", &dest_with_extension]);
+
+    command::exec(&mut cmd);
+
+    return match fs::read(&dest_with_extension) {
+        Ok(content) => {
+            // Remove output extension in final cache file
+            let _ = fs::rename(dest_with_extension, dest_path);
+            content
+        },
+        Err(_) => b"".to_vec(),
+    };
 }
 
 
@@ -220,6 +237,7 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         )),
     }
 }
+
 
 #[cfg(test)]
 mod test {

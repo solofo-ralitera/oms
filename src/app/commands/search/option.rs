@@ -22,7 +22,7 @@ impl SearchOption {
         SearchOption {
             search_term: search_term,
             display: String::from("all"),
-            thread: 1,
+            thread: max(1, num_cpus::get() - 1),
             extensions: vec![],
             exclude_extensions: vec![],
             files: vec![],
