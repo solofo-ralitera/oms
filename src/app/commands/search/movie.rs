@@ -22,7 +22,13 @@ impl<'a> MovieSearch<'a> {
             found.push(("File".to_string(), file_name.clone()));
         }
 
-        let movies = movie::get_movie_result(&file::get_file_name(&self.file_path), &self.file_path, &String::new()).unwrap_or(vec![]);
+        let movies = movie::get_movie_result(
+            &file::get_file_name(
+                &self.file_path), 
+                &self.file_path,
+                &String::new(),
+                &String::from("api")
+            ).unwrap_or(vec![]);
         if movies.len() == 0 {
             return;
         }

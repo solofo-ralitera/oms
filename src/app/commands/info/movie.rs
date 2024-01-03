@@ -19,7 +19,7 @@ pub struct MovieInfo<'a> {
 
 impl<'a> MovieInfo<'a> {
     pub fn info(&self, tx: Sender<String>) {
-        match movie::get_movie_result(&self.movie_raw_name, &self.file_path, &self.info_option.base_path) {
+        match movie::get_movie_result(&self.movie_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
             Ok(mut movies) => {
                 save_elastic(&mut movies, &self.info_option.elastic);
                 for movie in movies {

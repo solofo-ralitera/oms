@@ -83,7 +83,7 @@ time {
     <h2 class="title">
         <button class="play" role="button">▶</button>
         &nbsp;&nbsp;
-        ${this.movie.title} (${this.movie.year})
+        ${this.movie.title} ${this.movie.year ? `(${this.movie.year})` : ''}
     </h2>
     <div style="text-align:center;">
         <img 

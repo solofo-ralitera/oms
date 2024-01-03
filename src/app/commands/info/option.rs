@@ -9,6 +9,7 @@ pub struct InfoOption {
     pub display_preview: bool,
     pub elastic: Option<Elastic>,
     pub thread: usize,
+    pub provider: String,
 }
 
 impl InfoOption {
@@ -19,6 +20,20 @@ impl InfoOption {
             display_preview: true,
             elastic: None,
             thread: max(1, num_cpus::get() - 1),
+            provider: String::from("api"),
+        }
+    }
+
+    pub fn set_provider(&mut self, value: &str) -> Result<()> {
+        match value {
+            "local" | "api" => {
+                self.provider = value.to_string();
+                Ok(())
+            },
+            _ => Err(Error::new(
+                ErrorKind::NotFound, 
+                format!("Unknown value for provider")
+            ))
         }
     }
 
@@ -47,7 +62,7 @@ impl InfoOption {
         }
         return Err(Error::new(
             ErrorKind::NotFound, 
-            format!("Unknown value for provider")
+            format!("Unknown value for list")
         ));
     }
 
@@ -78,6 +93,7 @@ impl Clone for InfoOption {
             display_preview: self.display_preview.clone(),
             elastic: self.elastic.clone(),
             thread: self.thread,
+            provider: self.provider.clone(),
         }
     }
 }

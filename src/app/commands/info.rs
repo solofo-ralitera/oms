@@ -61,6 +61,7 @@ impl Runnable for Info {
         info_option.set_basepath(&file_path)?;
         for (option, value) in &self.cmd_options {
             match option.as_str() {
+                "p" | "provider" => info_option.set_provider(value)?,
                 "hide-preview" => info_option.hide_preview(),
                 "elastic-dsn" => info_option.set_elastic(value)?,
                 "t" | "thread" => info_option.set_thread(value)?,
@@ -160,9 +161,10 @@ fn file_info_from_list(info_option: &InfoOption, thread_pool: &ThreadPool, tx: S
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
-info [file_path/dir_path]
+info [OPTIONS] <file_path/dir_path>
     Display/get file informations
     --help
+    -p string --provider=<string>   possible value: local, api (default)
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server
     --hide-preview=<bool>   Mute display

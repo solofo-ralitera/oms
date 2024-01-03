@@ -1,5 +1,6 @@
 pub mod tmdb;
 pub mod omdb;
+pub mod local;
 
 use core::fmt;
 use std::{ops::Deref, process::Command, io, fs};
@@ -9,7 +10,7 @@ use regex::Regex;
 use sha256::digest;
 use serde::{Deserialize, Serialize};
 
-use self::{tmdb::TMDb, omdb::OMDb};
+use self::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}};
 
 use super::{cache, string::text_contains, file, command};
 
@@ -193,10 +194,9 @@ impl MovieResult {
     }
 }
 
-pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String) -> Result<Vec<MovieResult>, io::Error> {
+pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String, provider: &String) -> Result<Vec<MovieResult>, io::Error> {
     let movie_title = format_title(raw_title);
     let movie_hash = digest(movie_title.normalized());
-
 
     // Check cache
     if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
@@ -208,12 +208,25 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
     }
 
     // Find first in tmdb, if not found switch to omdb, otherwise fall in error
-    let movies = if let Ok(result) = TMDb::info(&movie_title) {
-        Some(result)
-    } else if let Ok(result) = OMDb::info(&movie_title) {
-        Some(result)
-    } else {
-        None
+    let movies = match provider.as_str() {
+        "api" => if let Ok(result) = TMDb::info(&movie_title) {
+            Some(result)
+        } else if let Ok(result) = OMDb::info(&movie_title) {
+            Some(result)
+        } else {
+            None
+        },
+        "local" => if let Ok(result) = Local::info(LocalParam {
+            movie_title: &movie_title,
+            raw_title: raw_title,
+            file_path: file_path,
+            base_path: base_path,
+        }) {
+            Some(result)
+        } else {
+            None
+        },
+        _ => None,
     };
 
     let file_time = file::get_creation_time(file_path);

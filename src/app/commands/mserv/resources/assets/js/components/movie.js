@@ -223,7 +223,7 @@ li.genre:hover, li.cast:hover {
                         <button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>
                         ${this._movie.title}
                     </span>
-                    <span class="info" aria-label="Year ${this._movie.year?.escape_quote()}">(${this._movie.year})</span>
+                    <span class="info" aria-label="Year ${this._movie.year?.escape_quote()}">${this._movie.year ? `(${this._movie.year})` : ''}</span>
                 </header>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
