@@ -130,6 +130,7 @@ mserv --elastic-dsn=<string> --url=<string>  --cache-path=<string> --base-path=<
         - Transocde your video files into a streamable format (like H.264)
         - Elsastic search for indexing
         - [Optional] ffmpeg and ffprobe, for video duration
+        - [Optional] imagick, for pdf and image thumbnail
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --elastic-dsn=<string>  Elastic search server

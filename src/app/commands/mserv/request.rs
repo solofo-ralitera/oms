@@ -1,6 +1,6 @@
 mod summary;
 
-use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
+use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie, pdf, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use sha256::digest;
@@ -95,7 +95,12 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
     if path.starts_with("/poster/") {
         let file_path = decode(path).unwrap_or_default().replace("/poster/", "/");
         return process_thumb(&file_path, &serv_option, "-1:-1");
-    }    
+    }
+    // open/download files
+    if path.starts_with("/open/") {
+        let file_path = decode(path).unwrap_or_default().replace("/open/", "/");
+        return open_file(&file_path, &serv_option);
+    }
     // Other processes
     return process_command(path, &request_header, &serv_option);
 }
@@ -195,11 +200,35 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
     );
 }
 
-fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    // Pick imag at random time of video
-    let mut rng = rand::thread_rng();
-    let at = rng.gen_range(0.05..=0.5);
+fn open_file(file_path: &String, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+    let file_path = match file::check_file(file_path) {
+        Ok(_) => file_path.to_string(),
+        _ => {
+            let base_path = rtrim_char(&serv_option.base_path, '/');
+            format!("{base_path}{file_path}")
+        }
+    };
+    println!("{file_path}");
 
+    let content = match fs::read(&file_path) {
+        Ok(content) => content,
+        _ => b"".to_vec()
+    };
+    if content.is_empty() {
+        return (String::from("404 Not Found"), vec![], None, None);
+    }
+    return (
+        String::from("200 OK"), 
+        vec![
+            (String::from("Content-type"), file::get_mimetype(&file_path)),
+        ], 
+        None,
+        Some(content),
+    );
+}
+
+/// size: in format width:height, e.g. 600:300, 300:-1 (-1 to keep ratio)
+fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let file_path = match file::check_file(file_path) {
         Ok(_) => file_path.to_string(),
         _ => {
@@ -223,14 +252,19 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
             let extension = file::get_extension(&file_path).to_lowercase();
             let cache_path = cache::get_cache_path(&cache_key, ".thumb");
             let content = if file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+                // Pick image at random time of video
+                let mut rng = rand::thread_rng();
+                let at = rng.gen_range(0.05..=0.5);
                 movie::generate_thumb(&file_path, &cache_path, size, at)
             } else if file::IMAGE_EXTENSIONS.contains(&extension.as_str()) {
                 match fs::read(&file_path) {
                     Ok(content) => content,
                     _ => b"".to_vec()
                 }
+            } else if file::PDF_EXTENSIONS.contains(&extension.as_str()) {
+                pdf::generate_thumb(&file_path, &cache_path, size)
             } else {
-                // TODO other format (pdf, ms files...)
+                // TODO other format (ms files...)
                 // TODO write cache
                 b"".to_vec()
             };

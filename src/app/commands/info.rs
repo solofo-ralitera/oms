@@ -134,7 +134,10 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
         let extension = extension.as_str();
         
         if file::PDF_EXTENSIONS.contains(&extension) {
-            PdfInfo { file_path: &file_path}.info(tx);
+            PdfInfo {
+                file_path: &file_path,
+                info_option: &info_option,
+            }.info(tx);
         }
         else if file::IMAGE_EXTENSIONS.contains(&extension) {
             ImageInfo {

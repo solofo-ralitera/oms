@@ -3,6 +3,7 @@ pub mod text;
 pub mod pdf;
 pub mod ms;
 pub mod movie;
+pub mod image;
 
 
 use std::collections::HashMap;
@@ -12,6 +13,7 @@ use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::cmp;
 
+use self::image::ImageSearch;
 use self::movie::MovieSearch;
 
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
@@ -176,6 +178,13 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
         }
         else if file::MS_EXTENSIONS.contains(&extension) {
             MsSearch { 
+                file_path: &file_path, 
+                search_term: &search_term, 
+                search_option: &search_option,
+            }.search(tx);
+        }
+        else if file::IMAGE_EXTENSIONS.contains(&extension) {
+            ImageSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,

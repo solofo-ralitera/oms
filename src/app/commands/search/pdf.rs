@@ -1,9 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use super::{format_file_display, format_line_found, SearchOption, text_reg_contains};
-use crate::helpers::pdf::PdfInfo;
-use crate::helpers::file::get_file_name;
-use crate::helpers::string::text_contains;
+use crate::helpers::pdf::{PdfInfo, get_pdf_result};
 
 
 ///
@@ -28,29 +26,17 @@ impl<'a> PdfSearch<'a> {
     pub fn search(&self, tx: Sender<String>) {
         let mut result = String::new();
         let mut found: Vec<(String, String)> = vec![];
-        let file_name = get_file_name(&self.file_path).to_lowercase();
 
-        if text_contains(&file_name, &self.search_term) {
-            found.push(("File".to_string(), file_name.clone()));
+        if let Ok(pdf) = get_pdf_result(&String::new(), self.file_path) {
+            let search_results = pdf.search(self.search_term);
+            if search_results.len() > 0 {
+                search_results.iter().for_each(|(item, text)| {
+                    found.push((item.to_string(), text.to_string()));
+                });
+            }
         }
 
         if let Ok(pdf_info) = PdfInfo::read(&self.file_path) {
-            if text_contains(&pdf_info.title, &self.search_term) {
-                found.push(("Title".to_string(), pdf_info.title));
-            }
-            if text_contains(&pdf_info.author, &self.search_term) {
-                found.push(("Author".to_string(), pdf_info.author));
-            }
-            if text_contains(&pdf_info.creator, &self.search_term) {
-                found.push(("Creator".to_string(), pdf_info.creator));
-            }
-            if text_contains(&pdf_info.keywords, &self.search_term) {
-                found.push(("Keywords".to_string(), pdf_info.keywords));
-            }
-            if text_contains(&pdf_info.subject, &self.search_term) {
-                found.push(("Subject".to_string(), pdf_info.subject));
-            }
-
             for (page, content) in pdf_info.content.enumerate() {
                 if self.skip_file(&found) {
                     break;

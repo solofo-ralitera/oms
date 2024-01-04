@@ -182,6 +182,8 @@ li.genre:hover, li.cast:hover {
                     window.open(`/poster${this._movie.file_path}`);
                 } else if (this._movie.file_type === "movie") {
                     eventBus.fire("play-movie", this._movie);
+                } else {
+                    window.open(`/open${this._movie.file_path}`);
                 }
             }));
         }, 250);
@@ -224,6 +226,8 @@ li.genre:hover, li.cast:hover {
     renderPlay() {
         if (this._movie?.file_type === "image") {
             return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">🖼</button>`;
+        } else if (this._movie?.file_type === "pdf") {
+            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">&#128462;</button>`;
         } else if (this._movie?.file_type === "movie") {
             return `<button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>`;
         } else {

@@ -78,6 +78,8 @@ time {
             return `<button class="play" role="button">🖼</button>`;
         } else if (this.movie?.file_type === "movie") {
             return `<button class="play" role="button">▶</button>`;
+        } else if (this.movie?.file_type === "pdf") {
+            return `<button class="play" role="button">&#128462;</button>`;
         } else {
             return '';
         }
@@ -126,6 +128,8 @@ time {
                 window.open(`/poster${this.movie.file_path}`);
             } else if (this.movie.file_type === "movie") {
                 eventBus.fire("play-movie", this.movie);
+            } else {
+                window.open(`/open${this.movie.file_path}`);
             }
         });
         this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
