@@ -38,6 +38,7 @@ h2,h3,h4 {
     opacity: 0.75;
     z-index: 2;
     padding: 0.5em;
+    overflow: hidden;
 }
 .card .card-body {
     position: relative;
@@ -177,7 +178,11 @@ li.genre:hover, li.cast:hover {
             plays.forEach(play => play.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                eventBus.fire("play-movie", this._movie);
+                if (this._movie.file_type === "image") {
+                    window.open(`/poster${this._movie.file_path}`);
+                } else if (this._movie.file_type === "movie") {
+                    eventBus.fire("play-movie", this._movie);
+                }
             }));
         }, 250);
     }
@@ -216,6 +221,29 @@ li.genre:hover, li.cast:hover {
         </article>`;
     }
 
+    renderPlay() {
+        if (this._movie?.file_type === "image") {
+            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">🖼</button>`;
+        } else if (this._movie?.file_type === "movie") {
+            return `<button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>`;
+        } else {
+            return '';
+        }
+    }
+
+    fireCurrent() {
+        eventBus.fire("current-movie", { movie: this._movie });
+    }
+
+    displayContent() {
+        if (!this._movie.summary || this._movie.summary.length < 5) {
+            this.fireCurrent();
+        } else {
+            const content = this.root.querySelector(".card-body-content").innerHTML;
+            this.root.querySelector(".card-body-content").innerHTML = content.includes("<img") ? this.renderSummary() : this.renderImage(false);
+        }
+    }
+
     async render() {
         if (!this._movie) {
             this.root.innerHTML = '';
@@ -226,7 +254,7 @@ li.genre:hover, li.cast:hover {
             <article class="card" id="card">
                 <header id="card-title">
                     <span>
-                        <button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>
+                        ${this.renderPlay()}
                         ${this._movie.title}
                     </span>
                     <span class="info" aria-label="Year ${this._movie.year?.escape_quote()}">${this._movie.year ? `(${this._movie.year})` : ''}</span>
@@ -240,14 +268,10 @@ li.genre:hover, li.cast:hover {
             </article>`;
 
         this.root.querySelector("#card-title").addEventListener("click", () => {
-            eventBus.fire("current-movie", {
-                movie: this._movie
-            });
+            this.fireCurrent();
         });
         this.root.querySelector(".card-body-bg").addEventListener("click", () => {
-            eventBus.fire("current-movie", {
-                movie: this._movie
-            });
+            this.fireCurrent();
         });
 
         this.root.querySelector("#thumb").addEventListener("error", e => {
@@ -266,8 +290,7 @@ li.genre:hover, li.cast:hover {
         });
 
         this.root.querySelector(".card-body-content").addEventListener("click", () => {
-            const content = this.root.querySelector(".card-body-content").innerHTML;
-            this.root.querySelector(".card-body-content").innerHTML = content.includes("<img") ? this.renderSummary() : this.renderImage(false);
+            this.displayContent();
         });
         this.playEvent();
 

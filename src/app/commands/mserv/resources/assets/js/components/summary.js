@@ -73,6 +73,16 @@ time {
         this.render();
     }
 
+    renderPlay() {
+        if (this.movie?.file_type === "image") {
+            return `<button class="play" role="button">🖼</button>`;
+        } else if (this.movie?.file_type === "movie") {
+            return `<button class="play" role="button">▶</button>`;
+        } else {
+            return '';
+        }
+    }
+
     render() {
         if (!this.movie) {
             this.root.innerHTML = '';
@@ -81,7 +91,7 @@ time {
         this.root.innerHTML = `${this.css}
 <article>
     <h2 class="title">
-        <button class="play" role="button">▶</button>
+        ${this.renderPlay()}
         &nbsp;&nbsp;
         ${this.movie.title} ${this.movie.year ? `(${this.movie.year})` : ''}
     </h2>
@@ -112,7 +122,11 @@ time {
             this.close();
         });
         this.root.querySelector(".play")?.addEventListener("click", () => {
-            eventBus.fire("play-movie", JSON.parse(JSON.stringify(this.movie)));
+            if (this.movie.file_type === "image") {
+                window.open(`/poster${this.movie.file_path}`);
+            } else if (this.movie.file_type === "movie") {
+                eventBus.fire("play-movie", this.movie);
+            }
         });
         this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {

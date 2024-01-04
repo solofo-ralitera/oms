@@ -9,9 +9,7 @@ use colored::Colorize;
 use regex::Regex;
 use sha256::digest;
 use serde::{Deserialize, Serialize};
-
 use self::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}};
-
 use super::{cache, string::text_contains, file, command};
 
 
