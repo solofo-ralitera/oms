@@ -4,7 +4,7 @@ use std::env;
 use std::io::{Error, ErrorKind};
 use crate::helpers::http::{self, get_image};
 use self::movie::OMDbMovie;
-use super::{MovieTitle, MovieResult};
+use super::{VideoTitle, VideoResult};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
@@ -30,7 +30,7 @@ impl OMDb {
         Ok(access_token)
     }
     
-    pub fn info(movie: &MovieTitle) -> Result<Vec<MovieResult>> {
+    pub fn info(movie: &VideoTitle) -> Result<Vec<VideoResult>> {
         let access_token = Self::get_token()?;
 
         let request_url = format!("https://www.omdbapi.com/");
@@ -46,7 +46,7 @@ impl OMDb {
         }
 
         match http::get::<OMDbMovie>(&request_url, vec![], params, true) {
-            Ok(result) => return Ok(Self::to_movie_result(&result)),
+            Ok(result) => return Ok(Self::to_video_result(&result)),
             Err(err) => return Err(Error::new(
                 ErrorKind::InvalidData, 
                 format!("Unable to get information from OMDb: {err}")
@@ -54,9 +54,9 @@ impl OMDb {
         }
     }
 
-    pub fn to_movie_result(movie: &OMDbMovie) -> Vec<MovieResult> {
+    pub fn to_video_result(movie: &OMDbMovie) -> Vec<VideoResult> {
         let mut results = vec![];
-        results.push(MovieResult {
+        results.push(VideoResult {
             title: movie.Title.clone(),
             summary: movie.Plot.clone(),
             year: movie.Year.trim().get(0..=3).unwrap_or("").to_string(),

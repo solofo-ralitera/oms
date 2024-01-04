@@ -1,9 +1,9 @@
-use super::{MovieTitle, MovieResult};
+use super::{VideoTitle, VideoResult};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
 pub struct LocalParam<'a> {
-    pub movie_title: &'a MovieTitle,
+    pub video_title: &'a VideoTitle,
     pub raw_title: &'a String,
     pub file_path: &'a String,
     pub base_path: &'a String,
@@ -12,13 +12,13 @@ pub struct Local {
 }
 
 impl Local {
-    pub fn info(movie_param: LocalParam) -> Result<Vec<MovieResult>> {
+    pub fn info(video_param: LocalParam) -> Result<Vec<VideoResult>> {
         let mut result = vec![] ;
         
-        result.push(MovieResult {
-            title: movie_param.movie_title.title.clone(),
-            summary: sumarize(&movie_param),
-            year: movie_param.movie_title.year.clone(),
+        result.push(VideoResult {
+            title: video_param.video_title.title.clone(),
+            summary: sumarize(&video_param),
+            year: video_param.video_title.year.clone(),
             casts: vec![],
             genres: vec![],
             thumb_url: String::new(),
@@ -32,7 +32,7 @@ impl Local {
 
 
             file_path: String::new(),
-            file_type: String::from("movie"),
+            file_type: String::from("video"),
             hash: String::new(),
             modification_time: 0,
             duration: 0,
@@ -42,12 +42,12 @@ impl Local {
     }
 }
 
-fn sumarize(movie_param: &LocalParam) -> String {
+fn sumarize(video_param: &LocalParam) -> String {
     return format!(
         "{} {} {} {}", 
-        movie_param.movie_title.title, 
-        movie_param.movie_title.year,
-        movie_param.raw_title,
-        movie_param.file_path,
+        video_param.video_title.title, 
+        video_param.video_title.year,
+        video_param.raw_title,
+        video_param.file_path,
     );
 }

@@ -226,9 +226,11 @@ li.genre:hover, li.cast:hover {
         if (this._movie?.file_type === "image") {
             return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">🖼</button>`;
         } else if (this._movie?.file_type === "pdf") {
-            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">&#128462;</button>`;
+            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">pdf</button>`;
         } else if (this._movie?.file_type === "movie") {
             return `<button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>`;
+        } else if (this._movie?.file_type === "audio") {
+            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">♫</button>`;
         } else {
             return '';
         }

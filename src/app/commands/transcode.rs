@@ -1,7 +1,7 @@
 mod option;
 
 use std::{collections::HashMap, fs, io, path::Path, sync::{Arc, Mutex}};
-use crate::helpers::{file::{get_extension, self}, threadpool::ThreadPool, movie};
+use crate::helpers::{file::{get_extension, self}, threadpool::ThreadPool, video};
 use colored::Colorize;
 use self::option::TranscodeOption;
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
@@ -110,7 +110,7 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
         if extension.eq("mp4") {
             return;
         }
-        match movie::to_mp4(&file_path, None) {
+        match video::to_mp4(&file_path, None) {
             Ok(dest_mp4) if dest_mp4.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Err(err) => {
                     println!("{}", err.to_string().on_red());

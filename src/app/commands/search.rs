@@ -2,8 +2,9 @@ pub mod option;
 pub mod text;
 pub mod pdf;
 pub mod ms;
-pub mod movie;
+pub mod video;
 pub mod image;
+pub mod audio;
 
 
 use std::collections::HashMap;
@@ -13,8 +14,9 @@ use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::cmp;
 
+use self::audio::AudioSearch;
 use self::image::ImageSearch;
-use self::movie::MovieSearch;
+use self::video::VideoSearch;
 
 use super::{get_args_parameter, Runnable, OPTION_SEPARATOR};
 use crate::helpers::output::colorize;
@@ -48,7 +50,7 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 ///         * [x] docx
 ///         * [x] xlsx
 ///         * [x] pptx
-///     * [x] Search in movie
+///     * [x] Search in video
 /// * [x] Search in directory
 /// * [o] Search arguments
 ///     * [x] extensions
@@ -79,6 +81,7 @@ impl Runnable for Search {
 
         for (option, value) in &self.cmd_options {
             match option.as_str() {
+                "p" | "provider" => search_option.set_provider(value)?,
                 "display" => search_option.set_display(value)?,
                 "t" | "thread" => search_option.set_thread(value)?,
                 "e" | "extensions" => search_option.extensions_from(value)?,
@@ -170,7 +173,14 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
             }.search(tx);
         }
         else if file::VIDEO_EXTENSIONS.contains(&extension) {
-            MovieSearch {
+            VideoSearch {
+                file_path: &file_path, 
+                search_term: &search_term, 
+                search_option: &search_option,
+            }.search(tx);
+        }
+        else if file::AUDIO_EXTENSIONS.contains(&extension) {
+            AudioSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
@@ -237,6 +247,7 @@ pub fn usage() -> String {
 search [options] <file_path|directory_path> <query>
     Search in file or directory. Display each line of the file containing the query text
     --help    
+    -p <string> --provider=<string>   possible value: local, api (default), use for external information provider
     -e <string> --extensions=<string>    Search only in these file extensions, separated by '{OPTION_SEPARATOR}'
     --exclude-extensions=<string>    exlude these file extensions, separated by '{OPTION_SEPARATOR}'
     -f <> --files=<string>  Search only in these file names

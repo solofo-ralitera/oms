@@ -15,6 +15,7 @@ pub struct SearchOption {
 
     pub files: Vec<String>,
     pub exclude_files: Vec<String>,
+    pub provider: String,
 }
 
 impl SearchOption {
@@ -27,6 +28,20 @@ impl SearchOption {
             exclude_extensions: vec![],
             files: vec![],
             exclude_files: vec![],
+            provider: String::from("api"),
+        }
+    }
+    
+    pub fn set_provider(&mut self, value: &str) -> Result<()> {
+        match value {
+            "local" | "api" => {
+                self.provider = value.to_string();
+                Ok(())
+            },
+            _ => Err(Error::new(
+                ErrorKind::NotFound, 
+                format!("Unknown value for provider")
+            ))
         }
     }
 
@@ -124,6 +139,7 @@ impl Clone for SearchOption {
             exclude_extensions: self.exclude_extensions.clone(),
             files: self.files.clone(),
             exclude_files: self.exclude_files.clone(),
+            provider: self.provider.clone(),
         }
     }
 }

@@ -16,14 +16,14 @@ use super::{cache, string::text_contains, file, command, rtrim_char};
 ///
 /// cargo run -- info --cache-path="/media/solofo/MEDIA/.oms" "/media/solofo/MEDIA/films/"
 /// 
-pub struct MovieTitle {
+pub struct VideoTitle {
     pub title: String,
     pub year: String,
     pub language: String,
     pub adult: bool,
 }
 
-impl MovieTitle {
+impl VideoTitle {
     pub fn normalized(&self) -> String {
         let mut res = String::new();
         res.push_str(&self.title);
@@ -44,12 +44,12 @@ fn format_title_remove_point(title: &str) -> String {
     return title.trim().to_string();
 }
 
-pub fn format_title(raw_title: &String) -> MovieTitle {
+pub fn format_title(raw_title: &String) -> VideoTitle {
     let re_year = Regex::new(r"^(.{1,})[\.\(]([0-9]{4})(.{0,})").unwrap();
     if let Some((_, [title, year, _])) = re_year.captures(&raw_title).map(|c| c.extract()) {
         let title = format_title_remove_point(title);
 
-        return MovieTitle { 
+        return VideoTitle { 
             title: title, 
             year: year.to_string(),
             language: "en-US".to_string().clone(),
@@ -60,7 +60,7 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
     let title: String = remove_extension(raw_title);
     let title = format_title_remove_point(&title);
 
-    return MovieTitle { 
+    return VideoTitle { 
         title: title, 
         year: String::new(),
         language: String::new(),
@@ -103,7 +103,7 @@ pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<S
     };
 }
 
-pub fn movie_duration(file_path: &String) -> usize {
+pub fn video_duration(file_path: &String) -> usize {
     let mut cmd = Command::new("ffprobe");
     cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
 
@@ -134,7 +134,7 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32
     let src_path = get_video_file(&String::new(), src_path);
 
     // Format duration (s) to hh:mm:ss, :0>2 to keep the leading 0
-    let duration = (movie_duration(&src_path) as f32 * at).round() as usize;
+    let duration = (video_duration(&src_path) as f32 * at).round() as usize;
     let duration = format!("{:0>2}:{:0>2}:{:0>2}", (duration / 60) / 60, (duration / 60) % 60, duration % 60);
 
     // ffmpeg need extenstion in output
@@ -158,7 +158,7 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32
 
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct MovieResult {
+pub struct VideoResult {
     pub title: String,
     pub summary: String,
     pub year: String,
@@ -179,7 +179,7 @@ pub struct MovieResult {
     pub duration: usize,
 }
 
-impl fmt::Display for MovieResult {
+impl fmt::Display for VideoResult {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut str = String::new();
         str.push_str(&format!("Title: {} ({})\n\n", self.title.bold(), self.year));
@@ -194,7 +194,7 @@ impl fmt::Display for MovieResult {
     }
 }
 
-impl MovieResult {
+impl VideoResult {
     pub fn search(&self, term: &String) -> Vec<(&str, String)> {
         let mut result = vec![];
         if text_contains(&self.title, term) {
@@ -213,13 +213,13 @@ impl MovieResult {
     }
 }
 
-pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &String, provider: &String) -> Result<Vec<MovieResult>, io::Error> {
-    let movie_title = format_title(raw_title);
-    let movie_hash = digest(movie_title.normalized());
+pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &String, provider: &String) -> Result<Vec<VideoResult>, io::Error> {
+    let video_title = format_title(raw_title);
+    let video_hash = digest(video_title.normalized());
 
     // Fist check if result is in cache
-    let mut movies = if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
-        match serde_json::from_str::<Vec<MovieResult>>(&content) {
+    let mut videos = if let Some((_, content)) = cache::get_cache(&video_hash, ".video") {
+        match serde_json::from_str::<Vec<VideoResult>>(&content) {
             Ok(result) if result.len() > 0 => {
                 Some(result)
             },
@@ -230,11 +230,11 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
     };
 
     // Then search in tmdb, if not found switch to omdb
-    if movies.is_none() {
-        movies = match provider.as_str() {
-            "api" => if let Ok(result) = TMDb::info(&movie_title) {
+    if videos.is_none() {
+        videos = match provider.as_str() {
+            "api" => if let Ok(result) = TMDb::info(&video_title) {
                 Some(result)
-            } else if let Ok(result) = OMDb::info(&movie_title) {
+            } else if let Ok(result) = OMDb::info(&video_title) {
                 Some(result)
             } else {
                 print!("Unable to find information about the video: {}, fallback to local provider\n\n", file_path.on_red());
@@ -245,9 +245,9 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
     }
 
     // Lastly, fill result with local data
-    if movies.is_none() {
-        movies = if let Ok(result) = Local::info(LocalParam {
-            movie_title: &movie_title,
+    if videos.is_none() {
+        videos = if let Ok(result) = Local::info(LocalParam {
+            video_title: &video_title,
             raw_title: raw_title,
             file_path: file_path,
             base_path: base_path,
@@ -258,25 +258,25 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         }
     }
 
-    if movies.is_none() {
+    if videos.is_none() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput, 
-            format!("Unable to find information about the movie: {}", file_path.on_red())
+            format!("Unable to find information about the video: {}", file_path.on_red())
         ));
     }
 
     let file_time = file::get_creation_time(file_path);
-    let file_duration = movie_duration(&file_path);
+    let file_duration = video_duration(&file_path);
 
-    let mut result = movies.unwrap();
-    for movie in &mut result {
-        movie.file_path = file_path.replace(base_path, "");
-        movie.hash = movie_hash.clone();
-        movie.modification_time = file_time;
-        movie.duration = file_duration;
+    let mut result = videos.unwrap();
+    for video in &mut result {
+        video.file_path = file_path.replace(base_path, "");
+        video.hash = video_hash.clone();
+        video.modification_time = file_time;
+        video.duration = file_duration;
     }
     if !base_path.is_empty() {
-        cache::write_cache_json(&movie_hash, &result, ".movie");
+        cache::write_cache_json(&video_hash, &result, ".video");
     }
     return Ok(result);
 }

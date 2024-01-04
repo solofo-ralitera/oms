@@ -29,6 +29,8 @@ export const app = new class {
             window.open(`/poster${item.file_path}`);
         } else if (item?.file_type === "movie") {
             eventBus.fire("play-movie", item);
+        } else if (item?.file_type === "audio") {
+            eventBus.fire("play-audio", item);
         } else {
             window.open(`/open${item.file_path}`);
         }        

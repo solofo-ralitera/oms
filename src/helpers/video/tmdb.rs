@@ -5,7 +5,7 @@ mod cast;
 use std::env;
 use std::io::{Error, ErrorKind};
 use crate::helpers::http::{self, get_image};
-use super::{MovieTitle, MovieResult};
+use super::{VideoTitle, VideoResult};
 use movie::TMDbMovie;
 use genre::TMDbGenre;
 use cast::TMDbCast;
@@ -43,7 +43,7 @@ impl TMDb {
         Ok(access_token)
     }
     
-    pub fn info(param: &MovieTitle) -> Result<Vec<MovieResult>> {
+    pub fn info(param: &VideoTitle) -> Result<Vec<VideoResult>> {
         let access_token = Self::get_token()?;
 
         let request_url = format!("https://api.themoviedb.org/3/search/movie");
@@ -71,7 +71,7 @@ impl TMDb {
 
         if let Ok(result) = http::get::<TMDbMovie>(&request_url, headers, params, true) {
             if result.results.len() > 0 {
-                return Ok(Self::to_movie_result(&result));
+                return Ok(Self::to_video_result(&result));
             }
         }
         return Err(Error::new(
@@ -80,7 +80,7 @@ impl TMDb {
         ));        
     }
 
-    pub fn to_movie_result(movies: &TMDbMovie) -> Vec<MovieResult> {
+    pub fn to_video_result(movies: &TMDbMovie) -> Vec<VideoResult> {
         let access_token = Self::get_token().unwrap_or_default();
         let genres = TMDbGenre::genres(&access_token).unwrap();
 
@@ -103,7 +103,7 @@ impl TMDb {
             let thumb_url = format!("https://image.tmdb.org/t/p/w300{}", item.backdrop_path);
             let thumb_path = get_image(&thumb_url).unwrap_or_default();
 
-            results.push(MovieResult {
+            results.push(VideoResult {
                 title: item.title.clone(),
                 summary: item.overview.clone(),
                 year: item.release_date.trim().get(0..=3).unwrap_or("").to_string(),

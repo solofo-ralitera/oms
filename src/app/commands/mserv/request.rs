@@ -1,6 +1,6 @@
 mod summary;
 
-use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie, pdf, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
+use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, video, pdf, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
 use once_cell::sync::Lazy;
 use sha256::digest;
 use urlencoding::decode;
@@ -183,7 +183,7 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
         return (String::from("204 No Content"), vec![], None, None);
     }
 
-    let file_path = &movie::get_video_file(&serv_option.base_path, file_path);
+    let file_path = &video::get_video_file(&serv_option.base_path, file_path);
     let file_size = file::file_size(&file_path).unwrap_or_default();
     let buffer: u64 = 1_500_000;
     
@@ -257,7 +257,7 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
                 // Pick image at random time of video
                 let mut rng = rand::thread_rng();
                 let at = rng.gen_range(0.05..=0.5);
-                movie::generate_thumb(&file_path, &cache_path, size, at)
+                video::generate_thumb(&file_path, &cache_path, size, at)
             } else if file::IMAGE_EXTENSIONS.contains(&extension.as_str()) {
                 match fs::read(&file_path) {
                     Ok(content) => content,

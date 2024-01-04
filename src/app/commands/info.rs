@@ -1,14 +1,15 @@
 mod pdf;
-mod movie;
+mod video;
 mod image;
 mod option;
+mod audio;
 
 use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs, path::Path, sync::{mpsc::{self, Sender}, Arc, Mutex}};
 use once_cell::sync::Lazy;
 
 use crate::helpers::{file::{get_extension, get_file_name, self}, threadpool::ThreadPool};
 use super::{Runnable, get_args_parameter};
-use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption, image::ImageInfo};
+use self::{pdf::PdfInfo, video::VideoInfo, option::InfoOption, image::ImageInfo, audio::AudioInfo};
 
 
 /// # Info command
@@ -17,7 +18,7 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption, image::ImageInfo}
 /// 
 /// ## Usage
 ///
-/// `oms info /home/me/movie.mp4`
+/// `oms info /home/me/video.mp4`
 /// 
 /// cargo run -- info --elastic-url="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" --thread=5 "/media/solofo/MEDIA/films/"
 /// 
@@ -25,7 +26,7 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption, image::ImageInfo}
 /// ## Features
 /// 
 /// * [ ] File information: TODO
-/// * [ ] Movie information: TODO
+/// * [ ] Video information: TODO
 /// * [ ] Read office file: TODO
 /// 
 pub struct Info {
@@ -146,8 +147,14 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
             }.info(tx);
         }
         else if file::VIDEO_EXTENSIONS.contains(&extension) || extension.is_empty() {
-            MovieInfo { 
-                movie_raw_name: &get_file_name(&file_path),
+            VideoInfo { 
+                video_raw_name: &get_file_name(&file_path),
+                file_path: &file_path,
+                info_option: &info_option,
+            }.info(tx);
+        }
+        else if file::AUDIO_EXTENSIONS.contains(&extension) || extension.is_empty() {
+            AudioInfo { 
                 file_path: &file_path,
                 info_option: &info_option,
             }.info(tx);
@@ -186,7 +193,7 @@ info [OPTIONS] <file_path/dir_path>
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse
 
-    For movies: info --elastic-url=<string> --cache-path=<string> [dir_path]
+    For videos: info --elastic-url=<string> --cache-path=<string> [dir_path]
 "
 }
 
@@ -214,7 +221,7 @@ fn print_usage() {
 /// 
 /// * [ ] PDF metadata (title, author, keywords...)
 /// * [ ] PDf summary?
-/// * [ ] Movie
+/// * [ ] Video
 /// 
 pub fn build_cmd(args: &Vec<String>, options: HashMap<String, String>) -> Result<Info, io::Error> {
     let file_path = get_args_parameter(

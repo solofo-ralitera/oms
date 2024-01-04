@@ -18,6 +18,7 @@ pub static VIDEO_EXTENSIONS_IGNORED: [&str; 9] = ["db", "srt", "nfo", "idx", "su
 pub static PDF_EXTENSIONS: [&str; 1] = ["pdf"];
 pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xlsx"];
 pub static IMAGE_EXTENSIONS: [&str; 10] = ["avif", "apng", "gif", "jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "webp"];
+pub static AUDIO_EXTENSIONS: [&str; 20] = ["wav", "wave", "aiff", "aif", "aifc", "pcm", "aiff", "au", "wav", "l16", "flac", "m4a", "caf", "wma", "mp3", "ogg", "oga", "mogg", "aac", "m4r"];
 
 /// Check if the given file exists
 ///

@@ -1,7 +1,7 @@
 use std::{sync::mpsc::Sender, time::SystemTime};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
-use crate::helpers::{movie::{self, MovieResult}, cache, db::elastic::Elastic};
+use crate::helpers::{video::{self, VideoResult}, cache, db::elastic::Elastic};
 use super::option::InfoOption;
 
 /// 
@@ -11,21 +11,21 @@ use super::option::InfoOption;
 ///
 /// https://developer.themoviedb.org/reference/search-movie
 ///
-pub struct MovieInfo<'a> {
-    pub movie_raw_name: &'a String,
+pub struct VideoInfo<'a> {
+    pub video_raw_name: &'a String,
     pub file_path: &'a String,
     pub info_option: &'a InfoOption,
 }
 
-impl<'a> MovieInfo<'a> {
+impl<'a> VideoInfo<'a> {
     pub fn info(&self, tx: Sender<String>) {
-        match movie::get_movie_result(&self.movie_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
-            Ok(mut movies) => {
-                save_elastic(&mut movies, &self.info_option.elastic);
-                for movie in movies {
+        match video::get_video_result(&self.video_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
+            Ok(mut videos) => {
+                save_elastic(&mut videos, &self.info_option.elastic);
+                for video in videos {
                     tx.send(format!("\
 \n------------------------------------------------------------------------
-{movie}\n")).unwrap_or_default();
+{video}\n")).unwrap_or_default();
                 }
             },
             Err(err) => {
@@ -40,19 +40,19 @@ impl<'a> MovieInfo<'a> {
     }
 }
 
-fn save_elastic(movies: &mut Vec<MovieResult>, elastic: &Option<Elastic>) {
+fn save_elastic(videos: &mut Vec<VideoResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
         // Get and save only first result
-        if let Some(movie) = movies.iter_mut().next() {
-            el.insert(&movie.hash, &movie);
+        if let Some(video) = videos.iter_mut().next() {
+            el.insert(&video.hash, &video);
         }
     }
 }
 
-fn log_error(movie: &MovieInfo) {
+fn log_error(video: &VideoInfo) {
     let curr_time = SystemTime::now();
     let dt: DateTime<Utc> = curr_time.into();
 
-    let content = format!("{}\n", movie.file_path);
+    let content = format!("{}\n", video.file_path);
     cache::append_cache_content(&dt.format("%Y-%m-%d").to_string(), &content, ".http-error");
 }
