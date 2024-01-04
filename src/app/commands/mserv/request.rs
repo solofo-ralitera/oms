@@ -2,7 +2,6 @@ mod summary;
 
 use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, movie, pdf, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
 use once_cell::sync::Lazy;
-use regex::Regex;
 use sha256::digest;
 use urlencoding::decode;
 use std::{cmp::min, thread, collections::HashMap, fs};
@@ -47,6 +46,11 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
     if verb == "OPTIONS" {
         return (String::new(), vec![], None, None);
     }
+    let path = decode(path).unwrap_or_default();
+    let path: &str = path.as_ref();
+    let path = path.replace("//", "/");
+    let path = path.as_str();
+   
     // Static files
     match STATIC_RESOURCES.get(path) {
         None => (),
@@ -83,22 +87,22 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
     }
     // Movie files
     if path.starts_with("/movie/") {
-        let file_path = decode(path).unwrap_or_default().replace("/movie/", "/");
+        let file_path = path.replace("/movie/", "/");
         return process_video(&file_path, &request_header, &serv_option);
     }
     // Thumb files (width=300)
     if path.starts_with("/thumb/") {
-        let file_path = decode(path).unwrap_or_default().replace("/thumb/", "/");
+        let file_path = path.replace("/thumb/", "/");
         return process_thumb(&file_path, &serv_option, "300:-1");
     }
     // Poster files (no resize)
     if path.starts_with("/poster/") {
-        let file_path = decode(path).unwrap_or_default().replace("/poster/", "/");
+        let file_path = path.replace("/poster/", "/");
         return process_thumb(&file_path, &serv_option, "-1:-1");
     }
     // open/download files
     if path.starts_with("/open/") {
-        let file_path = decode(path).unwrap_or_default().replace("/open/", "/");
+        let file_path = path.replace("/open/", "/");
         return open_file(&file_path, &serv_option);
     }
     // Other processes
@@ -179,7 +183,7 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
         return (String::from("204 No Content"), vec![], None, None);
     }
 
-    let file_path = &get_video_file(&serv_option.base_path, file_path);
+    let file_path = &movie::get_video_file(&serv_option.base_path, file_path);
     let file_size = file::file_size(&file_path).unwrap_or_default();
     let buffer: u64 = 1_500_000;
     
@@ -280,19 +284,4 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
             );
         }
     }
-}
-
-///
-/// TODO: live re-encoding for other format than mp4 or ts
-/// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
-fn get_video_file(base_path: &String, file_path: &String) -> String {
-    let file_path = rtrim_char(base_path, '/') + file_path;
-    if !file_path.ends_with(".mp4") {
-        let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
-        let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
-        if let Ok(f) = file::check_file(&mp4_file_path) {
-            return f.to_string();
-        }
-    }
-    return file_path.clone();
 }

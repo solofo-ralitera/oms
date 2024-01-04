@@ -1,5 +1,6 @@
 import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
+import {app} from '../services/app.js';
 
 export class SummaryComponent extends HTMLElement {
     css = `<style type="text/css">
@@ -101,8 +102,8 @@ time {
         <img 
             id="poster" 
             data-attempt="0" 
-            data-filepath="${this.movie.file_path.escape_quote()}"
-            src="${this.movie.poster_url}" 
+            data-filepath="${this.movie.file_path.escape_path_attribute()}"
+            src="${this.movie.poster_url.escape_path_attribute()}" 
             alt="${this.movie.title.escape_quote()}">
     </div>
     <section class="summary">
@@ -124,13 +125,7 @@ time {
             this.close();
         });
         this.root.querySelector(".play")?.addEventListener("click", () => {
-            if (this.movie.file_type === "image") {
-                window.open(`/poster${this.movie.file_path}`);
-            } else if (this.movie.file_type === "movie") {
-                eventBus.fire("play-movie", this.movie);
-            } else {
-                window.open(`/open${this.movie.file_path}`);
-            }
+            app.openItem(this.movie);
         });
         this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {

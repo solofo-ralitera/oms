@@ -1,4 +1,5 @@
 import {eventBus} from '../services/EventBus.js';
+import {app} from '../services/app.js';
 
 export class MovieComponent extends HTMLElement {
     css = `<style type="text/css">
@@ -84,6 +85,9 @@ h2,h3,h4 {
     background-color: rgb(49, 49, 49);
     mix-blend-mode: difference;
 }
+#thumb {
+    max-width: 295px;
+}
 .info {
     font-size: 0.8em;
 }
@@ -113,7 +117,7 @@ li.genre:hover, li.cast:hover {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
                     if (this.root.querySelector(".card .card-body-bg")) {
-                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url}")`;
+                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url.escape_path_attribute()}")`;
                     }
                     if (this.root.querySelector("#thumb")) {
                         this.root.querySelector("#thumb").src = this.root.querySelector("#thumb")?.getAttribute('data-src');
@@ -132,10 +136,11 @@ li.genre:hover, li.cast:hover {
     set movie(movie) {
         this._movie = movie;
         if (this._movie) {
-            if (!this._movie.thumb_url) {
+            // < 5: cas des N/A
+            if (!this._movie.thumb_url || this._movie.thumb_url.length < 5) {
                 this._movie.thumb_url = `/thumb${this._movie.file_path}`;
             }
-            if (!this._movie.poster_url) {
+            if (!this._movie.poster_url || this._movie.poster_url.length < 5) {
                 this._movie.poster_url = `/poster${this._movie.file_path}`;
             }
             if (!this._movie.casts) {
@@ -153,17 +158,17 @@ li.genre:hover, li.cast:hover {
             if (lazy === true) {
                 return `<img 
                     src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
-                    data-src="${this._movie.thumb_url}" 
-                    data-filepath="${this._movie.file_path.escape_quote()}" 
+                    data-src="${this._movie.thumb_url.escape_path_attribute()}" 
+                    data-filepath="${this._movie.file_path.escape_path_attribute()}" 
                     data-attempt="0"
                     id="thumb"
                     loading="lazy"
                     alt="Poster of ${this._movie.title.escape_quote()}">`;
             }
             return `<img 
-                src="${this._movie.thumb_url}" 
-                data-src="${this._movie.thumb_url}" 
-                data-filepath="${this._movie.file_path.escape_quote()}" 
+                src="${this._movie.thumb_url.escape_path_attribute()}" 
+                data-src="${this._movie.thumb_url.escape_path_attribute()}" 
+                data-filepath="${this._movie.file_path.escape_path_attribute()}" 
                 data-attempt="0"
                 id="thumb" 
                 loading="lazy"
@@ -178,13 +183,7 @@ li.genre:hover, li.cast:hover {
             plays.forEach(play => play.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (this._movie.file_type === "image") {
-                    window.open(`/poster${this._movie.file_path}`);
-                } else if (this._movie.file_type === "movie") {
-                    eventBus.fire("play-movie", this._movie);
-                } else {
-                    window.open(`/open${this._movie.file_path}`);
-                }
+                app.openItem(this._movie);
             }));
         }, 250);
     }
@@ -287,7 +286,6 @@ li.genre:hover, li.cast:hover {
                 attempt++;
                 e.target.setAttribute("data-attempt", attempt);
                 const thumb = `/thumb${e.target.getAttribute("data-filepath")}`;
-                console.log(thumb);
                 this._movie.thumb_url = thumb;
                 e.target.src = thumb;
             }

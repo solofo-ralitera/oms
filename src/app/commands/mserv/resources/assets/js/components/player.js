@@ -1,5 +1,9 @@
 import {eventBus} from '../services/EventBus.js';
 
+// init start volume
+let VIDEO_VOLUME = parseFloat(window.localStorage.getItem("VIDEO_VOLUME") ?? "1");
+VIDEO_VOLUME = isNaN(VIDEO_VOLUME) ? 1 : VIDEO_VOLUME;
+
 export class PLayerComponent extends HTMLElement {
     keyuptimer = 0;
     movie = null;
@@ -76,8 +80,8 @@ video {
         <span></span>
     </div>
     <video controls 
-        poster="${this.movie.thumb_url}">
-        <source src="./movie${this.movie.file_path}" type="video/mp4" />
+        poster="${this.movie.thumb_url.escape_path_attribute()}">
+        <source src="./movie${this.movie.file_path.escape_path_attribute()}" type="video/mp4" />
         <p>
             Your browser doesn't support this video. Here is the path of the file:
             ${this.movie.file_path}
@@ -85,6 +89,13 @@ video {
     </video>
     <footer class="footer">&nbsp;</footer>
 </div>`;
+        const video = this.root.querySelector("video");
+        video.volume = VIDEO_VOLUME;
+        video.addEventListener("volumechange", event => {
+            VIDEO_VOLUME = Math.max(0, Math.min(1, event.target.volume));
+            window.localStorage.setItem("VIDEO_VOLUME", VIDEO_VOLUME);
+        });
+
         this.root.querySelector("#search")?.addEventListener("input", e => {
             window.clearTimeout(this.keyuptimer);
             const value = e.target.value;

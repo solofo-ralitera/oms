@@ -10,7 +10,7 @@ use regex::Regex;
 use sha256::digest;
 use serde::{Deserialize, Serialize};
 use self::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}};
-use super::{cache, string::text_contains, file, command};
+use super::{cache, string::text_contains, file, command, rtrim_char};
 
 
 ///
@@ -111,17 +111,38 @@ pub fn movie_duration(file_path: &String) -> usize {
     return output.parse::<f64>().unwrap_or(0.).round() as usize;
 }
 
+
+/// Search if file with .mp4 extension existe in the same directory,
+/// if found use this mp4 file for next process
+/// TODO: live re-encoding for other format than mp4 or ts
+/// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
+pub fn get_video_file(base_path: &String, file_path: &String) -> String {
+    let file_path = rtrim_char(base_path, '/') + file_path;
+    if !file_path.ends_with(".mp4") {
+        let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
+        let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
+        if let Ok(f) = file::check_file(&mp4_file_path) {
+            return f.to_string();
+        }
+    }
+    return file_path.clone();
+}
+
 /// size: in format width:height, e.g. 600:300, 300:-1 (-1 to keep ratio)
 /// at: pick image at x% of video duration, and resize to size
 pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32) -> Vec<u8> {
+    let src_path = get_video_file(&String::new(), src_path);
+
     // Format duration (s) to hh:mm:ss, :0>2 to keep the leading 0
-    let duration = (movie_duration(src_path) as f32 * at).round() as usize;
+    let duration = (movie_duration(&src_path) as f32 * at).round() as usize;
     let duration = format!("{:0>2}:{:0>2}:{:0>2}", (duration / 60) / 60, (duration / 60) % 60, duration % 60);
-    
+
     // ffmpeg need extenstion in output
     let dest_with_extension = format!("{dest_path}.jpeg");
     let mut cmd = Command::new("ffmpeg");
-    cmd.args(["-ss", &duration, "-i", src_path, "-vf", &format!("scale={size}"), "-frames:v", "1", &dest_with_extension]);
+    cmd.args(["-ss", &duration, "-i", &src_path, "-vf", &format!("scale={size}"), "-frames:v", "1", &dest_with_extension]);
+    
+    // println!("\n\n{:?}\n\n", cmd);
 
     command::exec(&mut cmd);
 
@@ -196,28 +217,34 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
     let movie_title = format_title(raw_title);
     let movie_hash = digest(movie_title.normalized());
 
-    // Check cache
-    if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
-        if let Ok(result) = serde_json::from_str::<Vec<MovieResult>>(&content) {
-            if result.len() > 0 {
-                return Ok(result);
-            }
+    // Fist check if result is in cache
+    let mut movies = if let Some((_, content)) = cache::get_cache(&movie_hash, ".movie") {
+        match serde_json::from_str::<Vec<MovieResult>>(&content) {
+            Ok(result) if result.len() > 0 => {
+                Some(result)
+            },
+            _ => None,
         }
-    }
-
-    let mut movies = match provider.as_str() {
-        //  firstly search in tmdb, if not found switch to omdb
-        "api" => if let Ok(result) = TMDb::info(&movie_title) {
-            Some(result)
-        } else if let Ok(result) = OMDb::info(&movie_title) {
-            Some(result)
-        } else {
-            print!("Unable to find information about the video: {}, fallback to local provider\n\n", file_path.on_red());
-            None
-        },
-        _ => None,
+    } else {
+        None
     };
 
+    // Then search in tmdb, if not found switch to omdb
+    if movies.is_none() {
+        movies = match provider.as_str() {
+            "api" => if let Ok(result) = TMDb::info(&movie_title) {
+                Some(result)
+            } else if let Ok(result) = OMDb::info(&movie_title) {
+                Some(result)
+            } else {
+                print!("Unable to find information about the video: {}, fallback to local provider\n\n", file_path.on_red());
+                None
+            },
+            _ => None,
+        };
+    }
+
+    // Lastly, fill result with local data
     if movies.is_none() {
         movies = if let Ok(result) = Local::info(LocalParam {
             movie_title: &movie_title,
@@ -231,26 +258,27 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         }
     }
 
-    let file_time = file::get_creation_time(file_path);
-    let file_duration = movie_duration(&file_path);
-    match movies {
-        Some(mut movies) => {
-            for movie in &mut movies {
-                movie.file_path = file_path.replace(base_path, "");
-                movie.hash = movie_hash.clone();
-                movie.modification_time = file_time;
-                movie.duration = file_duration;
-            }
-            if !base_path.is_empty() {
-                cache::write_cache_json(&movie_hash, &movies, ".movie");
-            }
-            return Ok(movies);
-        },
-        None => return Err(io::Error::new(
+    if movies.is_none() {
+        return Err(io::Error::new(
             io::ErrorKind::InvalidInput, 
             format!("Unable to find information about the movie: {}", file_path.on_red())
-        )),
+        ));
     }
+
+    let file_time = file::get_creation_time(file_path);
+    let file_duration = movie_duration(&file_path);
+
+    let mut result = movies.unwrap();
+    for movie in &mut result {
+        movie.file_path = file_path.replace(base_path, "");
+        movie.hash = movie_hash.clone();
+        movie.modification_time = file_time;
+        movie.duration = file_duration;
+    }
+    if !base_path.is_empty() {
+        cache::write_cache_json(&movie_hash, &result, ".movie");
+    }
+    return Ok(result);
 }
 
 

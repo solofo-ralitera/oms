@@ -131,6 +131,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
         - [Optional] imagick (convert), for pdf and image thumbnail
     --help
     --cache-path=<string>   Cache path, default ./.oms/
+    --base-path=<string>   Dir path of relative root
     -p <string> --provider=<string>   possible value: local, api (default)
     --elastic-url=<string>  Url of elastic search server (with index, e.g. http://localhost:9200/oms)
     --url=<string>  e.g. localhost:7777, 192.168.33.106:7777
