@@ -12,8 +12,6 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 
 ///
 /// 
-/// cargo run -- mserv --elastic-dsn="http://localhost:9200" --url="localhost:7878"  --cache-path="/media/solofo/MEDIA/.oms"
-/// 
 pub struct Mserv {
     /// Command options
     cmd_options: HashMap<String, String>,
@@ -32,7 +30,7 @@ impl Runnable for Mserv {
             match option.as_str() {
                 "p" | "provider" => mserv_option.set_provider(value)?,
                 "base-path" => mserv_option.set_basepath(value)?,
-                "elastic-dsn" => mserv_option.set_elastic(value)?,
+                "elastic-url" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,
                 arg => return Err(io::Error::new(
                     io::ErrorKind::InvalidInput, 
@@ -124,17 +122,18 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
-mserv --elastic-dsn=<string> --url=<string>  --cache-path=<string> --base-path=<string>
+mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<string>
     Launch media server
     Prerequisites:
-        - Transocde your video files into a streamable format (like H.264)
-        - Elsastic search for indexing
+        - Transcode your video files into a streamable format (like H.264)
+        - Elsastic search for indexing, with cors allowed, see elastic configuration
         - [Optional] ffmpeg and ffprobe, for video duration
-        - [Optional] imagick, for pdf and image thumbnail
+        - [Optional] imagick (convert), for pdf and image thumbnail
     --help
     --cache-path=<string>   Cache path, default ./.oms/
-    --elastic-dsn=<string>  Elastic search server
-    --url=<string>  
+    -p <string> --provider=<string>   possible value: local, api (default)
+    --elastic-url=<string>  Url of elastic search server (with index, e.g. http://localhost:9200/oms)
+    --url=<string>  e.g. localhost:7777, 192.168.33.106:7777
 "
 }
 

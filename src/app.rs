@@ -6,7 +6,7 @@ use crate::helpers::input::parse_command_option;
 
 
 /// App version
-pub const VERSION: &str = "v0.0.1";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// It's the main application
 pub struct App {

@@ -75,7 +75,11 @@ pub fn get_range_params(request_header: &Vec<String>, size: u64) -> Result<(u64,
             let end = if range.len() > 1 {
                 range[1].parse::<u64>().unwrap_or_default()
             } else {
-                max(0, size - 1)
+                if size <= 0 {
+                    0
+                } else {
+                    max(0, size - 1)
+                }
             };
             Ok((start, end))
         },

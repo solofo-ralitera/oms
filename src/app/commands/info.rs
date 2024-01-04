@@ -19,7 +19,7 @@ use self::{pdf::PdfInfo, movie::MovieInfo, option::InfoOption, image::ImageInfo}
 ///
 /// `oms info /home/me/movie.mp4`
 /// 
-/// cargo run -- info --elastic-dsn="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" --thread=5 "/media/solofo/MEDIA/films/"
+/// cargo run -- info --elastic-url="http://localhost:9200" --cache-path="/media/solofo/MEDIA/.oms" --thread=5 "/media/solofo/MEDIA/films/"
 /// 
 /// 
 /// ## Features
@@ -68,7 +68,7 @@ impl Runnable for Info {
             match option.as_str() {
                 "p" | "provider" => info_option.set_provider(value)?,
                 "hide-preview" => info_option.hide_preview(),
-                "elastic-dsn" => info_option.set_elastic(value)?,
+                "elastic-url" => info_option.set_elastic(value)?,
                 "t" | "thread" => info_option.set_thread(value)?,
                 "list" => { 
                     info_option.set_list(value)?; // Files are provided in option
@@ -180,13 +180,13 @@ pub fn usage() -> &'static str {
 info [OPTIONS] <file_path/dir_path>
     Display/get file informations
     --help
-    -p string --provider=<string>   possible value: local, api (default)
+    -p <string> --provider=<string>   possible value: local, api (default)
     --cache-path=<string>   Cache path, default ./.oms/
-    --elastic-dsn=<string>  Elastic search server
+    --elastic-url=<string>  Elastic search server
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse
 
-    For movies: info --elastic-dsn=<string> --cache-path=<string> [dir_path]
+    For movies: info --elastic-url=<string> --cache-path=<string> [dir_path]
 "
 }
 

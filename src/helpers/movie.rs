@@ -72,7 +72,7 @@ pub fn format_title(raw_title: &String) -> MovieTitle {
 pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<String>, io::Error> {
     let dest_path = match dest_path {
         None => {
-            let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
+            let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
             re.replace(file_path.as_str(), ".mp4").to_string()
         },
         Some(d) => d.to_string(),
@@ -205,16 +205,21 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
         }
     }
 
-    let movies = match provider.as_str() {
-        //  firstly search in tmdb, if not found switch to omdb, otherwise fall in error
+    let mut movies = match provider.as_str() {
+        //  firstly search in tmdb, if not found switch to omdb
         "api" => if let Ok(result) = TMDb::info(&movie_title) {
             Some(result)
         } else if let Ok(result) = OMDb::info(&movie_title) {
             Some(result)
         } else {
+            print!("Unable to find information about the video: {}, fallback to local provider\n\n", file_path.on_red());
             None
         },
-        "local" => if let Ok(result) = Local::info(LocalParam {
+        _ => None,
+    };
+
+    if movies.is_none() {
+        movies = if let Ok(result) = Local::info(LocalParam {
             movie_title: &movie_title,
             raw_title: raw_title,
             file_path: file_path,
@@ -223,9 +228,8 @@ pub fn get_movie_result(raw_title: &String, file_path: &String, base_path: &Stri
             Some(result)
         } else {
             None
-        },
-        _ => None,
-    };
+        }
+    }
 
     let file_time = file::get_creation_time(file_path);
     let file_duration = movie_duration(&file_path);

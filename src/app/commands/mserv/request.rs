@@ -141,7 +141,7 @@ fn scan_movie_dir(serv_option: &MservOption) {
 
     match serv_option.elastic.as_ref() {
         Some(elastic) => {
-            option.insert(String::from("elastic-dsn"), elastic.url.to_string());
+            option.insert(String::from("elastic-url"), elastic.url.to_string());
         },
         _ => (),
     }
@@ -208,8 +208,6 @@ fn open_file(file_path: &String, serv_option: &MservOption) -> (String, Vec<(Str
             format!("{base_path}{file_path}")
         }
     };
-    println!("{file_path}");
-
     let content = match fs::read(&file_path) {
         Ok(content) => content,
         _ => b"".to_vec()
@@ -290,7 +288,7 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
 fn get_video_file(base_path: &String, file_path: &String) -> String {
     let file_path = rtrim_char(base_path, '/') + file_path;
     if !file_path.ends_with(".mp4") {
-        let re = Regex::new(r"(?i)\.[a-z]{2,}$").unwrap();
+        let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
         let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
         if let Ok(f) = file::check_file(&mp4_file_path) {
             return f.to_string();
