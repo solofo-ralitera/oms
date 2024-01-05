@@ -129,6 +129,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
         - Elsastic search for indexing, with cors allowed, see elastic configuration
         - [Optional] ffmpeg and ffprobe, for video duration
         - [Optional] imagick (convert), for pdf and image thumbnail
+
     --help
     --cache-path=<string>   Cache path, default ./.oms/
     --base-path=<string>   Dir path of relative root

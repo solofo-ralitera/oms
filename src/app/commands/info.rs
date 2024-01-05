@@ -186,6 +186,7 @@ pub fn usage() -> &'static str {
     "\
 info [OPTIONS] <file_path/dir_path>
     Display/get file informations
+    
     --help
     -p <string> --provider=<string>   possible value: local, api (default)
     --cache-path=<string>   Cache path, default ./.oms/

@@ -55,6 +55,7 @@ impl Runnable for Transcode {
                 "d" => transcode_option.set_delete(),
                 "t" | "thread" => transcode_option.set_thread(value)?,
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
+                "o" | "output" => transcode_option.set_output(value)?,
                 arg => {
                     *b_isrunning = false;
                     return Err(io::Error::new(
@@ -96,28 +97,30 @@ impl Runnable for Transcode {
 
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
     let extension = get_extension(file_path).to_lowercase();
-    
-    if !transcode_option.has_extension(&extension) {
+
+    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
         return ();
     }
-    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+
+    if !transcode_option.has_extension(&extension) {
         return ();
     }
 
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
+    let output_format = transcode_option.output_format.clone();
     thread_pool.execute(move || {
-        if extension.eq("mp4") {
+        if extension.eq(&output_format) {
             return;
         }
-        match video::to_mp4(&file_path, None) {
-            Ok(dest_mp4) if dest_mp4.is_some() && delete_after => match fs::remove_file(&file_path) {
+        match video::transcode(&file_path, None, &output_format) {
+            Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Err(err) => {
                     println!("{}", err.to_string().on_red());
                 },
                 _ => (),
             },
-            Ok(dest_mp4) if dest_mp4.is_none() => {
+            Ok(dest_output) if dest_output.is_none() => {
                 println!("{} already exists", file_path.blue());
             },
             Err(err) => {
@@ -143,11 +146,15 @@ fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_p
 pub fn usage() -> String {
     format!("\
 transcode [options] <file_path|directory_path>
-    Transcode video files. Need ffmpeg installed
+    Transcode video files.
+    Prerequists:
+        Need to install ffmpeg
+
     --help
     -d  Delete original file after transcoding
     -e <string> --extensions=<string>    only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'
     -t <int> --thread=<int>    Number of max thread used
+    -o <string> --output=<string>   Output extension
 ")
 }
 

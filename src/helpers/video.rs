@@ -68,12 +68,19 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
     };
 }
 
-//  ffmpeg -i input.avi input.mp4
-pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<String>, io::Error> {
+//  ffmpeg -i input.avi input.webm
+pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String) -> Result<Option<String>, io::Error> {
+    if !file::VIDEO_EXTENSIONS.contains(&output.as_str()) {
+        return Err(io::Error::new(
+            io::ErrorKind::WriteZero, 
+            format!("Video transcode: unknown extension {output}")
+        ))
+    }
+
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
-            re.replace(file_path.as_str(), ".mp4").to_string()
+            re.replace(file_path.as_str(), format!(".{output}")).to_string()
         },
         Some(d) => d.to_string(),
     };
@@ -98,7 +105,7 @@ pub fn to_mp4(file_path: &String, dest_path: Option<&String>) -> Result<Option<S
         },
         _ => Err(io::Error::new(
             io::ErrorKind::WriteZero, 
-            format!("to_mp4: {dest_path} not created")
+            format!("Video transcode: {dest_path} not created")
         )),
     };
 }
@@ -266,7 +273,7 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     if videos.is_none() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput, 
-            format!("Unable to find information about the video: {}", file_path.on_red())
+            format!("Unable to find information about the video: {}", file_path.red())
         ));
     }
 
