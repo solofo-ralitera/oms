@@ -7,7 +7,7 @@ use sha256::digest;
 
 use crate::helpers::output::draw_image;
 
-use super::{file, string::text_contains};
+use super::{file, string::{text_contains, normalize_media_title}};
 
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -59,7 +59,7 @@ pub fn get_image_result(base_path: &String, file_path: &String) -> Result<ImageR
     let hash = file::sha256(file_path).unwrap_or(digest(&relative_file_path));
 
     Ok(ImageResult {
-        title: file_name,
+        title: normalize_media_title(&file_name),
         summary: String::new(),
 
         rating: 1.,

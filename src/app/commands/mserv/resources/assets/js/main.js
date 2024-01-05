@@ -1,5 +1,5 @@
 import { SearchComponent } from "./components/search.js";
-import { MoviesComponent } from "./components/movies.js";
+import { MediasComponent } from "./components/medias.js";
 import { SummaryComponent } from "./components/summary.js";
 import { PLayerComponent } from "./components/player.js";
 
@@ -19,6 +19,10 @@ String.prototype.escape_path = function () {
         return this.escape_quote();
     }
     return encodeURIComponent(this);
+};
+
+String.prototype.extension = function () {
+    return this.split('.').pop();
 };
 
 Number.prototype.secondsToHMS = function() {

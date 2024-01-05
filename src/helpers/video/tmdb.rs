@@ -114,11 +114,11 @@ impl TMDb {
                 casts: casts,
                 rating: item.vote_average,
 
-                provider: String::from("tmdb"),
+                provider: String::from("api"),
                 provider_id: item.id.to_string(),
                 
                 file_path: String::new(),
-                file_type: String::from("movie"),
+                file_type: String::from("video"),
                 hash: String::new(),
                 modification_time: 0,
                 duration: 0,

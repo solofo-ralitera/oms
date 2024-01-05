@@ -10,7 +10,7 @@ pub struct SummaryResult {
     pub files_extension: HashMap<String, usize>,
 }
 
-pub fn movies_summary(serv_option: &MservOption) -> SummaryResult {
+pub fn medias_summary(serv_option: &MservOption) -> SummaryResult {
     let mut files_extension: HashMap<String, usize> = HashMap::new();
     let _ = file::scan_count_by_extension(&serv_option.base_path, &mut files_extension);
 

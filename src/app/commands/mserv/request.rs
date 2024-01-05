@@ -19,11 +19,16 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     let mut static_resources: HashMap<&str, (&str, &[u8])> = HashMap::new();
     static_resources.insert("/", ("text/html; charset=utf-8", include_bytes!("./resources/assets/index.html")));
     static_resources.insert("/favicon.ico", ("image/x-icon", include_bytes!("./resources/assets/favicon.ico")));
+    static_resources.insert("/assets/img/audio.png", ("image/png", include_bytes!("./resources/assets/img/audio.png")));
     static_resources.insert("/assets/js/main.js", ("text/javascript", include_bytes!("./resources/assets/js/main.js")));
     
-    static_resources.insert("/assets/js/components/movie.js", ("text/javascript", include_bytes!("./resources/assets/js/components/movie.js")));
-    static_resources.insert("/assets/js/components/movies.js", ("text/javascript", include_bytes!("./resources/assets/js/components/movies.js")));
+    static_resources.insert("/assets/js/components/media.js", ("text/javascript", include_bytes!("./resources/assets/js/components/media.js")));
+    static_resources.insert("/assets/js/components/medias.js", ("text/javascript", include_bytes!("./resources/assets/js/components/medias.js")));
+    
     static_resources.insert("/assets/js/components/player.js", ("text/javascript", include_bytes!("./resources/assets/js/components/player.js")));
+    static_resources.insert("/assets/js/components/player/video.js", ("text/javascript", include_bytes!("./resources/assets/js/components/player/video.js")));
+    static_resources.insert("/assets/js/components/player/audio.js", ("text/javascript", include_bytes!("./resources/assets/js/components/player/audio.js")));
+
     static_resources.insert("/assets/js/components/search.js", ("text/javascript", include_bytes!("./resources/assets/js/components/search.js")));
     static_resources.insert("/assets/js/components/summary.js", ("text/javascript", include_bytes!("./resources/assets/js/components/summary.js")));
 
@@ -85,10 +90,10 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
             );
         }
     }
-    // Movie files
-    if path.starts_with("/movie/") {
-        let file_path = path.replace("/movie/", "/");
-        return process_video(&file_path, &request_header, &serv_option);
+    // Video files
+    if path.starts_with("/media/") {
+        let file_path = path.replace("/media/", "/");
+        return process_media(&file_path, &request_header, &serv_option);
     }
     // Thumb files (width=300)
     if path.starts_with("/thumb/") {
@@ -111,15 +116,15 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
 
 fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     if path.starts_with("/scan-dir") {
-        scan_movie_dir(serv_option);
+        scan_media_dir(serv_option);
         return (String::from("200 OK"), vec![], None, None);
     }
     else if path.starts_with("/transcode-dir") {
-        transcode_movie_dir(path, serv_option);
+        transcode_media_dir(path, serv_option);
         return (String::from("200 OK"), vec![], None, None);
     }
     else if path.eq("/summary") {
-        let summary = serde_json::to_string(&summary::movies_summary(serv_option)).unwrap_or(String::new());
+        let summary = serde_json::to_string(&summary::medias_summary(serv_option)).unwrap_or(String::new());
         return (String::from("200 OK"), vec![], None, Some(summary.as_bytes().to_vec()));
     }
     else if path.eq("/all-files-path") {
@@ -133,7 +138,7 @@ fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (S
     }
 }
 
-fn scan_movie_dir(serv_option: &MservOption) {
+fn scan_media_dir(serv_option: &MservOption) {
     let file_path = serv_option.base_path.to_string();
     if file_path.is_empty() {
         return;
@@ -156,7 +161,7 @@ fn scan_movie_dir(serv_option: &MservOption) {
     thread::spawn(move || info.run());
 }
 
-fn transcode_movie_dir(path: &str, serv_option: &MservOption) {
+fn transcode_media_dir(path: &str, serv_option: &MservOption) {
     let extension = ltrim_char(&path.replace("/transcode-dir", ""), '/');
 
     let file_path = serv_option.base_path.to_string();
@@ -168,6 +173,16 @@ fn transcode_movie_dir(path: &str, serv_option: &MservOption) {
     option.insert(String::from("thread"), String::from("1"));
     if !extension.is_empty() {
         option.insert(String::from("extensions"), extension);
+    } else {
+        // do not encode known streaming formats
+        let mut extension = file::VIDEO_EXTENSIONS.join(",");
+        extension = extension.replace("mp4", "");
+        extension = extension.replace("ts", "");
+        extension = extension.replace("webm", "");        
+        extension = extension.replace(",,", ",");
+        extension = rtrim_char(&extension, ',');
+        extension = ltrim_char(&extension, ',');
+        option.insert(String::from("extensions"), extension);
     }
 
     let transcode = Transcode {
@@ -177,9 +192,10 @@ fn transcode_movie_dir(path: &str, serv_option: &MservOption) {
     thread::spawn(move || transcode.run());    
 }
 
-fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+fn process_media(file_path: &String, request_header: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let extension = file::get_extension(&file_path);
-    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+    
+    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) && !file::AUDIO_EXTENSIONS.contains(&extension.as_str()) {
         return (String::from("204 No Content"), vec![], None, None);
     }
 
@@ -194,7 +210,7 @@ fn process_video(file_path: &String, request_header: &Vec<String>, serv_option: 
     return (
         String::from("206 Partial Content"), 
         vec![
-            (String::from("Content-type"), format!("video/{extension}")),
+            (String::from("Content-type"), file::get_mimetype(&file_path)),
             (String::from("Accept-Ranges"), String::from("bytes")),
             (String::from("Content-Range"), format!("bytes {start_range}-{end_range}/{file_size}")),
             (String::from("Content-Length"), format!("{}", byte_count)),
@@ -216,13 +232,13 @@ fn open_file(file_path: &String, serv_option: &MservOption) -> (String, Vec<(Str
         Ok(content) => content,
         _ => b"".to_vec()
     };
-    if content.is_empty() {
-        return (String::from("404 Not Found"), vec![], None, None);
-    }
+
+    let file_size: u64 = file::file_size(&file_path).unwrap_or_default();
     return (
         String::from("200 OK"), 
         vec![
             (String::from("Content-type"), file::get_mimetype(&file_path)),
+            (String::from("Content-Length"), format!("{file_size}")),
         ], 
         None,
         Some(content),

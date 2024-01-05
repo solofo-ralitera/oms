@@ -53,8 +53,8 @@ input[type=search]:focus {
         this.keyuptimer = window.setTimeout(() => {
             history.pushHistory("navigate-search", data);
 
-            eventBus.fire("current-movie", {
-                movie: null,
+            eventBus.fire("current-media", {
+                media: null,
                 fromHistory: true,
             });
 
@@ -62,7 +62,7 @@ input[type=search]:focus {
                 eventBus.fire("display-config", null);
                 return;
             }
-            eventBus.fire("movie-search", term);
+            eventBus.fire("media-search", term);
         }, 350);
     }
 

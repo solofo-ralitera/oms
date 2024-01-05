@@ -10,7 +10,7 @@ use regex::Regex;
 use sha256::digest;
 use serde::{Deserialize, Serialize};
 use self::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}};
-use super::{cache, string::text_contains, file, command, rtrim_char};
+use super::{cache, string::{text_contains, normalize_media_title}, file, command, rtrim_char};
 
 
 ///
@@ -50,7 +50,7 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
         let title = format_title_remove_point(title);
 
         return VideoTitle { 
-            title: title, 
+            title: normalize_media_title(&title), 
             year: year.to_string(),
             language: "en-US".to_string().clone(),
             adult: false,
@@ -61,7 +61,7 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
     let title = format_title_remove_point(&title);
 
     return VideoTitle { 
-        title: title, 
+        title: normalize_media_title(&title), 
         year: String::new(),
         language: String::new(),
         adult: false,
@@ -108,7 +108,7 @@ pub fn video_duration(file_path: &String) -> usize {
     cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
 
     let output = command::exec(&mut cmd);
-    return output.parse::<f64>().unwrap_or(0.).round() as usize;
+    return output.parse::<f64>().unwrap_or(0.).ceil() as usize;
 }
 
 
@@ -134,7 +134,7 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32
     let src_path = get_video_file(&String::new(), src_path);
 
     // Format duration (s) to hh:mm:ss, :0>2 to keep the leading 0
-    let duration = (video_duration(&src_path) as f32 * at).round() as usize;
+    let duration = (video_duration(&src_path) as f32 * at).ceil() as usize;
     let duration = format!("{:0>2}:{:0>2}:{:0>2}", (duration / 60) / 60, (duration / 60) % 60, duration % 60);
 
     // ffmpeg need extenstion in output
@@ -218,10 +218,15 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     let video_hash = digest(video_title.normalized());
 
     // Fist check if result is in cache
+    //  If provider in cache is different from supplied provider => force none to reload data
     let mut videos = if let Some((_, content)) = cache::get_cache(&video_hash, ".video") {
         match serde_json::from_str::<Vec<VideoResult>>(&content) {
             Ok(result) if result.len() > 0 => {
-                Some(result)
+                if result.iter().any(|r| r.provider.ne(provider)) {
+                    None
+                } else {
+                    Some(result)
+                }
             },
             _ => None,
         }

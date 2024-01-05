@@ -1,6 +1,6 @@
 const ELASTIC_URL = "ELASTIC_URL";
 
-class ElasticMovie {
+class ElasticMedia {
     genres = new Set();
 
     getGenres() {
@@ -194,15 +194,15 @@ class ElasticMovie {
         })
             .then(r => r.json())
             .then(r => r?.hits?.hits?.map(hit => hit._source) ?? [])
-            .then(movies => {
-                movies.map(m => m.genres).flat().forEach(g => {
+            .then(medias => {
+                medias.map(m => m.genres).flat().forEach(g => {
                     if (g) this.genres.add(g)
                 });
-                return movies;
+                return medias;
             })
             .catch(() => []);
     }
 
 }
 
-export const elasticMovie = new ElasticMovie();
+export const elasticMedia = new ElasticMedia();

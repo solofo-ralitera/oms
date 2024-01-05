@@ -1,6 +1,19 @@
 import {eventBus} from './EventBus.js';
 
+// init start volume
+let PLAYER_VOLUME = parseFloat(window.localStorage.getItem("PLAYER_VOLUME") ?? "1");
+PLAYER_VOLUME = isNaN(PLAYER_VOLUME) ? 1 : PLAYER_VOLUME;
+
 export const app = new class {
+    playerVolume(mediaElement) {
+        if (typeof mediaElement === "undefined") {
+            return Math.max(0, Math.min(1, PLAYER_VOLUME));
+        } else {
+            PLAYER_VOLUME = mediaElement.muted ? 0 : Math.max(0, Math.min(1, mediaElement.volume));
+            window.localStorage.setItem("PLAYER_VOLUME", PLAYER_VOLUME);            
+        }
+    }
+
     async scanDir() {
         return fetch("./scan-dir");
     }
@@ -23,16 +36,15 @@ export const app = new class {
             .catch(() => {});
     }
 
-    openItem(item) {
-        if (!item) return;
-        if (item?.file_type === "image") {
-            window.open(`/poster${item.file_path}`);
-        } else if (item?.file_type === "movie") {
-            eventBus.fire("play-movie", item);
-        } else if (item?.file_type === "audio") {
-            eventBus.fire("play-audio", item);
+    openMedia(media) {
+        if (!media) return;
+
+        if (media.file_type === "image") {
+            window.open(`/poster${media.file_path}`);
+        } else if (["audio", "video"].includes(media.file_type)) {
+            eventBus.fire("play-media", media);
         } else {
-            window.open(`/open${item.file_path}`);
+            window.open(`/open${media.file_path}`);
         }        
     }
 }

@@ -1,9 +1,9 @@
-import { MovieComponent } from "./movie.js";
+import { MediaComponent } from "./media.js";
 import { ConfigComponent } from "./config.js";
 import {eventBus} from '../services/EventBus.js';
-import {elasticMovie} from '../services/elastic.js';
+import {elasticMedia} from '../services/elastic.js';
 
-export class MoviesComponent extends HTMLElement {
+export class MediasComponent extends HTMLElement {
     static observedAttributes = ["search"];
     isRendering = false;
     currentFrom = 0;
@@ -14,7 +14,7 @@ export class MoviesComponent extends HTMLElement {
         this.root = this.attachShadow({mode: "closed"});
         this.searchTerm = this.getAttribute('search') ?? "";
 
-        eventBus.register("movie-search", ({detail}) => {
+        eventBus.register("media-search", ({detail}) => {
             this.setAttribute("search", detail);
         });
 
@@ -46,13 +46,13 @@ return `<style type="text/css">
     }
 
     async searchAll() {
-        const movies = await elasticMovie.search(this.searchTerm, this.currentFrom, this.pageSize);
-        movies.forEach(movie => {
-            const appMovie = new MovieComponent();
-            appMovie.movie = movie;
-            this.root.append(appMovie);
+        const medias = await elasticMedia.search(this.searchTerm, this.currentFrom, this.pageSize);
+        medias.forEach(media => {
+            const appMedia = new MediaComponent();
+            appMedia.media = media;
+            this.root.append(appMedia);
         });
-        if (movies.length) {
+        if (medias.length) {
             this.currentFrom += this.pageSize;
             await this.searchAll();
         }
@@ -78,4 +78,4 @@ return `<style type="text/css">
     }
 }
 
-window.customElements.define('app-movies', MoviesComponent);
+window.customElements.define('app-medias', MediasComponent);

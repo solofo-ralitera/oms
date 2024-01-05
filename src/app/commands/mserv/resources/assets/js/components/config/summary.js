@@ -1,5 +1,5 @@
 import {app} from '../../services/app.js';
-import {elasticMovie} from '../../services/elastic.js';
+import {elasticMedia} from '../../services/elastic.js';
 
 const BASE_URL = "BASE_URL";
 
@@ -32,7 +32,7 @@ export class Summary extends HTMLElement {
 
     summaryDetail() {
         Promise.all([
-            elasticMovie.getAll(),
+            elasticMedia.getAll(),
             app.getAllFiles(),
         ])
             .then(([elasticAll, allFiles]) => {
@@ -53,7 +53,7 @@ export class Summary extends HTMLElement {
 
     render() {
         Promise.all([
-            elasticMovie.totalCount(),
+            elasticMedia.totalCount(),
             app.summary(),
         ])
             .then(([elasticCount, dirSummary]) => this.root.innerHTML = `${this.css}

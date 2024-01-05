@@ -6,7 +6,7 @@ use pdf::{file::FileOptions, PdfError};
 use lopdf::Document;
 use serde::{Deserialize, Serialize};
 use sha256::digest;
-use super::{string::text_contains, file, command, rtrim_char, ltrim_char};
+use super::{string::{text_contains, normalize_media_title}, file, command, rtrim_char, ltrim_char};
 
 pub struct PdfInfo {
     pub title: String,
@@ -168,9 +168,9 @@ pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResul
     match PdfInfo::read(file_path) {
         Ok(pdf_info) => return Ok(PdfResult {
             title: if pdf_info.title.is_empty() {
-                file_name
+                normalize_media_title(&file_name)
             } else {
-                pdf_info.title
+                normalize_media_title(&pdf_info.title)
             },
             summary: String::new(),
             author: pdf_info.author,
@@ -187,7 +187,7 @@ pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResul
             duration: 0,
         }),
         Err(_) => return Ok(PdfResult {
-            title: file_name,
+            title: normalize_media_title(&file_name),
             summary: String::new(),
             author: String::new(),
             creator: String::new(),

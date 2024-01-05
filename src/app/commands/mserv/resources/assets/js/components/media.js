@@ -1,7 +1,7 @@
 import {eventBus} from '../services/EventBus.js';
 import {app} from '../services/app.js';
 
-export class MovieComponent extends HTMLElement {
+export class MediaComponent extends HTMLElement {
     css = `<style type="text/css">
 ul {
     padding: 0;
@@ -107,7 +107,7 @@ li.genre:hover, li.cast:hover {
     margin: 0 0.5em 0 0;
 }
 </style>`;
-    _movie = null;
+    _media = null;
 
     constructor() {
         super();
@@ -117,7 +117,7 @@ li.genre:hover, li.cast:hover {
             entries.forEach((entry) => {
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
                     if (this.root.querySelector(".card .card-body-bg")) {
-                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._movie.thumb_url.escape_path_attribute()}")`;
+                        this.root.querySelector(".card .card-body-bg").style.backgroundImage = `linear-gradient(to bottom, rgba(0, 0, 0, 0.73), rgb(192,192,192, 0.1)),url("${this._media.thumb_url.escape_path_attribute()}")`;
                     }
                     if (this.root.querySelector("#thumb")) {
                         this.root.querySelector("#thumb").src = this.root.querySelector("#thumb")?.getAttribute('data-src');
@@ -133,46 +133,46 @@ li.genre:hover, li.cast:hover {
         this.render();
     }
 
-    set movie(movie) {
-        this._movie = movie;
-        if (this._movie) {
+    set media(media) {
+        this._media = media;
+        if (this._media) {
             // < 5: cas des N/A
-            if (!this._movie.thumb_url || this._movie.thumb_url.length < 5) {
-                this._movie.thumb_url = `/thumb${this._movie.file_path}`;
+            if (!this._media.thumb_url || this._media.thumb_url.length < 5) {
+                this._media.thumb_url = `/thumb${this._media.file_path}`;
             }
-            if (!this._movie.poster_url || this._movie.poster_url.length < 5) {
-                this._movie.poster_url = `/poster${this._movie.file_path}`;
+            if (!this._media.poster_url || this._media.poster_url.length < 5) {
+                this._media.poster_url = `/poster${this._media.file_path}`;
             }
-            if (!this._movie.casts) {
-                this._movie.casts = [];
+            if (!this._media.casts) {
+                this._media.casts = [];
             }
-            if (!this._movie.genres) {
-                this._movie.genres = [];
+            if (!this._media.genres) {
+                this._media.genres = [];
             }
         }
         this.render();
     }
     
     renderImage(lazy = true) {
-        if (this._movie?.thumb_url) {
+        if (this._media?.thumb_url) {
             if (lazy === true) {
                 return `<img 
                     src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" 
-                    data-src="${this._movie.thumb_url.escape_path_attribute()}" 
-                    data-filepath="${this._movie.file_path.escape_path_attribute()}" 
+                    data-src="${this._media.thumb_url.escape_path_attribute()}" 
+                    data-filepath="${this._media.file_path.escape_path_attribute()}" 
                     data-attempt="0"
                     id="thumb"
                     loading="lazy"
-                    alt="Poster of ${this._movie.title.escape_quote()}">`;
+                    alt="Poster of ${this._media.title.escape_quote()}">`;
             }
             return `<img 
-                src="${this._movie.thumb_url.escape_path_attribute()}" 
-                data-src="${this._movie.thumb_url.escape_path_attribute()}" 
-                data-filepath="${this._movie.file_path.escape_path_attribute()}" 
+                src="${this._media.thumb_url.escape_path_attribute()}" 
+                data-src="${this._media.thumb_url.escape_path_attribute()}" 
+                data-filepath="${this._media.file_path.escape_path_attribute()}" 
                 data-attempt="0"
                 id="thumb" 
                 loading="lazy"
-                alt="Poster of ${this._movie.title.escape_quote()}">`;
+                alt="Poster of ${this._media.title.escape_quote()}">`;
         }
         return this.renderSummary();
     }
@@ -183,13 +183,13 @@ li.genre:hover, li.cast:hover {
             plays.forEach(play => play.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                app.openItem(this._movie);
+                app.openMedia(this._media);
             }));
         }, 250);
     }
 
     renderSummary() {
-        if (!this._movie) {
+        if (!this._media) {
             return "";
         }
         this.playEvent();
@@ -212,36 +212,36 @@ li.genre:hover, li.cast:hover {
         }, 500);
 
         return `<article class="card-body-summary">
-            <p>${this._movie.summary}</p>
+            <p>${this._media.summary}</p>
             <hr>
-            <ul class="info"><li class="item cast">${this._movie.casts.join("</li><li class=\"item cast\">")}</li></ul>
+            <ul class="info"><li class="item cast">${this._media.casts.join("</li><li class=\"item cast\">")}</li></ul>
             <ul class="info genres">
-                <li class="item"><time>${this._movie.duration?.secondsToHMS() ?? ''}</time></li>
-                <li class="item genre">${this._movie.genres.join("</li><li class=\"item genre\">")}</li>
+                <li class="item"><time>${this._media.duration?.secondsToHMS() ?? ''}</time></li>
+                <li class="item genre">${this._media.genres.join("</li><li class=\"item genre\">")}</li>
             </ul>
         </article>`;
     }
 
     renderPlay() {
-        if (this._movie?.file_type === "image") {
-            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">🖼</button>`;
-        } else if (this._movie?.file_type === "pdf") {
-            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">pdf</button>`;
-        } else if (this._movie?.file_type === "movie") {
-            return `<button class="play" tabindex="1" aria-label="Play ${this._movie.title.escape_quote()}">▶</button>`;
-        } else if (this._movie?.file_type === "audio") {
-            return `<button class="play" tabindex="1" aria-label="Display ${this._movie.title.escape_quote()}">♫</button>`;
+        if (!this._media) return '';
+
+        if (this._media.file_type === "image") {
+            return `<button class="play" tabindex="1" aria-label="Display ${this._media.title.escape_quote()}">🖼</button>`;
+        } else if (this._media.file_type === "pdf") {
+            return `<button class="play" tabindex="1" aria-label="Display ${this._media.title.escape_quote()}">pdf</button>`;
+        } else if (["video", "audio"].includes(this._media.file_type)) {
+            return `<button class="play" tabindex="1" aria-label="Play ${this._media.title.escape_quote()}">▶</button>`;
         } else {
             return '';
         }
     }
 
     fireCurrent() {
-        eventBus.fire("current-movie", { movie: this._movie });
+        eventBus.fire("current-media", { media: this._media });
     }
 
     displayContent() {
-        if (!this._movie.summary || this._movie.summary.length < 5) {
+        if (!this._media.summary || this._media.summary.length < 5) {
             this.fireCurrent();
         } else {
             const content = this.root.querySelector(".card-body-content").innerHTML;
@@ -250,7 +250,7 @@ li.genre:hover, li.cast:hover {
     }
 
     async render() {
-        if (!this._movie) {
+        if (!this._media) {
             this.root.innerHTML = '';
             return;
         }
@@ -260,9 +260,9 @@ li.genre:hover, li.cast:hover {
                 <header id="card-title">
                     <span>
                         ${this.renderPlay()}
-                        ${this._movie.title}
+                        ${this._media.title}
                     </span>
-                    <span class="info" aria-label="Year ${this._movie.year?.escape_quote()}">${this._movie.year ? `(${this._movie.year})` : ''}</span>
+                    <span class="info" aria-label="Year ${this._media.year?.escape_quote()}">${this._media.year ? `(${this._media.year})` : ''}</span>
                 </header>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
@@ -280,6 +280,7 @@ li.genre:hover, li.cast:hover {
         });
 
         this.root.querySelector("#thumb").addEventListener("error", e => {
+            // If image cannot be loaded, generate thumb localy
             let attempt = parseInt(e.target.getAttribute("data-attempt"));
             if (isNaN(attempt)) attempt = 0;
             if (attempt > 1) {
@@ -288,7 +289,7 @@ li.genre:hover, li.cast:hover {
                 attempt++;
                 e.target.setAttribute("data-attempt", attempt);
                 const thumb = `/thumb${e.target.getAttribute("data-filepath")}`;
-                this._movie.thumb_url = thumb;
+                this._media.thumb_url = thumb;
                 e.target.src = thumb;
             }
         });
@@ -302,4 +303,4 @@ li.genre:hover, li.cast:hover {
     }
 }
 
-window.customElements.define('app-movie', MovieComponent);
+window.customElements.define('app-media', MediaComponent);

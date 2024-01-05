@@ -67,11 +67,11 @@ impl OMDb {
             casts: movie.Actors.split(",").map(|i| i.trim().to_string()).collect(),
             rating: movie.imdbRating.parse().unwrap_or_default(),
 
-            provider: String::from("omdb"),
+            provider: String::from("api"),
             provider_id: movie.imdbID.to_string(),
 
             file_path: String::new(),
-            file_type: String::from("movie"),
+            file_type: String::from("video"),
             hash: String::new(),
             modification_time: 0,
             duration: 0,

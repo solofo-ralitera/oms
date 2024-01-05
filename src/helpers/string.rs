@@ -1,5 +1,7 @@
 use diacritics::remove_diacritics;
 
+use super::file::remove_extension;
+
 /// Find each line of content content containing query
 /// 
 /// # Arguments
@@ -58,6 +60,13 @@ where
     }
 
     result
+}
+
+
+pub fn normalize_media_title(title: &String) -> String {
+    let title = title.replace("_", " ");
+    let title = remove_extension(&title);
+    return title;
 }
 
 #[cfg(test)]

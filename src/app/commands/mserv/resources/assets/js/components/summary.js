@@ -19,6 +19,9 @@ ul li {
 img {
     max-width: 55vw;
 }
+#poster {
+    min-width: 295px;
+}
 .title {
     padding: 0 1em;
 }
@@ -48,17 +51,16 @@ time {
 }
 </style>`;
 
-    keyuptimer = 0;
-    movie = null;
+    media = null;
 
     constructor() {
         super();
         this.root = this.attachShadow({mode: "closed"});
         this.render();
 
-        eventBus.register("current-movie", ({detail}) => {
-            this.movie = detail.movie;
-            history.pushHistory("current-movie", detail);
+        eventBus.register("current-media", ({detail}) => {
+            this.media = detail.media;
+            history.pushHistory("current-media", detail);
             this.render();
         });
 
@@ -70,16 +72,18 @@ time {
     }
 
     close() {
-        this.movie = null;
+        this.media = null;
         this.render();
     }
 
     renderPlay() {
-        if (this.movie?.file_type === "image") {
+        if (!this.media) return '';
+        
+        if (this.media?.file_type === "image") {
             return `<button class="play" role="button">🖼</button>`;
-        } else if (this.movie?.file_type === "movie") {
+        } else if (["video", "audio"].includes(this.media.file_type)) {
             return `<button class="play" role="button">▶</button>`;
-        } else if (this.movie?.file_type === "pdf") {
+        } else if (this.media?.file_type === "pdf") {
             return `<button class="play" role="button">&#128462;</button>`;
         } else {
             return '';
@@ -87,7 +91,7 @@ time {
     }
 
     render() {
-        if (!this.movie) {
+        if (!this.media) {
             this.root.innerHTML = '';
             return;
         };
@@ -96,24 +100,24 @@ time {
     <h2 class="title">
         ${this.renderPlay()}
         &nbsp;&nbsp;
-        ${this.movie.title} ${this.movie.year ? `(${this.movie.year})` : ''}
+        ${this.media.title} ${this.media.year ? `(${this.media.year})` : ''}
     </h2>
     <div style="text-align:center;">
         <img 
             id="poster" 
             data-attempt="0" 
-            data-filepath="${this.movie.file_path.escape_path_attribute()}"
-            src="${this.movie.poster_url.escape_path_attribute()}" 
-            alt="${this.movie.title.escape_quote()}">
+            data-filepath="${this.media.file_path.escape_path_attribute()}"
+            src="${this.media.poster_url.escape_path_attribute()}"
+            alt="${this.media.title.escape_quote()}">
     </div>
     <section class="summary">
-        <p>${this.movie.summary}</p>
-        <ul class="info"><li class="item cast pointer">${this.movie.casts.join("</li><li class=\"item cast pointer\">")}</li></ul>
-        <ul class="info"><li class="item genre pointer">${this.movie.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
+        <p>${this.media.summary}</p>
+        <ul class="info"><li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">")}</li></ul>
+        <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
         <footer>
-            <span class="info pointer movie-path">${this.movie.file_path}</span>
+            <span class="info pointer media-path">${this.media.file_path}</span>
             <br>
-            <time>${this.movie.duration?.secondsToHMS() ?? ''}</time>
+            <time>${this.media.duration?.secondsToHMS() ?? ''}</time>
         </footer>
     </section>
 </article>`;
@@ -125,7 +129,7 @@ time {
             this.close();
         });
         this.root.querySelector(".play")?.addEventListener("click", () => {
-            app.openItem(this.movie);
+            app.openMedia(this.media);
         });
         this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
@@ -139,8 +143,8 @@ time {
             });
             this.close();
         }));
-        this.root.querySelector(".movie-path")?.addEventListener("click", () => {
-            const text = this.movie.file_path.split(/\/|\\/).pop();
+        this.root.querySelector(".media-path")?.addEventListener("click", () => {
+            const text = this.media.file_path.split(/\/|\\/).pop();
             try {
                 navigator.clipboard.writeText(text);
             } catch (_) {
@@ -167,7 +171,7 @@ time {
                 e.target.setAttribute("data-attempt", attempt);
 
                 const thumb = `/poster${e.target.getAttribute("data-filepath")}`;
-                this.movie.poster_url = thumb;
+                this.media.poster_url = thumb;
                 e.target.src = thumb;
             }
         });

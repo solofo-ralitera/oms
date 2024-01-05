@@ -1,4 +1,4 @@
-import {elasticMovie} from '../../services/elastic.js';
+import {elasticMedia} from '../../services/elastic.js';
 import {eventBus} from '../../services/EventBus.js';
 
 export class Genres extends HTMLElement {
@@ -28,7 +28,7 @@ li.genre~li.genre::before {
                     <u>Genres</u>
                 </header>
                 <ul>
-                ${elasticMovie.getGenres().map(genre => {
+                ${elasticMedia.getGenres().map(genre => {
                     return `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`;
                 }).join("")}
                 </ul>

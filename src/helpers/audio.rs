@@ -3,13 +3,16 @@ use std::{io, process::Command};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use sha256::digest;
-use super::{file, string::text_contains, command};
+use super::{file, string::{text_contains, normalize_media_title}, command};
 
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AudioResult {
     pub title: String,
     pub summary: String,
+
+    pub thumb_url: String,
+    pub poster_url: String,
 
     pub rating: f32,
     pub file_type: String,
@@ -48,7 +51,7 @@ pub fn audio_duration(file_path: &String) -> usize {
     cmd.args(["-i", file_path, "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0"]);
     // println!("{:?}", cmd);
     let output = command::exec(&mut cmd);
-    return output.parse::<f64>().unwrap_or(0.).round() as usize;
+    return output.parse::<f64>().unwrap_or(0.).ceil() as usize;
 }
 
 pub fn get_audio_result(base_path: &String, file_path: &String) -> Result<AudioResult, io::Error> {
@@ -59,9 +62,12 @@ pub fn get_audio_result(base_path: &String, file_path: &String) -> Result<AudioR
     let file_duration = audio_duration(&file_path);
 
     Ok(AudioResult {
-        title: file_name,
+        title: normalize_media_title(&file_name),
         summary: String::new(),
 
+        thumb_url: String::from("/assets/img/audio.png"),
+        poster_url: String::from("/assets/img/audio.png"),
+    
         rating: 1.,
         file_type: String::from("audio"),
         file_path: relative_file_path,
