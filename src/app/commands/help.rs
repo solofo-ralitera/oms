@@ -15,7 +15,7 @@ impl Runnable for Help {
     /// Start processing the command
     fn run(&self) -> Result<(), io::Error> {
         println!("\
-\nUsage:  oms [options] <command> [<args>]
+\nUsage:  oms <command> [options] <args>
 
 Available commands:
 

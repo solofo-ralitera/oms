@@ -112,7 +112,9 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
 
 pub fn video_duration(file_path: &String) -> usize {
     let mut cmd = Command::new("ffprobe");
-    cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
+
+    // cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
+    cmd.args(["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
 
     let output = command::exec(&mut cmd);
     return output.parse::<f64>().unwrap_or(0.).ceil() as usize;

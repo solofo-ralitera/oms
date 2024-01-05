@@ -204,9 +204,19 @@ fn process_media(file_path: &String, request_header: &Vec<String>, serv_option: 
     let buffer: u64 = 1_500_000;
     
     let (start_range, _) = get_range_params(&request_header, file_size).unwrap_or((0, buffer));
-    let end_range = min(start_range + buffer, file_size) - 1;
+    let end_range = min(start_range + buffer, file_size);
+    let end_range = if end_range > 0 {
+        end_range - 1
+    } else {
+        0
+    };
+    
+    let byte_count = if end_range >= start_range {
+        end_range - start_range + 1
+    } else {
+        0
+    };
 
-    let byte_count = end_range - start_range + 1;
     return (
         String::from("206 Partial Content"), 
         vec![
@@ -216,7 +226,7 @@ fn process_media(file_path: &String, request_header: &Vec<String>, serv_option: 
             (String::from("Content-Length"), format!("{}", byte_count)),
         ], 
         None,
-        Some(file::read_range(&file_path, start_range, byte_count).unwrap()),
+        Some(file::read_range(&file_path, start_range, byte_count).unwrap_or(b"".to_vec())),
     );
 }
 
