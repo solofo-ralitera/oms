@@ -2,6 +2,8 @@ import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
 import {app} from '../services/app.js';
 
+const TRANSCODE_FORMAT = "TRANSCODE_FORMAT";
+
 export class SummaryComponent extends HTMLElement {
     css = `<style type="text/css">
 :host {
@@ -90,6 +92,13 @@ time {
         }
     }
 
+    renderTranscode() {
+        if (this.media.file_path.isVideoFile()) {
+            return `&nbsp;(<span class="info pointer transcode-path">transcode to ${TRANSCODE_FORMAT}</span>)`
+        }
+        return '';
+    }
+
     render() {
         if (!this.media) {
             this.root.innerHTML = '';
@@ -116,6 +125,7 @@ time {
         <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
         <footer>
             <span class="info pointer media-path">${this.media.file_path}</span>
+            ${this.renderTranscode()}
             <br>
             <time>${this.media.duration?.secondsToHMS() ?? ''}</time>
         </footer>
@@ -145,22 +155,12 @@ time {
         }));
         this.root.querySelector(".media-path")?.addEventListener("click", () => {
             const text = this.media.file_path.split(/\/|\\/).pop();
-            try {
-                navigator.clipboard.writeText(text);
-            } catch (_) {
-                const selBox = window.document.createElement('textarea');
-                selBox.style.position = 'fixed';
-                selBox.style.left = '0';
-                selBox.style.top = '0';
-                selBox.style.opacity = '0';
-                selBox.value = text;
-                document.body.appendChild(selBox);
-                selBox.focus();
-                selBox.select();
-                document.execCommand('copy');
-                document.body.removeChild(selBox);
-            }
+            if (text) text.toClipBoard();
         });
+        this.root.querySelector(".transcode-path")?.addEventListener("click", () => {
+            app.transcodeDir(this.media.file_path);
+        });
+        
         this.root.querySelector("#poster").addEventListener("error", e => {
             let attempt = parseInt(e.target.getAttribute("data-attempt"));
             if (isNaN(attempt)) attempt = 0;

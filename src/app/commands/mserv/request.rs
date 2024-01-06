@@ -1,10 +1,12 @@
 mod summary;
 
 use crate::{helpers::{file, rtrim_char, input::get_range_params, string, cache, video, pdf, ltrim_char}, app::commands::{info::Info, Runnable, transcode::Transcode}};
+use image::EncodableLayout;
 use once_cell::sync::Lazy;
+use regex::Regex;
 use sha256::digest;
 use urlencoding::decode;
-use std::{cmp::min, thread, collections::HashMap, fs};
+use std::{cmp::min, thread, collections::HashMap, fs, path::Path};
 use super::option::MservOption;
 use rand::Rng;
 
@@ -45,6 +47,24 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     return static_resources;
 });
 
+/// Return the required file_path, with checking traversal
+fn get_file_path(base_path: &String, file_path: &String) -> Option<String> {
+    let file_path = Path::new(&rtrim_char(base_path, '/')).join(ltrim_char(file_path, '/')).as_path().display().to_string();
+    // Test is file existe and return canonical path
+    let file_path = file::check_file(&file_path);
+    if file_path.is_err() {
+        return None;
+    }
+
+    let file_path = file_path.unwrap();
+
+    // TODO test base path
+    if file_path.starts_with(base_path) {
+        return Some(file_path);
+    }
+    None
+}
+
 ///
 /// Return: status: 200 OK, headers, content
 pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessParam) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
@@ -59,57 +79,62 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
     // Static files
     match STATIC_RESOURCES.get(path) {
         None => (),
-        Some((content_type, content)) => {
-            if path.ends_with("elastic.js") {
+        Some((content_type, content)) => return (
+            String::from("200 OK"), 
+            vec![
+                (String::from("Content-type"), content_type.to_string()),
+            ], 
+            None,
+            if path.ends_with(".js") {
+                let mut content = string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_FORMAT\"", format!("\"{}\"", serv_option.transcode_format).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"[\"VIDEO_EXTENSIONS\"]", serde_json::to_string(&file::VIDEO_EXTENSIONS).unwrap_or(String::new()).as_bytes());
                 match serv_option.elastic.as_ref() {
-                    Some(elastic) => return (
-                        String::from("200 OK"), 
-                        vec![(String::from("Content-type"), content_type.to_string())], 
-                        None,
-                        Some(string::bytes_replace(content, b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes())),
-                    ),
+                    Some(elastic) => {
+                        content = string::bytes_replace(content.as_bytes(), b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes());
+                    },
                     _ => (),
                 };
+                Some(content)
+            } else {
+                Some(content.to_vec())
             }
-            if path.ends_with("summary.js") {
-                return (
-                    String::from("200 OK"), 
-                    vec![(String::from("Content-type"), content_type.to_string())], 
-                    None,
-                    Some(string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes())),
-                );
-            }
-            
-            return (
-                String::from("200 OK"), 
-                vec![
-                    (String::from("Content-type"), content_type.to_string()),
-                ], 
-                None,
-                Some(content.to_vec()),
-            );
-        }
-    }
+        )
+    };
+
     // Video files
-    if path.starts_with("/media/") {
-        let file_path = path.replace("/media/", "/");
-        return process_media(&file_path, &request_header, &serv_option);
+    if path.starts_with("/stream/") {
+        let file_path = get_file_path(&serv_option.base_path, &path.replace("/stream/", "/"));
+        if file_path.is_none() {
+            return (String::from("404 Not Found"), vec![], None, None);
+        }
+        return process_stream(&file_path.unwrap(), &request_header);
     }
     // Thumb files (width=300)
     if path.starts_with("/thumb/") {
-        let file_path = path.replace("/thumb/", "/");
-        return process_thumb(&file_path, &serv_option, "300:-1");
+        let file_path = get_file_path(&serv_option.base_path, &path.replace("/thumb/", "/"));
+        if file_path.is_none() {
+            return (String::from("404 Not Found"), vec![], None, None);
+        }
+        return process_thumb(&file_path.unwrap(), "300:-1");
     }
     // Poster files (no resize)
     if path.starts_with("/poster/") {
-        let file_path = path.replace("/poster/", "/");
-        return process_thumb(&file_path, &serv_option, "-1:-1");
+        let file_path = get_file_path(&serv_option.base_path, &path.replace("/poster/", "/"));
+        if file_path.is_none() {
+            return (String::from("404 Not Found"), vec![], None, None);
+        }
+        return process_thumb(&file_path.unwrap(), "-1:-1");
     }
     // open/download files
     if path.starts_with("/open/") {
-        let file_path = path.replace("/open/", "/");
-        return open_file(&file_path, &serv_option);
+        let file_path = get_file_path(&serv_option.base_path, &path.replace("/open/", "/"));
+        if file_path.is_none() {
+            return (String::from("404 Not Found"), vec![], None, None);
+        }
+        return open_file(&file_path.unwrap());
     }
+
     // Other processes
     return process_command(path, &request_header, &serv_option);
 }
@@ -129,9 +154,15 @@ fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (S
     }
     else if path.eq("/all-files-path") {
         let mut files: Vec<String> = vec![];
-        let _ = file::scan(&serv_option.base_path, &mut files);
-        let files = serde_json::to_string(&files).unwrap_or(String::new());
-        return (String::from("200 OK"), vec![], None, Some(files.as_bytes().to_vec()));
+        match file::scan(&serv_option.base_path, &mut files) {
+            Ok(_) => {
+                let files = serde_json::to_string(&files).unwrap_or(String::new());
+                return (String::from("200 OK"), vec![], None, Some(files.as_bytes().to_vec()));
+            },
+            Err(_) => {
+                return (String::from("404 Not Found"), vec![], None, None);
+            }
+        }
     }
     else {
         return (String::from("404 Not Found"), vec![], None, None);
@@ -162,19 +193,24 @@ fn scan_media_dir(serv_option: &MservOption) {
 }
 
 fn transcode_media_dir(path: &str, serv_option: &MservOption) {
-    let extension = ltrim_char(&path.replace("/transcode-dir", ""), '/');
-
-    let file_path = serv_option.base_path.to_string();
+    let path = ltrim_char(&path.replace("/transcode-dir", ""), '/');
+    
+    let mut file_path = serv_option.base_path.to_string();
     if file_path.is_empty() {
         return;
     }
+
+    let re_extension = Regex::new("^(?im)[0-9a-z]{2,5}$").unwrap();
+
+    // Transcode option
     let mut option = HashMap::new();
     option.insert(String::from("d"), String::new());
     option.insert(String::from("thread"), String::from("1"));
-    if !extension.is_empty() {
-        option.insert(String::from("extensions"), extension);
-    } else {
-        // do not encode known streaming formats
+    option.insert(String::from("output"), serv_option.transcode_format.clone());
+
+    if path.is_empty() {
+        // transcode all file in base_path
+        // do not transcode known streaming formats
         let mut extension = file::VIDEO_EXTENSIONS.join(",");
         extension = extension.replace("mp4", "");
         extension = extension.replace("ts", "");
@@ -184,22 +220,42 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
         extension = ltrim_char(&extension, ',');
         option.insert(String::from("extensions"), extension);
     }
+    else if re_extension.is_match(&path) {
+        // if path is an extension => transcode all file with this extension in base_path
+        if !file::VIDEO_EXTENSIONS.contains(&path.to_lowercase().as_str()) {
+            return;
+        }
+        option.insert(String::from("extensions"), path);
+    }
+    else {
+        // if path is a file => transcode this file to transcode_format
+        file_path = get_file_path(&serv_option.base_path, &path).unwrap_or_default();
+        if file_path.is_empty() {
+            return;
+        }
+        // TODO check video extension
+        if !file::is_video_file(&file_path) {
+            return;
+        }
+    };
 
     let transcode = Transcode {
         file_path: file_path.to_string(),
         cmd_options: option,
     };
-    thread::spawn(move || transcode.run());    
+    thread::spawn(move || transcode.run());
 }
 
-fn process_media(file_path: &String, request_header: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
+fn process_stream(file_path: &String, request_header: &Vec<String>) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let extension = file::get_extension(&file_path);
     
+    // TODO test file > 0
+
     if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) && !file::AUDIO_EXTENSIONS.contains(&extension.as_str()) {
         return (String::from("204 No Content"), vec![], None, None);
     }
 
-    let file_path = &video::get_video_file(&serv_option.base_path, file_path);
+    let file_path = &video::get_video_file(file_path);
     let file_size = file::file_size(&file_path).unwrap_or_default();
     let buffer: u64 = 1_500_000;
     
@@ -230,14 +286,7 @@ fn process_media(file_path: &String, request_header: &Vec<String>, serv_option: 
     );
 }
 
-fn open_file(file_path: &String, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    let file_path = match file::check_file(file_path) {
-        Ok(_) => file_path.to_string(),
-        _ => {
-            let base_path = rtrim_char(&serv_option.base_path, '/');
-            format!("{base_path}{file_path}")
-        }
-    };
+fn open_file(file_path: &String) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let content = match fs::read(&file_path) {
         Ok(content) => content,
         _ => b"".to_vec()
@@ -256,15 +305,7 @@ fn open_file(file_path: &String, serv_option: &MservOption) -> (String, Vec<(Str
 }
 
 /// size: in format width:height, e.g. 600:300, 300:-1 (-1 to keep ratio)
-fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
-    let file_path = match file::check_file(file_path) {
-        Ok(_) => file_path.to_string(),
-        _ => {
-            let base_path = rtrim_char(&serv_option.base_path, '/');
-            format!("{base_path}{file_path}")
-        }
-    };
-
+fn process_thumb(file_path: &String, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let cache_key = digest(&format!("{size}-{file_path}"));
     match cache::get_cache_bytes(&cache_key, ".thumb") {
         Some((_, content)) => return (
@@ -277,19 +318,18 @@ fn process_thumb(file_path: &String, serv_option: &MservOption, size: &str) -> (
             Some(content),
         ),
         None => {
-            let extension = file::get_extension(&file_path).to_lowercase();
             let cache_path = cache::get_cache_path(&cache_key, ".thumb");
-            let content = if file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+            let content = if file::is_video_file(file_path) {
                 // Pick image at random time of video
                 let mut rng = rand::thread_rng();
                 let at = rng.gen_range(0.05..=0.5);
                 video::generate_thumb(&file_path, &cache_path, size, at)
-            } else if file::IMAGE_EXTENSIONS.contains(&extension.as_str()) {
+            } else if file::is_image_file(file_path) {
                 match fs::read(&file_path) {
                     Ok(content) => content,
                     _ => b"".to_vec()
                 }
-            } else if file::PDF_EXTENSIONS.contains(&extension.as_str()) {
+            } else if file::is_pdf_file(file_path) {
                 pdf::generate_thumb(&file_path, &cache_path, size)
             } else {
                 // TODO other format (ms files...)

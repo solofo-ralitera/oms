@@ -1,5 +1,7 @@
 import {app} from '../../services/app.js';
 
+const TRANSCODE_FORMAT = "TRANSCODE_FORMAT";
+
 export class ScanDir extends HTMLElement {
     css = `<style type="text/css">
 .container {
@@ -23,7 +25,7 @@ button {
         this.root.innerHTML = `${this.css}
 <section class="container">
     <button id="scan-dir">Scan directory</button>
-    <button id="transcode-dir">Transcode directory</button>
+    <button id="transcode-dir">Transcode directory (${TRANSCODE_FORMAT})</button>
 </section>        
         `;
 

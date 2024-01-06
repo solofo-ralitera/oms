@@ -131,37 +131,35 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
     let file_path = file_path.clone();
     let info_option = info_option.clone();
     thread_pool.execute(move || {
-        let extension = get_extension(&file_path).to_lowercase();
-        let extension = extension.as_str();
-        
-        if file::PDF_EXTENSIONS.contains(&extension) {
+        if file::is_pdf_file(&file_path) {
             PdfInfo {
                 file_path: &file_path,
                 info_option: &info_option,
             }.info(tx);
         }
-        else if file::IMAGE_EXTENSIONS.contains(&extension) {
+        else if file::is_image_file(&file_path) {
             ImageInfo {
                 file_path: &file_path,
                 info_option: &info_option,
             }.info(tx);
         }
-        else if file::VIDEO_EXTENSIONS.contains(&extension) || extension.is_empty() {
+        else if file::is_audio_file(&file_path) {
+            AudioInfo { 
+                file_path: &file_path,
+                info_option: &info_option,
+            }.info(tx);
+        }
+        else if file::is_video_ignored_file(&file_path) {
+            ();
+        }
+        else if file::is_video_file(&file_path) || get_extension(&file_path).is_empty() {
             VideoInfo { 
                 video_raw_name: &get_file_name(&file_path),
                 file_path: &file_path,
                 info_option: &info_option,
             }.info(tx);
         }
-        else if file::AUDIO_EXTENSIONS.contains(&extension) || extension.is_empty() {
-            AudioInfo { 
-                file_path: &file_path,
-                info_option: &info_option,
-            }.info(tx);
-        }
-        else if file::VIDEO_EXTENSIONS_IGNORED.contains(&extension) {
-            ();
-        } else {
+        else {
             print!("\n{file_path}: Format not supported\n");
         }
     });

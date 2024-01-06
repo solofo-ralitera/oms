@@ -72,7 +72,7 @@ export class PlayerVideoComponent extends HTMLElement {
                 </div>
                 <video controls autoplay
                     poster="${this.mediaItem.thumb_url.escape_path_attribute()}">
-                    <source src="./media${this.mediaItem.file_path.escape_path_attribute()}" type="video/mp4" />
+                    <source src="./stream${this.mediaItem.file_path.escape_path_attribute()}" type="video/mp4" />
                     <p>
                         Your browser doesn't support this video. Here is the path of the file:
                         ${this.mediaItem.file_path}
@@ -82,10 +82,7 @@ export class PlayerVideoComponent extends HTMLElement {
             </div>`;
 
         const video = this.root.querySelector("video");
-        video.volume = app.playerVolume();
-        video.addEventListener("volumechange", event => {
-            app.playerVolume(event.target);
-        });
+        app.initPLayerVolume(video);
 
         this.root.querySelector(".close")?.addEventListener("click", e => {
             eventBus.fire("play-media", null);

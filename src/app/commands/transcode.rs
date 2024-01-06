@@ -42,7 +42,7 @@ impl Runnable for Transcode {
         *b_isrunning = true;
         
         let mut transcode_option = TranscodeOption::new();
-        println!("Transcode running");
+
         // --help
         if self.cmd_options.contains_key("h") || self.cmd_options.contains_key("help") {
             *b_isrunning = false;
@@ -98,7 +98,7 @@ impl Runnable for Transcode {
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
     let extension = get_extension(file_path).to_lowercase();
 
-    if !file::VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+    if !file::is_video_file(file_path) {
         return ();
     }
 

@@ -10,7 +10,7 @@ use regex::Regex;
 use sha256::digest;
 use serde::{Deserialize, Serialize};
 use self::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}};
-use super::{cache, string::{text_contains, normalize_media_title}, file, command, rtrim_char};
+use super::{cache, string::{text_contains, normalize_media_title}, file, command};
 
 
 ///
@@ -70,6 +70,12 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
 
 //  ffmpeg -i input.avi input.webm
 pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String) -> Result<Option<String>, io::Error> {
+    if !file::is_video_file(file_path) {
+        return Err(io::Error::new(
+            io::ErrorKind::WriteZero, 
+            format!("Video transcode: unsupported extension for {file_path}")
+        ))
+    }
     if !file::VIDEO_EXTENSIONS.contains(&output.as_str()) {
         return Err(io::Error::new(
             io::ErrorKind::WriteZero, 
@@ -111,13 +117,23 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
 }
 
 pub fn video_duration(file_path: &String) -> usize {
+    if !file::is_video_file(file_path) {
+        return 0;
+    }
+    
     let mut cmd = Command::new("ffprobe");
-
-    // cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
     cmd.args(["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
 
     let output = command::exec(&mut cmd);
-    return output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+    let mut size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+    if size == 0 {
+        // Try stream option if the first one failed
+        let mut cmd = Command::new("ffprobe");
+        cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
+        let output = command::exec(&mut cmd);
+        size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+    }
+    return size;
 }
 
 
@@ -125,8 +141,8 @@ pub fn video_duration(file_path: &String) -> usize {
 /// if found use this mp4 file for next process
 /// TODO: live re-encoding for other format than mp4 or ts
 /// https://www.reddit.com/r/rust/comments/iplph5/encoding_decoding_video_streams_in_rust/
-pub fn get_video_file(base_path: &String, file_path: &String) -> String {
-    let file_path = rtrim_char(base_path, '/') + file_path;
+pub fn get_video_file(file_path: &String) -> String {
+    /*
     if !file_path.ends_with(".mp4") {
         let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
         let mp4_file_path = re.replace(file_path.as_str(), ".mp4").to_string();
@@ -134,13 +150,14 @@ pub fn get_video_file(base_path: &String, file_path: &String) -> String {
             return f.to_string();
         }
     }
+    */
     return file_path.clone();
 }
 
 /// size: in format width:height, e.g. 600:300, 300:-1 (-1 to keep ratio)
 /// at: pick image at x% of video duration, and resize to size
 pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32) -> Vec<u8> {
-    let src_path = get_video_file(&String::new(), src_path);
+    let src_path = get_video_file(src_path);
 
     // Format duration (s) to hh:mm:ss, :0>2 to keep the leading 0
     let duration = (video_duration(&src_path) as f32 * at).ceil() as usize;

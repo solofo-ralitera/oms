@@ -8,6 +8,7 @@ pub struct MservOption {
     pub urls: Vec<SocketAddr>,
     pub elastic: Option<Elastic>,
     pub provider: String,
+    pub transcode_format: String,
 }
 
 impl MservOption {
@@ -21,6 +22,7 @@ impl MservOption {
             urls: vec![Self::addr_from_string(&"localhost:7777".to_string())],
             elastic: None,
             provider: String::from("api"),
+            transcode_format: String::from("mp4"),
         }
     }
 
@@ -63,6 +65,18 @@ impl MservOption {
         }
     }
 
+    pub fn set_transcode_format(&mut self, value: &String) -> Result<()> {
+        let value = value.to_lowercase();
+        if file::VIDEO_EXTENSIONS.contains(&value.as_str()) {
+            self.transcode_format = value;
+            return Ok(());
+        }
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound, 
+            format!("Invalid value for output")
+        ));
+    }
+
     pub fn set_basepath(&mut self, value: &String) -> Result<()> {
         match file::check_dir(value) {
             Ok(_) => {
@@ -90,6 +104,7 @@ impl Clone for MservOption {
             urls: self.urls.clone(),
             elastic: self.elastic.clone(),
             provider: self.provider.clone(),
+            transcode_format: self.transcode_format.clone(),
         }
     }
 }

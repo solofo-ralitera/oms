@@ -164,36 +164,35 @@ fn search_in_file(file_path: &String, search_term: &String, search_option: &Sear
     }
     
     thread_pool.execute(move || {
-        let extension = extension.as_str();
-        if file::PDF_EXTENSIONS.contains(&extension) {
+        if file::is_pdf_file(&file_path) {
             PdfSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
             }.search(tx);
         }
-        else if file::VIDEO_EXTENSIONS.contains(&extension) {
+        else if file::is_video_file(&file_path) {
             VideoSearch {
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
             }.search(tx);
         }
-        else if file::AUDIO_EXTENSIONS.contains(&extension) {
+        else if file::is_audio_file(&file_path) {
             AudioSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
             }.search(tx);
         }
-        else if file::MS_EXTENSIONS.contains(&extension) {
+        else if file::is_ms_file(&file_path) {
             MsSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 
                 search_option: &search_option,
             }.search(tx);
         }
-        else if file::IMAGE_EXTENSIONS.contains(&extension) {
+        else if file::is_image_file(&file_path) {
             ImageSearch { 
                 file_path: &file_path, 
                 search_term: &search_term, 

@@ -66,7 +66,7 @@ export class PlayerAudioComponent extends HTMLElement {
                     <button class="close" arial-label="Close audio player">x</button>
                 </div>
                 <audio controls autoplay
-                    <source src="./media${this.mediaItem.file_path.escape_path_attribute()}" type="audio/${this.mediaItem.file_path.extension()}" />
+                    <source src="./stream${this.mediaItem.file_path.escape_path_attribute()}" type="audio/${this.mediaItem.file_path.extension()}" />
                     <p>
                         Your browser doesn't support this audio. Here is the path of the file:
                         ${this.mediaItem.file_path}
@@ -76,10 +76,7 @@ export class PlayerAudioComponent extends HTMLElement {
             </div>`;
 
         const audio = this.root.querySelector("audio");
-        audio.volume = app.playerVolume();
-        audio.addEventListener("volumechange", event => {
-            app.playerVolume(event.target);
-        });
+        app.initPLayerVolume(audio);
         
         this.root.querySelector(".close")?.addEventListener("click", e => {
             eventBus.fire("play-media", null);

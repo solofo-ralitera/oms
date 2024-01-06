@@ -41,9 +41,18 @@ pub static AUDIO_EXTENSIONS: [&str; 20] = ["wav", "wave", "aiff", "aif", "aifc",
 ///     Err(err) => assert!(err.to_string().starts_with("No")),
 /// };
 /// ```
-pub fn check_file(file_path: &str) -> Result<&str> {
+pub fn check_file(file_path: &String) -> Result<String> {
    match fs::metadata(file_path) {
-      Ok(m) if m.is_file() => Ok(file_path),
+      Ok(m) if m.is_file() => {
+         let full_path = fs::canonicalize(file_path).unwrap_or_default().as_path().display().to_string();
+         if full_path.is_empty() {
+            return Err(io::Error::new(
+               io::ErrorKind::WriteZero,
+               format!("{file_path} is not a file")
+            ));
+         }
+         Ok(full_path)
+      },
       Err(err) => Err(err),
       _ => Err(io::Error::new(
          io::ErrorKind::WriteZero, 
@@ -52,9 +61,18 @@ pub fn check_file(file_path: &str) -> Result<&str> {
    }
 }
 
-pub fn check_dir(dir_path: &str) -> Result<&str> {
+pub fn check_dir(dir_path: &String) -> Result<String> {
    match fs::metadata(dir_path) {
-      Ok(m) if m.is_dir() => Ok(dir_path),
+      Ok(m) if m.is_dir() => {
+         let full_path = fs::canonicalize(dir_path).unwrap_or_default().as_path().display().to_string();
+         if full_path.is_empty() {
+            return Err(io::Error::new(
+               io::ErrorKind::WriteZero,
+               format!("{dir_path} is not a directory")
+            ));
+         }
+         Ok(full_path)
+      },
       Err(err) => Err(err),
       _ => Err(io::Error::new(
          io::ErrorKind::WriteZero, 
@@ -63,12 +81,41 @@ pub fn check_dir(dir_path: &str) -> Result<&str> {
    }
 }
 
-
 pub fn file_size(file_path: &str) -> Result<u64> {
    match fs::metadata(file_path) {
       Ok(m) => Ok(m.len()),
       Err(err) => Err(err),
   }
+}
+
+pub fn is_video_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return VIDEO_EXTENSIONS.contains(&extension.as_str());
+}
+
+pub fn is_video_ignored_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return VIDEO_EXTENSIONS_IGNORED.contains(&extension.as_str());
+}
+
+pub fn is_image_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return IMAGE_EXTENSIONS.contains(&extension.as_str());
+}
+
+pub fn is_audio_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return AUDIO_EXTENSIONS.contains(&extension.as_str());
+}
+
+pub fn is_pdf_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return PDF_EXTENSIONS.contains(&extension.as_str());
+}
+
+pub fn is_ms_file(file_path: &String) -> bool {
+   let extension = get_extension(&file_path).to_lowercase();
+   return MS_EXTENSIONS.contains(&extension.as_str());
 }
 
 // https://stackoverflow.com/questions/68694399/most-idiomatic-way-to-read-a-range-of-bytes-from-a-file

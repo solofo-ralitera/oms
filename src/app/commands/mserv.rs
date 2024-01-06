@@ -32,6 +32,7 @@ impl Runnable for Mserv {
                 "base-path" => mserv_option.set_basepath(value)?,
                 "elastic-url" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,
+                "transcode-format" => mserv_option.set_transcode_format(value)?,
                 arg => return Err(io::Error::new(
                     io::ErrorKind::InvalidInput, 
                     format!("\nUnkown argument {}\n", arg)
@@ -136,6 +137,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
     -p <string> --provider=<string>   possible value: local, api (default)
     --elastic-url=<string>  Url of elastic search server (with index, e.g. http://localhost:9200/oms)
     --url=<string>  e.g. localhost:7777, 192.168.33.106:7777
+    --transcode-format=<string>   Extension of transcode feature (e.g. webm)
 "
 }
 
