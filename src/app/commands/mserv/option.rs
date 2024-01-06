@@ -73,7 +73,7 @@ impl MservOption {
         }
         return Err(io::Error::new(
             io::ErrorKind::NotFound, 
-            format!("Invalid value for output")
+            format!("Invalid value for transcode format")
         ));
     }
 

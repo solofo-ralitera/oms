@@ -64,11 +64,11 @@ export const app = new class {
         if (!media) return;
 
         if (media.file_type === "image") {
-            window.open(`/poster${media.file_path}`);
+            window.open(`/poster${media.file_path.escape_path()}`);
         } else if (["audio", "video"].includes(media.file_type)) {
             eventBus.fire("play-media", media);
         } else {
-            window.open(`/open${media.file_path}`);
+            window.open(`/open${media.file_path.escape_path()}`);
         }        
     }
 }

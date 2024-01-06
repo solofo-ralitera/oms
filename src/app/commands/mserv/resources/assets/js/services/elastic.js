@@ -39,8 +39,8 @@ class ElasticMedia {
         };
 
         // sort latest
-        if (term.startsWith(':latest')) {
-            term = term.replace(":latest", "").trim();
+        if (term.startsWith(':latest') || term.startsWith(':last')) {
+            term = term.replace(":latest", "").replace(":last", "").trim();
             query = {
                 "query_string": {
                     "query": term || "*",

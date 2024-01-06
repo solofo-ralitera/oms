@@ -308,15 +308,6 @@ fn open_file(file_path: &String) -> (String, Vec<(String, String)>, Option<Box<d
 fn process_thumb(file_path: &String, size: &str) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     let cache_key = digest(&format!("{size}-{file_path}"));
     match cache::get_cache_bytes(&cache_key, ".thumb") {
-        Some((_, content)) => return (
-            String::from("200 OK"), 
-            vec![
-                (String::from("Content-type"), String::from("image/jpeg")),
-                (String::from("Cache-Control"), String::from("public, max-age=31536000, s-maxage=31536000, immutable")),
-            ], 
-            None,
-            Some(content),
-        ),
         None => {
             let cache_path = cache::get_cache_path(&cache_key, ".thumb");
             let content = if file::is_video_file(file_path) {
@@ -348,6 +339,15 @@ fn process_thumb(file_path: &String, size: &str) -> (String, Vec<(String, String
                 None,
                 Some(content),
             );
-        }
+        },
+        Some((_, content)) => return (
+            String::from("200 OK"), 
+            vec![
+                (String::from("Content-type"), String::from("image/jpeg")),
+                (String::from("Cache-Control"), String::from("public, max-age=31536000, s-maxage=31536000, immutable")),
+            ], 
+            None,
+            Some(content),
+        ),
     }
 }
