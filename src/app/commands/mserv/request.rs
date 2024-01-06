@@ -87,7 +87,8 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
             None,
             if path.ends_with(".js") {
                 let mut content = string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes());
-                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_FORMAT\"", format!("\"{}\"", serv_option.transcode_format).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", serv_option.transcode_output).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", serv_option.transcode_thread).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"[\"VIDEO_EXTENSIONS\"]", serde_json::to_string(&file::VIDEO_EXTENSIONS).unwrap_or(String::new()).as_bytes());
                 match serv_option.elastic.as_ref() {
                     Some(elastic) => {
@@ -205,9 +206,9 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
     // Transcode option
     let mut option = HashMap::new();
     option.insert(String::from("d"), String::new());
-    option.insert(String::from("thread"), String::from("1"));
-    option.insert(String::from("output"), serv_option.transcode_format.clone());
-
+    option.insert(String::from("output"), serv_option.transcode_output.clone());
+    option.insert(String::from("thread"), serv_option.transcode_thread.to_string());
+    
     if path.is_empty() {
         // transcode all file in base_path
         // do not transcode known streaming formats
@@ -228,7 +229,7 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
         option.insert(String::from("extensions"), path);
     }
     else {
-        // if path is a file => transcode this file to transcode_format
+        // if path is a file => transcode this file to transcode_output
         file_path = get_file_path(&serv_option.base_path, &path).unwrap_or_default();
         if file_path.is_empty() {
             return;

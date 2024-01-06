@@ -64,10 +64,10 @@ impl Runnable for Info {
             return Ok(());
         }
 
-        info_option.set_basepath(&file_path)?;
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "p" | "provider" => info_option.set_provider(value)?,
+                "base-path" => info_option.set_basepath(value)?,
                 "hide-preview" => info_option.hide_preview(),
                 "elastic-url" => info_option.set_elastic(value)?,
                 "t" | "thread" => info_option.set_thread(value)?,
@@ -84,7 +84,10 @@ impl Runnable for Info {
                 },
             };
         }
-        
+        if info_option.base_path.is_empty() {
+            info_option.set_basepath(&file_path)?;
+        }
+
         let thread_pool = ThreadPool::new(info_option.thread);
 
         // if files are provided in option as list
@@ -191,6 +194,7 @@ info [OPTIONS] <file_path/dir_path>
     --elastic-url=<string>  Elastic search server
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse
+    --base-path=<string>   Dir path of relative root
 
     For videos: info --elastic-url=<string> --cache-path=<string> [dir_path]
 "

@@ -1,4 +1,4 @@
-use std::{io::{Error, ErrorKind}, cmp::max};
+use std::{io::{Error, ErrorKind}, cmp::max, fs, path::Path};
 use crate::helpers::{file, db::elastic::Elastic, rtrim_char};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -38,12 +38,25 @@ impl InfoOption {
     }
 
     pub fn set_basepath(&mut self, value: &String) -> Result<()> {
-        match file::check_dir(value) {
-            Ok(_) => {
+        match fs::metadata(value) {
+            Ok(metadata) if metadata.is_dir() => {
                 self.base_path = rtrim_char(value, '/').trim().to_string();
                 return Ok(());
             },
-            _ => Ok(()),
+            Ok(metadata) if metadata.is_file() => match Path::new(value).parent() {
+                Some(p) => {
+                    self.base_path = rtrim_char(&p.display().to_string(), '/').trim().to_string();
+                    return Ok(());
+                },
+                None => return Err(Error::new(
+                    ErrorKind::InvalidInput, 
+                    format!("Base path {value} is not a directory")
+                )),
+            },
+            _ => Err(Error::new(
+                ErrorKind::InvalidInput, 
+                format!("Base path {value} is not a directory")
+            )),
         }
     }
 

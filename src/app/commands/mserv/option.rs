@@ -1,4 +1,4 @@
-use std::{io, net::{SocketAddr, ToSocketAddrs}};
+use std::{io, net::{SocketAddr, ToSocketAddrs}, cmp::max};
 use crate::helpers::{db::elastic::Elastic, rtrim_char, file};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -8,7 +8,8 @@ pub struct MservOption {
     pub urls: Vec<SocketAddr>,
     pub elastic: Option<Elastic>,
     pub provider: String,
-    pub transcode_format: String,
+    pub transcode_output: String,
+    pub transcode_thread: usize,
 }
 
 impl MservOption {
@@ -22,7 +23,8 @@ impl MservOption {
             urls: vec![Self::addr_from_string(&"localhost:7777".to_string())],
             elastic: None,
             provider: String::from("api"),
-            transcode_format: String::from("mp4"),
+            transcode_output: String::from("mp4"),
+            transcode_thread: max(1, num_cpus::get() - 1),
         }
     }
 
@@ -65,16 +67,29 @@ impl MservOption {
         }
     }
 
-    pub fn set_transcode_format(&mut self, value: &String) -> Result<()> {
+    pub fn set_transcode_output(&mut self, value: &String) -> Result<()> {
         let value = value.to_lowercase();
         if file::VIDEO_EXTENSIONS.contains(&value.as_str()) {
-            self.transcode_format = value;
+            self.transcode_output = value;
             return Ok(());
         }
         return Err(io::Error::new(
             io::ErrorKind::NotFound, 
             format!("Invalid value for transcode format")
         ));
+    }
+
+    pub fn set_transcode_thread(&mut self, value: &String) -> Result<()> {
+        match value.parse::<usize>() {
+            Ok(v) => {
+                self.transcode_thread = v;
+                Ok(())
+            },
+            _ => Err(io::Error::new(
+                io::ErrorKind::NotFound, 
+                format!("Invalid value for transcode thread")
+            ))
+        }
     }
 
     pub fn set_basepath(&mut self, value: &String) -> Result<()> {
@@ -104,7 +119,8 @@ impl Clone for MservOption {
             urls: self.urls.clone(),
             elastic: self.elastic.clone(),
             provider: self.provider.clone(),
-            transcode_format: self.transcode_format.clone(),
+            transcode_output: self.transcode_output.clone(),
+            transcode_thread: self.transcode_thread,
         }
     }
 }

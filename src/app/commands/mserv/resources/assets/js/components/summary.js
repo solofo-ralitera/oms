@@ -2,7 +2,7 @@ import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
 import {app} from '../services/app.js';
 
-const TRANSCODE_FORMAT = "TRANSCODE_FORMAT";
+const TRANSCODE_OUTPUT = "TRANSCODE_OUTPUT";
 
 export class SummaryComponent extends HTMLElement {
     css = `<style type="text/css">
@@ -93,8 +93,8 @@ time {
     }
 
     renderTranscode() {
-        if (this.media.file_path.isVideoFile()) {
-            return `&nbsp;(<span class="info pointer transcode-path">transcode to ${TRANSCODE_FORMAT}</span>)`
+        if (this.media.file_path.isVideoFile() && this.media.file_path.extension().toLowerCase() !== TRANSCODE_OUTPUT) {
+            return `&nbsp;(<span class="info pointer transcode-path">transcode to ${TRANSCODE_OUTPUT}</span>)`
         }
         return '';
     }

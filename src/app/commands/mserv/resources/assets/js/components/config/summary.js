@@ -2,7 +2,7 @@ import {app} from '../../services/app.js';
 import {elasticMedia} from '../../services/elastic.js';
 
 const BASE_URL = "BASE_URL";
-const TRANSCODE_FORMAT = "TRANSCODE_FORMAT";
+const TRANSCODE_OUTPUT = "TRANSCODE_OUTPUT";
 
 export class Summary extends HTMLElement {
     css = `<style type="text/css">
@@ -26,8 +26,9 @@ export class Summary extends HTMLElement {
     renderCountByExtension(files_extension) {
         let str = '';
         Object.entries(files_extension).forEach(([extension, count]) => {
-            if (extension.isVideoFile()) {
-                str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_FORMAT}">${extension}: ${count}</li>`;
+            console.log(extension.toLowerCase(), TRANSCODE_OUTPUT);
+            if (extension.isVideoFile() && extension.toLowerCase() !== TRANSCODE_OUTPUT) {
+                str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_OUTPUT}">${extension}: ${count}</li>`;
             } else {
                 str += `<li>${extension}: ${count}</li>`;
             }
