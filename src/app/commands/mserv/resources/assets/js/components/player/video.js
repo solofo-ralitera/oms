@@ -36,6 +36,12 @@ export class PlayerVideoComponent extends HTMLElement {
     .tool > button:hover {
         font-weight: bold;
     }
+    .tool .title {
+        cursor: pointer;
+    }
+    .tool .title:hover {
+        text-decoration: underline;
+    }
     video {
         width: 100%;
         height: calc(100% - 50px - 10px);
@@ -65,7 +71,7 @@ export class PlayerVideoComponent extends HTMLElement {
         this.root.innerHTML = `${this.css}
             <div class="video-container" data-size="mini">
                 <div class="tool">
-                    <span class="info">${this.mediaItem.title}</span>
+                    <span class="info title">${this.mediaItem.title}</span>
                     <button class="full" arial-label="Extend player">&#9634;</button>
                     <button class="close" arial-label="Close video player">x</button>
                     <span></span>
@@ -86,6 +92,9 @@ export class PlayerVideoComponent extends HTMLElement {
 
         this.root.querySelector(".close")?.addEventListener("click", e => {
             eventBus.fire("play-media", null);
+        });
+        this.root.querySelector(".title")?.addEventListener("click", e => {
+            eventBus.fire("current-media", { media: this.mediaItem });
         });
 
         this.root.querySelector(".full")?.addEventListener("click", e => {

@@ -58,7 +58,7 @@ fn get_file_path(base_path: &String, file_path: &String) -> Option<String> {
 
     let file_path = file_path.unwrap();
 
-    // TODO test base path
+    // test base path for traversal
     if file_path.starts_with(base_path) {
         return Some(file_path);
     }
@@ -142,7 +142,7 @@ pub fn process(ProcessParam {path, verb, request_header, serv_option}: ProcessPa
 
 fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {
     if path.starts_with("/scan-dir") {
-        scan_media_dir(serv_option);
+        scan_media_dir(None, serv_option);
         return (String::from("200 OK"), vec![], None, None);
     }
     else if path.starts_with("/transcode-dir") {
@@ -170,8 +170,11 @@ fn process_command(path: &str, _: &Vec<String>, serv_option: &MservOption) -> (S
     }
 }
 
-fn scan_media_dir(serv_option: &MservOption) {
-    let file_path = serv_option.base_path.to_string();
+fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
+    let file_path = match file_path {
+        None => serv_option.base_path.to_string(),
+        Some(p) => p,
+    };
     if file_path.is_empty() {
         return;
     }
@@ -179,6 +182,7 @@ fn scan_media_dir(serv_option: &MservOption) {
     option.insert(String::from("hide-preview"), String::new());
     option.insert(String::from("thread"), String::from("5"));
     option.insert(String::from("provider"), serv_option.provider.clone());
+    option.insert(String::from("base-path"), serv_option.base_path.clone());
 
     match serv_option.elastic.as_ref() {
         Some(elastic) => {
@@ -190,7 +194,14 @@ fn scan_media_dir(serv_option: &MservOption) {
         file_path: file_path.to_string(),
         cmd_options: option,
     };
-    thread::spawn(move || info.run());
+    
+    println!("Scan start on {file_path}");
+    match thread::spawn(move || info.run()).join() {
+        Ok(_) => {
+            println!("Scan finished on {file_path}");
+        },
+        _ => (),
+    }
 }
 
 fn transcode_media_dir(path: &str, serv_option: &MservOption) {
@@ -234,7 +245,6 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
         if file_path.is_empty() {
             return;
         }
-        // TODO check video extension
         if !file::is_video_file(&file_path) {
             return;
         }
@@ -244,7 +254,15 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
         file_path: file_path.to_string(),
         cmd_options: option,
     };
-    thread::spawn(move || transcode.run());
+
+    match thread::spawn(move || transcode.run()).join() {
+        Ok(_) => {
+            println!("Transcode finished on {file_path}");
+            // update info after transcode
+            scan_media_dir(file::get_file_dir(&file_path), serv_option);
+        },
+        _ => (),
+    }
 }
 
 fn process_stream(file_path: &String, request_header: &Vec<String>) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {

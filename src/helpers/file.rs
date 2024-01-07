@@ -153,6 +153,17 @@ pub fn read_buf(file_path: &str) -> Vec<u8> {
    return vec![];
 }
 
+pub fn get_file_dir(file_path: &str) -> Option<String> {
+   match fs::metadata(file_path) {
+      Ok(m) if m.is_file() => match Path::new(file_path).parent() {
+         Some(path) => Some(path.display().to_string()),
+         None => None,
+      },
+      Ok(m) if m.is_dir() => Some(file_path.to_string()),
+      _ => None,
+   }   
+}
+
 pub fn get_extension(filename: &str) -> String {
    Path::new(filename)
       .extension()

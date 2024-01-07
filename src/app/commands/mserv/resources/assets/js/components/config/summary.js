@@ -26,7 +26,6 @@ export class Summary extends HTMLElement {
     renderCountByExtension(files_extension) {
         let str = '';
         Object.entries(files_extension).forEach(([extension, count]) => {
-            console.log(extension.toLowerCase(), TRANSCODE_OUTPUT);
             if (extension.isVideoFile() && extension.toLowerCase() !== TRANSCODE_OUTPUT) {
                 str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_OUTPUT}">${extension}: ${count}</li>`;
             } else {

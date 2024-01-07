@@ -1,4 +1,4 @@
-use std::{io::{Error, ErrorKind}, cmp::max, fs, path::Path};
+use std::{io::{Error, ErrorKind}, cmp::max, fs};
 use crate::helpers::{file, db::elastic::Elastic, rtrim_char};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -43,9 +43,9 @@ impl InfoOption {
                 self.base_path = rtrim_char(value, '/').trim().to_string();
                 return Ok(());
             },
-            Ok(metadata) if metadata.is_file() => match Path::new(value).parent() {
-                Some(p) => {
-                    self.base_path = rtrim_char(&p.display().to_string(), '/').trim().to_string();
+            Ok(metadata) if metadata.is_file() => match file::get_file_dir(value) {
+                Some(path) => {
+                    self.base_path = rtrim_char(&path, '/').trim().to_string();
                     return Ok(());
                 },
                 None => return Err(Error::new(
