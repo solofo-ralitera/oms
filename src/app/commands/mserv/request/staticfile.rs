@@ -26,6 +26,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     static_resources.insert("/assets/js/components/config/scandir.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/scandir.js")));
     static_resources.insert("/assets/js/components/config/summary.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/summary.js")));
     static_resources.insert("/assets/js/components/config/genres.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/genres.js")));
+    static_resources.insert("/assets/js/components/config/casts.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/casts.js")));
 
     static_resources.insert("/assets/js/services/app.js", ("text/javascript", include_bytes!("../resources/assets/js/services/app.js")));
     static_resources.insert("/assets/js/services/elastic.js", ("text/javascript", include_bytes!("../resources/assets/js/services/elastic.js")));
@@ -38,7 +39,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
 pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
     match STATIC_RESOURCES.get(path) {
         None => None,
-        Some((content_type, content)) => return Some((
+        Some((content_type, content)) => Some((
             String::from("200 OK"), 
             vec![
                 (String::from("Content-type"), content_type.to_string()),
@@ -49,12 +50,9 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", serv_option.transcode_output).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", serv_option.transcode_thread).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"[\"VIDEO_EXTENSIONS\"]", serde_json::to_string(&file::VIDEO_EXTENSIONS).unwrap_or(String::new()).as_bytes());
-                match serv_option.elastic.as_ref() {
-                    Some(elastic) => {
-                        content = string::bytes_replace(content.as_bytes(), b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes());
-                    },
-                    _ => (),
-                };
+                if let Some(elastic) = serv_option.elastic.as_ref() {
+                    content = string::bytes_replace(content.as_bytes(), b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes());
+                }
                 Some(content)
             } else {
                 Some(content.to_vec())

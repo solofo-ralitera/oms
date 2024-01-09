@@ -2,6 +2,8 @@ import { MediaComponent } from "./media.js";
 import { ConfigComponent } from "./config.js";
 import {eventBus} from '../services/EventBus.js';
 import {elasticMedia} from '../services/elastic.js';
+import { Genres } from "./config/genres.js";
+import { Casts } from "./config/casts.js";
 
 export class MediasComponent extends HTMLElement {
     static observedAttributes = ["search"];
@@ -20,6 +22,12 @@ export class MediasComponent extends HTMLElement {
 
         eventBus.register("display-config", () => {
             this.renderConfig();
+        });
+        eventBus.register("display-genre", () => {
+            this.renderGenre();
+        });
+        eventBus.register("display-cast", () => {
+            this.renderCast();
         });
     }
 
@@ -75,6 +83,16 @@ return `<style type="text/css">
     renderConfig() {
         this.root.innerHTML = this.css();
         this.root.append(new ConfigComponent());
+    }
+
+    renderGenre() {
+        this.root.innerHTML = this.css();
+        this.root.append(new Genres());
+    }
+
+    renderCast() {
+        this.root.innerHTML = this.css();
+        this.root.append(new Casts());
     }
 }
 

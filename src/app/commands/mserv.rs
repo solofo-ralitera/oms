@@ -130,7 +130,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
         - Transcode your video files into a streamable format (like H.264)
         - Elsastic search for indexing, with cors allowed, see elastic configuration
         - [Optional] ffmpeg and ffprobe, for video duration
-        - [Optional] imagick (convert), for pdf and image thumbnail
+        - [Optional] ImageMagick (convert + ghostscript) with pdf enabled, for pdf and image thumbnail
 
     --help
     --cache-path=<string>   Cache path, default ./.oms/

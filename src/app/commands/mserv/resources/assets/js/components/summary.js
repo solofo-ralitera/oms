@@ -121,7 +121,10 @@ time {
     </div>
     <section class="summary">
         <p>${this.media.summary}</p>
-        <ul class="info"><li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">")}</li></ul>
+        <ul class="info">
+            <span class="all-cast pointer">Casts</span>:
+            <li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">")}</li>
+        </ul>
         <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
         <footer>
             <span class="info pointer media-path">${this.media.file_path}</span>
@@ -147,6 +150,11 @@ time {
             });
             this.close();
         }));
+        this.root.querySelector(".all-cast")?.addEventListener("click", () => {
+            eventBus.fire("navigate-search", {
+                term: `:cast`,
+            });
+        });
         this.root.querySelectorAll("li.cast").forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
                 term: `:cast ${e.target.innerHTML.trim()}`,

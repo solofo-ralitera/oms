@@ -62,6 +62,17 @@ input[type=search]:focus {
                 eventBus.fire("display-config", null);
                 return;
             }
+
+            if (term === ":genre" || term === ":genres" ) {
+                eventBus.fire("display-genre", null);
+                return;
+            }
+
+            if (term === ":cast" || term === ":casts" ) {
+                eventBus.fire("display-cast", null);
+                return;
+            }
+
             eventBus.fire("media-search", term);
         }, 350);
     }

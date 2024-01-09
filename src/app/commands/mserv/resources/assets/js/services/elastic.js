@@ -1,7 +1,12 @@
 const ELASTIC_URL = "ELASTIC_URL";
 
 class ElasticMedia {
+    casts = new Set();
     genres = new Set();
+
+    getCasts() {
+        return Array.from(this.casts).sort();
+    }
 
     getGenres() {
         return Array.from(this.genres).sort();
@@ -197,6 +202,9 @@ class ElasticMedia {
             .then(medias => {
                 medias.map(m => m.genres).flat().forEach(g => {
                     if (g) this.genres.add(g)
+                });
+                medias.map(m => m.casts).flat().forEach(g => {
+                    if (g) this.casts.add(g)
                 });
                 return medias;
             })
