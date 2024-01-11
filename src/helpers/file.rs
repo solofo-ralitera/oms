@@ -174,7 +174,10 @@ pub fn get_extension(filename: &str) -> String {
 
 pub fn get_mimetype(file_path: &str) -> String {
    let guess = mime_guess::from_path(file_path);
-   return guess.first().unwrap().to_string();
+   match guess.first() {
+      Some(mime) => mime.to_string(),
+      None => String::from("application/octet-stream"),
+   }
 }
 
 pub fn get_creation_time(file_path: &str) -> u64 {

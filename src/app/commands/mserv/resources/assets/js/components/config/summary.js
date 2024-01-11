@@ -25,7 +25,7 @@ export class Summary extends HTMLElement {
 
     renderCountByExtension(files_extension) {
         let str = '';
-        Object.keys(files_extension).forEach(extension => {
+        Object.keys(files_extension).sort().forEach(extension => {
             if (extension.isVideoFile() && extension.toLowerCase() !== TRANSCODE_OUTPUT) {
                 str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_OUTPUT}">
                     ${extension}: ${files_extension[extension]}
@@ -48,9 +48,7 @@ export class Summary extends HTMLElement {
                 return difference; 
             })
             .then(files => {
-                this.root.querySelector("#summary-detail-content").innerHTML = `
-                    <br>
-                    <br>
+                this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
                     Files not indexed:
                     <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
                 `;
