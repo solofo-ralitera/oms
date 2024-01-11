@@ -25,11 +25,13 @@ export class Summary extends HTMLElement {
 
     renderCountByExtension(files_extension) {
         let str = '';
-        Object.entries(files_extension).forEach(([extension, count]) => {
+        Object.keys(files_extension).forEach(extension => {
             if (extension.isVideoFile() && extension.toLowerCase() !== TRANSCODE_OUTPUT) {
-                str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_OUTPUT}">${extension}: ${count}</li>`;
+                str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode ${extension.escape_quote()} files to ${TRANSCODE_OUTPUT}">
+                    ${extension}: ${files_extension[extension]}
+                </li>`;
             } else {
-                str += `<li>${extension}: ${count}</li>`;
+                str += `<li>${extension}: ${files_extension[extension]}</li>`;
             }
         });
         return str;

@@ -13,7 +13,7 @@ use data_encoding::HEXUPPER;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
-pub static VIDEO_EXTENSIONS: [&str; 26] = ["mpe", "mpv", "m2v", "m4v", "3gp", "3g2", "mp4", "mkv", "avi", "flv", "f4v", "f4p", "f4a", "f4b", "mpg", "mpeg", "mp2", "divx", "wmv", "dat", "webm", "vob", "ogv", "m4p", "ts", "webm"];
+pub static VIDEO_EXTENSIONS: [&str; 28] = ["mpe", "mpv", "m2v", "m4v", "3gp", "3g2", "mp4", "mkv", "avi", "flv", "f4v", "f4p", "f4a", "f4b", "mpg", "mpeg", "mp2", "divx", "wmv", "dat", "webm", "vob", "ogv", "m4p", "ts", "webm", "mov", "ogm"];
 pub static VIDEO_EXTENSIONS_IGNORED: [&str; 9] = ["db", "srt", "nfo", "idx", "sub", "bup", "ifo", "vob", "sfv"];
 pub static PDF_EXTENSIONS: [&str; 1] = ["pdf"];
 pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xlsx"];
@@ -304,7 +304,7 @@ pub fn scan_count_by_extension(
                .copied()
                .unwrap_or(0) + 1;
            // Increment extension number
-           record.insert(extension.to_string(), counter);
+           record.insert(extension.to_lowercase().to_string(), counter);
        }
    }
    Ok(())

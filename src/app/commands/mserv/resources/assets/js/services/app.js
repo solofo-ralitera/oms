@@ -53,6 +53,12 @@ export const app = new class {
             .catch(() => []);
     }
 
+    async serviceLog() {
+        return fetch("./service-log")
+            .then(r => r.text())
+            .catch(() => "");
+    }
+    
     async summary() {
         return fetch("./summary")
             .then(r => r.json())

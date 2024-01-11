@@ -1,6 +1,6 @@
-use std::{collections::HashMap, thread};
+use std::{collections::HashMap, thread, process::Command};
 use regex::Regex;
-use crate::{app::commands::{mserv::option::MservOption, transcode::Transcode, info::Info, Runnable}, helpers::{file, ltrim_char, rtrim_char}};
+use crate::{app::commands::{mserv::option::MservOption, transcode::Transcode, info::Info, Runnable}, helpers::{file::{self, get_file_name}, ltrim_char, rtrim_char, command}};
 use super::{utils::get_file_path, summary};
 
 
@@ -28,6 +28,9 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
                 return Some((String::from("404 Not Found"), vec![], None, None));
             }
         }
+    }
+    else if path.eq("/service-log") {
+        return Some((String::from("200 OK"), vec![], None, Some(get_service_log(serv_option).as_bytes().to_vec())));
     }
     None
 }
@@ -60,6 +63,14 @@ fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
         },
         _ => (),
     }
+}
+
+fn get_service_log(serv_option: &MservOption) -> String {
+    // journalctl -u movies.service
+    let mut cmd = Command::new("journalctl");
+    let servicename = get_file_name(&rtrim_char(&rtrim_char(&serv_option.base_path, '/'), '\\'));
+    cmd.args(["-u", &format!("{servicename}.service")]);
+    return command::exec(&mut cmd);
 }
 
 fn transcode_media_dir(path: &str, serv_option: &MservOption) {

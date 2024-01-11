@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use image::EncodableLayout;
 use once_cell::sync::Lazy;
 
-use crate::{app::commands::mserv::option::MservOption, helpers::{string, file}};
+use crate::{app::{commands::mserv::option::MservOption, VERSION}, helpers::{string, file}};
 
 
 static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
@@ -27,6 +27,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     static_resources.insert("/assets/js/components/config/summary.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/summary.js")));
     static_resources.insert("/assets/js/components/config/genres.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/genres.js")));
     static_resources.insert("/assets/js/components/config/casts.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/casts.js")));
+    static_resources.insert("/assets/js/components/config/service-log.js", ("text/javascript", include_bytes!("../resources/assets/js/components/config/service-log.js")));
 
     static_resources.insert("/assets/js/services/app.js", ("text/javascript", include_bytes!("../resources/assets/js/services/app.js")));
     static_resources.insert("/assets/js/services/elastic.js", ("text/javascript", include_bytes!("../resources/assets/js/services/elastic.js")));
@@ -50,6 +51,8 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", serv_option.transcode_output).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", serv_option.transcode_thread).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"[\"VIDEO_EXTENSIONS\"]", serde_json::to_string(&file::VIDEO_EXTENSIONS).unwrap_or(String::new()).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"VERSION\"", format!("\"{}\"", VERSION).as_bytes());
+                
                 if let Some(elastic) = serv_option.elastic.as_ref() {
                     content = string::bytes_replace(content.as_bytes(), b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes());
                 }

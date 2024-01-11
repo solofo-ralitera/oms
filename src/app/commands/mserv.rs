@@ -136,8 +136,11 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
     --cache-path=<string>   Cache path, default ./.oms/
     --base-path=<string>   Dir path of relative root
     -p <string> --provider=<string>   possible value: local, api (default)
+        If you use api, set the environment variables 
+            TMDB_ACCESS_TOKEN, you can get one here https://developer.themoviedb.org/v4/reference/auth-create-access-token)
+            OMDB_KEY here https://www.omdbapi.com/apikey.aspx
     --elastic-url=<string>  Url of elastic search server (with index, e.g. http://localhost:9200/oms)
-    --url=<string>  e.g. localhost:7777, 192.168.33.106:7777
+    --url=<string> without http:// e.g. localhost:7777 or 192.168.33.106:7777
     --transcode-output=<string>   Extension of transcode feature (e.g. webm)
     --transcode-thread=<int>    Number of max thread used
 "
