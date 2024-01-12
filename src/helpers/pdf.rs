@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{io, process::Command, fs};
+use std::{io, fs};
 
 use colored::Colorize;
 use pdf::{file::FileOptions, PdfError};
@@ -101,6 +101,7 @@ pub struct PdfResult {
     pub hash: String,
     pub modification_time: u64,    
     pub duration: usize,
+    pub file_size: usize,
 }
 
 impl fmt::Display for PdfResult {
@@ -158,6 +159,7 @@ impl PdfResult {
 }
 
 pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResult, io::Error> {
+    let file_size: usize = file::file_size(file_path).unwrap_or_default() as usize;
     let file_name = file::get_file_name(file_path);
     let relative_file_path = file_path.replace(base_path, "");
 
@@ -185,6 +187,7 @@ pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResul
             hash: hash,
             modification_time: modification_time,
             duration: 0,
+            file_size: file_size,
         }),
         Err(_) => return Ok(PdfResult {
             title: normalize_media_title(&file_name),
@@ -201,6 +204,7 @@ pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResul
             hash: hash,
             modification_time: modification_time,
             duration: 0,
+            file_size: 0,
         })
     }
 }
@@ -214,10 +218,10 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str) -> Vec<
 
     // Output need extenstion in output
     let dest_with_extension = format!("{dest_path}.jpeg");
-    let mut cmd = Command::new("convert");
-    cmd.args(["-thumbnail", &format!("{size}^>"), "-background", "white", "-alpha", "remove", &format!("{src_path}[0]"), &dest_with_extension]);
-
-    command::exec_stdout(&mut cmd);
+    command::exec_stdout(
+        "convert",
+        ["-thumbnail", &format!("{size}^>"), "-background", "white", "-alpha", "remove", &format!("{src_path}[0]"), &dest_with_extension]    
+    );
 
     return match fs::read(&dest_with_extension) {
         Ok(content) => {

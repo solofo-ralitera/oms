@@ -6,7 +6,7 @@ use crate::helpers::input::parse_command_option;
 
 
 /// App version
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// It's the main application
 pub struct App {
@@ -38,7 +38,7 @@ impl App {
     pub fn from_args(args: &Vec<String>) -> Result<App, Box<dyn Error>> {
         let options = parse_command_option(args);
         if options.contains_key("version") {
-            println!("{VERSION}");
+            println!("{APP_VERSION}");
             process::exit(0);
         }
         Ok(App {

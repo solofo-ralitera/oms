@@ -1,0 +1,8 @@
+# 7.1.1
+FROM docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+
+# For production use
+COPY ./sysctl.conf /etc/sysctl.conf
+
+# RUN bin/elasticsearch-plugin install -b ingest-attachment
+RUN bin/elasticsearch-plugin install analysis-phonetic

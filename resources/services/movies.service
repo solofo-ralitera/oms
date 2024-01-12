@@ -1,0 +1,15 @@
+[Unit]
+Description=OMS Movies
+After=network.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=solofo
+Environment="TMDB_ACCESS_TOKEN=xxxxxxxxxxx"
+Environment="OMDB_KEY=xxxxxxxxx"
+ExecStart=oms mserv --cache-path="/srv/dev-disk-by-uuid-xxxxxxxx/.movies" --base-path="/srv/dev-disk-by-uuid-xxxxxxxxxxxx/movies" --provider="api" --elastic-url="http://192.168.33.77:9200/movies" --url="192.168.33.77:7777" --transcode-output="webm"
+
+[Install]
+WantedBy=multi-user.target

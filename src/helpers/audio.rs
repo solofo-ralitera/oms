@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{io, process::Command};
+use std::io;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use sha256::digest;
@@ -21,6 +21,7 @@ pub struct AudioResult {
     pub hash: String,
     pub modification_time: u64,
     pub duration: usize,
+    pub file_size: usize,
 }
 
 impl fmt::Display for AudioResult {
@@ -47,14 +48,15 @@ impl AudioResult {
 }
 
 pub fn audio_duration(file_path: &String) -> usize {
-    let mut cmd = Command::new("ffprobe");
-    cmd.args(["-i", file_path, "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0"]);
-    // println!("{:?}", cmd);
-    let output = command::exec(&mut cmd);
+    let output = command::exec(
+        "ffprobe",
+         ["-i", file_path, "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0"]
+    );
     return output.parse::<f64>().unwrap_or(0.).ceil() as usize;
 }
 
 pub fn get_audio_result(base_path: &String, file_path: &String) -> Result<AudioResult, io::Error> {
+    let file_size: usize = file::file_size(file_path).unwrap_or_default() as usize;
     let file_name = file::get_file_name(file_path);
     let relative_file_path = file_path.replace(base_path, "");
 
@@ -75,5 +77,6 @@ pub fn get_audio_result(base_path: &String, file_path: &String) -> Result<AudioR
         hash: hash,
         modification_time: file::get_creation_time(file_path),
         duration: file_duration,
+        file_size: file_size,
     })    
 }

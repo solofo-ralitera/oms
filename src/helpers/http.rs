@@ -63,11 +63,18 @@ where
         "PUT" => {
             reqwest::blocking::Client::new()
                 .put(url)
+                .body(serde_json::to_string(&post_body).unwrap_or(String::new()))
                 .header("Content-Type", "application/json")            
-        },        
+        },  
+        "DELETE" => {
+            reqwest::blocking::Client::new()
+                .delete(url)
+                .header("Content-Type", "application/json")            
+        },                
         _ => {
             reqwest::blocking::Client::new()
                 .post(url)
+                .body(serde_json::to_string(&post_body).unwrap_or(String::new()))
                 .header("Content-Type", "application/json")            
         },
     };
@@ -76,9 +83,7 @@ where
         request = request.header(key, value);
     }
 
-    let post_body = serde_json::to_string(&post_body).unwrap();
-
-    match request.body(post_body).send() {
+    match request.send() {
         Ok(r) => {
             return Ok(r.text().unwrap_or_default());
         },

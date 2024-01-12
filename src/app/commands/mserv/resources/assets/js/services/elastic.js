@@ -34,14 +34,8 @@ class ElasticMedia {
                 "query": term || "*",
             }
         };
-        // Random sort by default
-        let sort = {
-            "_script" : { 
-                "script" : "Math.random()",
-                "type" : "number",
-                "order" : "asc"
-            }
-        };
+
+        const sort = [];
 
         // sort latest
         if (term.startsWith(':latest') || term.startsWith(':last')) {
@@ -51,24 +45,32 @@ class ElasticMedia {
                     "query": term || "*",
                 }
             };
-            sort = [{
+            sort.push({
                 "modification_time": "desc",
-            }];
+            });
         }
-        // sort duration
-        else if (term.startsWith(':duration')) {
-            term = term.replace(":duration", "").trim();
-            query = {
-                "query_string": {
-                    "query": term || "*",
-                }
-            };
-            sort = [{
-                "duration": "asc",
-            }, "_score"];
+        // sort by key asc or desc
+        else if (/^[><][a-z_0-9]{1,}/i.test(term)) {
+            console.log(1);
+            const regex = /^([><])([a-z_0-9]{1,}(.{0,}))/g;
+            [...term.matchAll(regex)].forEach(m => {
+                const order = m[1];
+                const field = m[2];
+                const term = m[3];
+
+                sort.push({
+                    [field]: order === '>' ? 'desc' : 'asc',
+                });
+                query = {
+                    "query_string": {
+                        "query": term.trim() || "*",
+                    }
+                };
+            });
+            sort.push("_score");
         }
         // Search by year
-        else if (/[0-9]{4}/.test(term)) {
+        else if (/^[0-9]{4}$/.test(term)) {
             query = {
                 "bool": {
                     "should": [
@@ -87,10 +89,11 @@ class ElasticMedia {
                     ]
                 }
             };
-            sort = [
+            sort.push([
+                "_score",
                 { "rating": "desc"},
                 {"modification_time": "desc"}
-            ];
+            ]);
         }
         // Search by actor
         else if (term.startsWith(':cast')) {
@@ -100,10 +103,10 @@ class ElasticMedia {
                     "casts": term || "*",
                 }
             };
-            sort = [
+            sort.push([
                 "_score",
                 { "rating": "desc" }
-            ];
+            ]);
         }
         // Search by genre
         else if (term.startsWith(':genre')) {
@@ -113,10 +116,10 @@ class ElasticMedia {
                     "genres": term || "*",
                 }
             };
-            sort = [
+            sort.push([
                 "_score",
                 { "rating": "desc" }
-            ];
+            ]);
         }
         // Search in filename
         else if (term.startsWith(':file')) {
@@ -127,10 +130,10 @@ class ElasticMedia {
                     "fields": ["file_path"],
                 }
             };
-            sort = [
+            sort.push([
                 "_score",
                 { "rating": "desc" }
-            ];
+            ]);
         }
         // Search non empty term
         else if (term && term !== '*') {
@@ -176,11 +179,21 @@ class ElasticMedia {
                     ]
                 }
             };
-            sort = [
+            sort.push([
                 "_score",
                 { "rating": "desc" },
                 {"modification_time": "desc"}
-            ];
+            ]);
+        }
+        // Random sort by default
+        if (!sort.length) {
+            sort.push({
+                "_script" : { 
+                    "script" : "Math.random()",
+                    "type" : "number",
+                    "order" : "asc"
+                }
+            });
         }
 
         return fetch(ELASTIC_URL + "/_search", {
@@ -194,7 +207,7 @@ class ElasticMedia {
                 "query": query,
                 "size": size,
                 "from": from,
-                "sort": sort,
+                "sort": sort.flat(),
             })
         })
             .then(r => r.json())

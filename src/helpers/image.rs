@@ -22,6 +22,7 @@ pub struct ImageResult {
     pub hash: String,
     pub modification_time: u64,
     pub duration: usize,
+    pub file_size: usize,
 }
 
 impl fmt::Display for ImageResult {
@@ -53,6 +54,7 @@ impl ImageResult {
 
 
 pub fn get_image_result(base_path: &String, file_path: &String) -> Result<ImageResult, io::Error> {
+    let file_size: usize = file::file_size(file_path).unwrap_or_default() as usize;
     let file_name = file::get_file_name(file_path);
     let relative_file_path = file_path.replace(base_path, "");
 
@@ -69,5 +71,6 @@ pub fn get_image_result(base_path: &String, file_path: &String) -> Result<ImageR
         hash: hash,
         modification_time: file::get_creation_time(file_path),
         duration: 0,
+        file_size: file_size,
     })    
 }

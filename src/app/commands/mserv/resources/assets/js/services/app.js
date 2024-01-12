@@ -59,6 +59,12 @@ export const app = new class {
             .catch(() => "");
     }
     
+    async prerequistes() {
+        return fetch("./prerequistes")
+            .then(r => r.json())
+            .catch(() => "");
+    }
+
     async summary() {
         return fetch("./summary")
             .then(r => r.json())

@@ -10,6 +10,7 @@ export class MediasComponent extends HTMLElement {
     isRendering = false;
     currentFrom = 0;
     pageSize = 100;
+    numMedias = 0;
 
     constructor() {
         super();
@@ -56,6 +57,7 @@ return `<style type="text/css">
     async searchAll() {
         const medias = await elasticMedia.search(this.searchTerm, this.currentFrom, this.pageSize);
         medias.forEach(media => {
+            this.numMedias++;
             const appMedia = new MediaComponent();
             appMedia.media = media;
             this.root.append(appMedia);
@@ -72,9 +74,17 @@ return `<style type="text/css">
         }
         try {
             this.currentFrom = 0;
+            this.numMedias = 0;
             this.isRendering = true;
             this.root.innerHTML = this.css();
-            this.searchAll();
+            this.searchAll().then(() => {
+                // Display setting if no result
+                if (["", "*"].includes(this.searchTerm) && this.numMedias === 0) {
+                    eventBus.fire("navigate-search", {
+                        term: `:setting`,
+                    });
+                }
+            });
         } finally {
             this.isRendering = false;
         }

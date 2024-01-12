@@ -121,7 +121,7 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
                 _ => (),
             },
             Ok(dest_output) if dest_output.is_none() => {
-                println!("{} already exists", file_path.blue());
+                println!("{}: Output already exists", file_path.blue());
             },
             Err(err) => {
                 println!("{}", err.to_string().on_red())

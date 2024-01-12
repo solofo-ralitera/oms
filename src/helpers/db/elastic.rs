@@ -47,6 +47,16 @@ impl Elastic {
             Err(err) => err.to_string(),
         }
     }
+
+    pub fn drop_index(&self) {
+        let _ = http::post_body(
+            &format!("{}", self.url), 
+            "DELETE",
+            &vec![], 
+            &String::new()
+        );
+    }
+
 }
 
 impl Clone for Elastic {

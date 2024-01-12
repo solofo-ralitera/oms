@@ -36,6 +36,7 @@ impl Local {
             hash: String::new(),
             modification_time: 0,
             duration: 0,
+            file_size: 0,
         });
 
         return Ok(result);

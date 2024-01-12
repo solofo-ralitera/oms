@@ -1,4 +1,4 @@
-use std::{collections::HashMap, thread, process::Command};
+use std::{collections::HashMap, thread};
 use regex::Regex;
 use crate::{app::commands::{mserv::option::MservOption, transcode::Transcode, info::Info, Runnable}, helpers::{file::{self, get_file_name}, ltrim_char, rtrim_char, command}};
 use super::{utils::get_file_path, summary};
@@ -32,6 +32,11 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
     else if path.eq("/service-log") {
         return Some((String::from("200 OK"), vec![], None, Some(get_service_log(serv_option).as_bytes().to_vec())));
     }
+    else if path.eq("/prerequistes") {
+        let prerequistes = serde_json::to_string(&get_prerequistes_version(serv_option));
+        return Some((String::from("200 OK"), vec![], None, Some(prerequistes.unwrap_or(String::new()).as_bytes().to_vec())));
+    }
+    
     None
 }
 
@@ -51,6 +56,8 @@ fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
 
     if let Some(elastic) = serv_option.elastic.as_ref() {
         option.insert(String::from("elastic-url"), elastic.url.to_string());
+        // Drop index
+        elastic.drop_index();
     }
 
     let file_path_thread = file_path.clone();
@@ -67,10 +74,22 @@ fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
 
 fn get_service_log(serv_option: &MservOption) -> String {
     // journalctl -u movies.service
-    let mut cmd = Command::new("journalctl");
     let servicename = get_file_name(&rtrim_char(&rtrim_char(&serv_option.base_path, '/'), '\\'));
-    cmd.args(["-u", &format!("{servicename}.service")]);
-    return command::exec(&mut cmd);
+    return command::exec(
+        "journalctl",
+        ["-u", &format!("{servicename}.service")]
+    );
+}
+
+fn get_prerequistes_version(serv_option: &MservOption) -> HashMap<&str, String> {
+    let mut result = HashMap::new();
+    result.insert("ffmpeg", command::exec("ffmpeg",["-version"]).split('\n').next().unwrap_or("").to_string());
+    result.insert("ffprobe", command::exec("ffprobe",["-version"]).split('\n').next().unwrap_or("").to_string());
+    result.insert("convert", command::exec("convert",["-version"]).split('\n').next().unwrap_or("").to_string());
+    if let Some(elastic) = serv_option.elastic.as_ref() {
+        result.insert("elastic", elastic.url.to_string());
+    }
+    return result;
 }
 
 fn transcode_media_dir(path: &str, serv_option: &MservOption) {
@@ -126,8 +145,6 @@ fn transcode_media_dir(path: &str, serv_option: &MservOption) {
     }.run()).join() {
         Ok(_) => {
             println!("Transcode finished on {file_path}");
-            // update info after transcode
-            scan_media_dir(file::get_file_dir(&file_path), serv_option);
         },
         _ => (),
     }

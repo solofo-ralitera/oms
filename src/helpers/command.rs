@@ -1,6 +1,13 @@
-use std::{process::{Command, Stdio}, io::{BufReader, BufRead}};
+use std::{process::{Command, Stdio}, io::{BufReader, BufRead}, ffi::OsStr};
 
-pub fn exec(cmd: &mut Command) -> String {
+pub fn exec<I, S> (command: &str, args: I) -> String
+where
+I: IntoIterator<Item = S>,
+S: AsRef<OsStr>,
+{
+    let mut cmd = Command::new(command);
+    cmd.args(args);
+
     let cmd= cmd
         .stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -11,7 +18,14 @@ pub fn exec(cmd: &mut Command) -> String {
     return String::new();
 }
 
-pub fn exec_stdout(cmd: &mut Command) {
+pub fn exec_stdout<I, S> (command: &str, args: I)
+where
+I: IntoIterator<Item = S>,
+S: AsRef<OsStr>,
+{
+    let mut cmd = Command::new(command);
+    cmd.args(args);
+
     let mut cmd = cmd
         .stdout(Stdio::piped())
         .spawn()

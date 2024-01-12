@@ -1,0 +1,32 @@
+version: '3.7'
+services:
+  elasticsearch:
+    build:
+      context: .
+      dockerfile: DockerFile
+    restart: always
+    environment:
+      #- node.name=es01
+      #- discovery.seed_hosts=es02
+      #- cluster.initial_master_nodes=es01,es02
+      #- cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      #- ELASTIC_PASSWORD=3l@st1c
+      - xpack.license.self_generated.type=basic
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - network.bind_host=0.0.0.0   
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data:/usr/share/elasticsearch/data
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    expose:
+      - '9200'
+    ports:
+      - 9200:9200

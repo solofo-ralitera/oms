@@ -3,7 +3,7 @@ pub mod omdb;
 pub mod local;
 
 use core::fmt;
-use std::{ops::Deref, process::Command, io, fs};
+use std::{ops::Deref, io, fs};
 use crate::helpers::{self, file::remove_extension};
 use colored::Colorize;
 use regex::Regex;
@@ -100,10 +100,10 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
     }
 
     println!("Transcoding start {file_path}");
-    
-    let mut cmd = Command::new("ffmpeg");
-    cmd.args(["-i", file_path, &dest_path]);
-    command::exec(&mut cmd);
+    command::exec(
+        "ffmpeg",
+        ["-i", file_path, &dest_path]
+    );
 
     return match fs::metadata(&dest_path) {
         Ok(metadata) if metadata.is_file() && metadata.len() > 0 => {
@@ -121,16 +121,17 @@ pub fn video_duration(file_path: &String) -> usize {
         return 0;
     }
     
-    let mut cmd = Command::new("ffprobe");
-    cmd.args(["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
-
-    let output = command::exec(&mut cmd);
+    let output = command::exec(
+        "ffprobe",
+        ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]        
+    );
     let mut size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
     if size == 0 {
         // Try stream option if the first one failed
-        let mut cmd = Command::new("ffprobe");
-        cmd.args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]);
-        let output = command::exec(&mut cmd);
+        let output = command::exec(
+            "ffprobe",
+            ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]        
+        );
         size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
     }
     return size;
@@ -165,12 +166,11 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32
 
     // ffmpeg need extenstion in output
     let dest_with_extension = format!("{dest_path}.jpeg");
-    let mut cmd = Command::new("ffmpeg");
-    cmd.args(["-ss", &duration, "-i", &src_path, "-vf", &format!("scale={size}"), "-frames:v", "1", &dest_with_extension]);
-    
-    // println!("\n\n{:?}\n\n", cmd);
 
-    command::exec(&mut cmd);
+    command::exec(
+        "ffmpeg",
+        ["-ss", &duration, "-i", &src_path, "-vf", &format!("scale={size}"), "-frames:v", "1", &dest_with_extension]
+    );
 
     return match fs::read(&dest_with_extension) {
         Ok(content) => {
@@ -203,6 +203,7 @@ pub struct VideoResult {
     pub hash: String,
     pub modification_time: u64,
     pub duration: usize,
+    pub file_size: usize,
 }
 
 impl fmt::Display for VideoResult {
@@ -241,7 +242,13 @@ impl VideoResult {
 
 pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &String, provider: &String) -> Result<Vec<VideoResult>, io::Error> {
     let video_title = format_title(raw_title);
-    let video_hash = digest(video_title.normalized());
+    let file_size = file::file_size(file_path).unwrap_or_default() as usize;
+    let video_hash = digest(format!("{}.{file_size}", video_title.normalized()));
+
+    // Warn if year is empty, (omdb and tmdb need year for more accuracy)
+    if provider.eq("api") && video_title.year.is_empty() {
+        print!("{}: empty year\n", file_path.yellow());
+    }
 
     // Fist check if result is in cache
     //  If provider in cache is different from supplied provider => force none to reload data
@@ -305,6 +312,7 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
         video.hash = video_hash.clone();
         video.modification_time = file_time;
         video.duration = file_duration;
+        video.file_size = file_size;
     }
     if !base_path.is_empty() {
         cache::write_cache_json(&video_hash, &result, ".video");
