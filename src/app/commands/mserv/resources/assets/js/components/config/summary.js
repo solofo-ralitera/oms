@@ -43,15 +43,19 @@ export class Summary extends HTMLElement {
             app.getAllFiles(),
         ])
             .then(([elasticAll, allFiles]) => {
-                const elasticNames = elasticAll.map(e => e.file_path.split(/[\\\/]/).pop());
-                const difference = allFiles.filter(af => !elasticNames.find(ef => af.endsWith(ef)));
+                const elasticNormalizedNames = elasticAll.map(e => e.file_path.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
+                const allFilesNormalized = allFiles.map(e => e.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
+                // TODO check full path
+                const difference = allFilesNormalized.filter(af => !elasticNormalizedNames.find(ef => af === ef));
                 return difference; 
             })
             .then(files => {
-                this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
-                    Files not indexed:
-                    <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
-                `;
+                if (files.length) {
+                    this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
+                        Files not indexed:
+                        <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
+                    `;
+                }
             })
             .catch(() => []);
     }

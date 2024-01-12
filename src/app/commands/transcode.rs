@@ -79,14 +79,14 @@ impl Runnable for Transcode {
                 *b_isrunning = false;
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    format!("\n{}\nsearch error: unknown file\n\n", self.file_path)
+                    format!("\n{}\ntranscode error: unknown file\n\n", self.file_path)
                 ));
             },
             Err(err) => {
                 *b_isrunning = false;
                 return Err(io::Error::new(
                     io::ErrorKind::NotFound, 
-                    format!("\n{}\nread error: {}\n\n", self.file_path, err)
+                    format!("\n{}\ntranscode error: {}\n\n", self.file_path, err)
                 ));
             }            
         }

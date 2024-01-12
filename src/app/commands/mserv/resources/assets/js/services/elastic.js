@@ -136,7 +136,7 @@ class ElasticMedia {
             ]);
         }
         // Search non empty term
-        else if (term && term !== '*') {
+        else if (term && term !== '*' && term && term !== '*:*') {
             query = {
                 "bool": {
                     "should": [
