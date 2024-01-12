@@ -9,6 +9,10 @@ String.prototype.escape_quote = function () {
     return this.replace(/"/g, "'");
 };
 
+Number.prototype.escape_quote = function () {
+    return this.toString().escape_quote();
+};
+
 String.prototype.escape_path_attribute = function () {
     if (/^http/.test(this)) {
         return this.escape_quote();
@@ -16,11 +20,19 @@ String.prototype.escape_path_attribute = function () {
     return encodeURIComponent(this).escape_quote();
 };
 
+Number.prototype.escape_path_attribute = function () {
+    return this.toString().escape_path_attribute();
+};
+
 String.prototype.escape_path = function () {
     if (/^http/.test(this)) {
         return this.escape_quote();
     }
     return encodeURIComponent(this);
+};
+
+Number.prototype.escape_path = function () {
+    return this.toString().escape_path();
 };
 
 String.prototype.extension = function () {
@@ -52,7 +64,6 @@ String.prototype.toClipBoard = function () {
         document.body.removeChild(selBox);
     }
 };
-
 
 Number.prototype.secondsToHMS = function() {
     if (typeof this === "undefined") return "";

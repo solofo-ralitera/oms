@@ -24,15 +24,17 @@ button {
 
     render() {
         this.root.innerHTML = `${this.css}
-<section class="container">
-    <button id="scan-dir">Scan directory</button>
-    <button id="transcode-dir">
-        Transcode directory
-        <br>
-        (${TRANSCODE_OUTPUT} x ${TRANSCODE_THREAD})
-    </button>
-</section>        
-        `;
+<article>
+    <h3>Tools</h3>
+    <section class="container">
+        <button id="scan-dir">Scan directory</button>
+        <button id="transcode-dir">
+            Transcode directory
+            <br>
+            (${TRANSCODE_OUTPUT} x ${TRANSCODE_THREAD})
+        </button>
+    </section>        
+</article>`;
 
         this.root.querySelector("#scan-dir").addEventListener("click", () => {
             app.scanDir();

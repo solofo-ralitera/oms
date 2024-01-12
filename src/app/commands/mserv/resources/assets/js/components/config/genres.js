@@ -24,9 +24,7 @@ li.genre~li.genre::before {
     render() {
         this.root.innerHTML = `${this.css}
             <article>
-                <header>
-                    <u>Genres</u>
-                </header>
+                <h3>Genres</h3>
                 <ul>
                 ${elasticMedia.getGenres().map(genre => {
                     return `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`;

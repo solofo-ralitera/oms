@@ -301,13 +301,13 @@ pub fn scan_count_by_extension(
        if path.is_dir() {
            let _ = scan_count_by_extension(&path.as_path().to_string_lossy().to_string(), record);
        } else if let Some(extension) = path.extension() {
-           let extension = extension.to_str().unwrap().to_string();
+           let extension = extension.to_str().unwrap_or_default().to_lowercase().to_string();
            let counter = record
                .get(&extension)
                .copied()
                .unwrap_or(0) + 1;
            // Increment extension number
-           record.insert(extension.to_lowercase().to_string(), counter);
+           record.insert(extension, counter);
        }
    }
    Ok(())

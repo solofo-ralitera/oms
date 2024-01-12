@@ -51,11 +51,11 @@ class ElasticMedia {
         }
         // sort by key asc or desc
         else if (/^[><][a-z_0-9]{1,}/i.test(term)) {
-            console.log(1);
-            const regex = /^([><])([a-z_0-9]{1,}(.{0,}))/g;
+            const regex = /^([><])([a-z_0-9]{1,})(.{0,})/g;
             [...term.matchAll(regex)].forEach(m => {
                 const order = m[1];
-                const field = m[2];
+                let field = m[2];
+                if (field === "size") field = "file_size";
                 const term = m[3];
 
                 sort.push({
@@ -162,12 +162,6 @@ class ElasticMedia {
                             "multi_match": {
                                 "query": term,
                                 "fields": "casts^1"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "year^0.9"
                             }
                         },
                         {

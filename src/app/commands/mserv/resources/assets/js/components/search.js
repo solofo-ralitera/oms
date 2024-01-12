@@ -80,7 +80,7 @@ input[type=search]:focus {
     render() {
         this.root.innerHTML = `${this.css}
             <search>
-                <input placeholder="Search" type="search" id="search" aria-label="Search" autofocus>
+                <input placeholder="Search" type="search" id="search" aria-label="Search">
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => {
             this.search();

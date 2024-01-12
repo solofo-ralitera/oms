@@ -63,17 +63,18 @@ export class Summary extends HTMLElement {
         ])
             .then(([elasticCount, dirSummary]) => this.root.innerHTML = `${this.css}
 <article>
-<header>
-    <u>Directory summary</u>: ${BASE_URL}
-</header>
-<p>
-    Number of files / indexed files: <span class="summary-detail-link pointer">${dirSummary.files_count} / ${elasticCount}</span>
-    <span id="summary-detail-content"></span>
-</p>
-<p>
-    Number of files by extension: 
-    <ul>${this.renderCountByExtension(dirSummary.files_extension)}</ul>
-</p>
+    <h3>Directory summary</h3>
+    <p>
+        Full path: ${BASE_URL}
+    </p>
+    <p>
+        Number of files / indexed files: <span class="summary-detail-link pointer">${dirSummary.files_count} / ${elasticCount}</span>
+        <span id="summary-detail-content"></span>
+    </p>
+    <p>
+        Number of files by extension: 
+        <ul>${this.renderCountByExtension(dirSummary.files_extension)}</ul>
+    </p>
 </article>        
             `)
             .then(() => {
