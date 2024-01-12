@@ -41,7 +41,7 @@ impl OMDb {
         if !movie.title.is_empty() {
             params.push(("t".to_string(), movie.title.to_string()));
         }
-        if !movie.year.is_empty() {
+        if movie.year > 0 {
             params.push(("y".to_string(), movie.year.to_string()));
         }
 
@@ -59,7 +59,7 @@ impl OMDb {
         results.push(VideoResult {
             title: movie.Title.clone(),
             summary: movie.Plot.clone(),
-            year: movie.Year.trim().get(0..=3).unwrap_or("").to_string(),
+            year: movie.Year.trim().get(0..=3).unwrap_or("").parse::<u16>().unwrap_or_default(),
             thumb_url: movie.Poster.clone(),
             thumb: get_image(&format!("{}", movie.Poster)).unwrap_or_default(),
             poster_url: movie.Poster.clone(),            

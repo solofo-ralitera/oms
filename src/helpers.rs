@@ -57,6 +57,13 @@ pub fn ltrim_char(str: &String, char: char) -> String {
     return re.replace(str, "").to_string();
 }
 
+pub fn ltrim(s: &String, suffix: &str) -> String {
+    match s.strip_suffix(suffix) {
+        Some(s) => s.to_string(),
+        None => s.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

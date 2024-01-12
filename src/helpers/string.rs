@@ -1,6 +1,5 @@
 use diacritics::remove_diacritics;
-
-use super::file::remove_extension;
+use super::{file, ltrim};
 
 /// Find each line of content content containing query
 /// 
@@ -58,14 +57,27 @@ where
             i += 1;
         }
     }
-
     result
 }
 
-
 pub fn normalize_media_title(title: &String) -> String {
-    let title = title.replace("_", " ");
-    let title = remove_extension(&title);
+    let mut title = title.replace("_", " ");
+    // TODO: better way to safe remove true extensions
+    for extension in file::VIDEO_EXTENSIONS {
+        title = ltrim(&title, &(".".to_owned() + extension));
+    }
+    for extension in file::PDF_EXTENSIONS {
+        title = ltrim(&title, &(".".to_owned() + extension));
+    }
+    for extension in file::MS_EXTENSIONS {
+        title = ltrim(&title, &(".".to_owned() + extension));
+    }
+    for extension in file::IMAGE_EXTENSIONS {
+        title = ltrim(&title, &(".".to_owned() + extension));
+    }
+    for extension in file::AUDIO_EXTENSIONS {
+        title = ltrim(&title, &(".".to_owned() + extension));
+    }
     return title;
 }
 

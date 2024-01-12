@@ -31,12 +31,12 @@ pub static AUDIO_EXTENSIONS: [&str; 20] = ["wav", "wave", "aiff", "aif", "aifc",
 /// ```
 /// use oms::helpers::file;
 /// 
-/// match file::check_file("./Cargo.toml") {
-///     Ok(file_path) => assert_eq!("./Cargo.toml", file_path),
+/// match file::check_file(&"./Cargo.toml".to_string()) {
+///     Ok(file_path) => assert!(file_path.ends_with("Cargo.toml")),
 ///     Err(err) => panic!("Should be Ok"),
 /// };
 /// 
-/// match file::check_file("./404.txt") {
+/// match file::check_file(&"./404.txt".to_string()) {
 ///     Ok(file_path) => panic!("Should throw error"),
 ///     Err(err) => assert!(err.to_string().starts_with("No")),
 /// };

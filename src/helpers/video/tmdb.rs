@@ -51,9 +51,9 @@ impl TMDb {
         if !param.title.is_empty() {
             params.push(("query".to_string(), param.title.to_string()));
         }
-        if !param.year.is_empty() {
-            params.push(("primary_release_year".to_string(), param.year.clone()));
-            params.push(("year".to_string(), param.year.clone()));
+        if param.year > 0 {
+            params.push(("primary_release_year".to_string(), param.year.to_string()));
+            params.push(("year".to_string(), param.year.to_string()));
         }
         if !param.language.is_empty() {
             params.push(("language".to_string(), param.language.to_string()));
@@ -106,7 +106,7 @@ impl TMDb {
             results.push(VideoResult {
                 title: item.title.clone(),
                 summary: item.overview.clone(),
-                year: item.release_date.trim().get(0..=3).unwrap_or("").to_string(),
+                year: item.release_date.trim().get(0..=3).unwrap_or("").parse::<u16>().unwrap_or_default(),
                 thumb_url: thumb_url,
                 thumb: thumb_path,
                 poster_url: format!("http://image.tmdb.org/t/p/w780{}", item.poster_path),

@@ -18,7 +18,7 @@ use super::{cache, string::{text_contains, normalize_media_title}, file, command
 /// 
 pub struct VideoTitle {
     pub title: String,
-    pub year: String,
+    pub year: u16,
     pub language: String,
     pub adult: bool,
 }
@@ -29,7 +29,7 @@ impl VideoTitle {
         res.push_str(&self.title);
         res.push(' ');
         res.push('(');
-        res.push_str(&self.year);
+        res.push_str(&self.year.to_string());
         res.push(')');
         return res;
     }
@@ -51,7 +51,7 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
 
         return VideoTitle { 
             title: normalize_media_title(&title), 
-            year: year.to_string(),
+            year: year.parse::<u16>().unwrap_or_default(),
             language: "en-US".to_string().clone(),
             adult: false,
         };
@@ -62,7 +62,7 @@ pub fn format_title(raw_title: &String) -> VideoTitle {
 
     return VideoTitle { 
         title: normalize_media_title(&title), 
-        year: String::new(),
+        year: 0,
         language: String::new(),
         adult: false,
     };
@@ -187,7 +187,7 @@ pub fn generate_thumb(src_path: &String, dest_path: &String, size: &str, at: f32
 pub struct VideoResult {
     pub title: String,
     pub summary: String,
-    pub year: String,
+    pub year: u16,
     pub genres: Vec<String>,
     pub casts: Vec<String>,
     pub thumb_url: String,
@@ -246,7 +246,7 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     let video_hash = digest(format!("{}.{file_size}", video_title.normalized()));
 
     // Warn if year is empty, (omdb and tmdb need year for more accuracy)
-    if provider.eq("api") && video_title.year.is_empty() {
+    if provider.eq("api") && video_title.year == 0 {
         print!("{}: empty year\n", file_path.yellow());
     }
 
@@ -331,7 +331,7 @@ mod test {
         let format_title = format_title(&content);
 
         assert_eq!("10 AAAAA BBBBB", format_title.title);
-        assert_eq!("1111", format_title.year);
+        assert_eq!(1111, format_title.year);
         assert_eq!("en-US", format_title.language);
     }
 
@@ -341,7 +341,7 @@ mod test {
         let format_title = format_title(&content);
 
         assert_eq!("A.B.C.D. EEEE", format_title.title);
-        assert_eq!("1111", format_title.year);
+        assert_eq!(1111, format_title.year);
         assert_eq!("en-US", format_title.language);
     }
 
@@ -351,14 +351,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("Aaa Bbbbbbbb 1", format_title_0.title);
-        assert_eq!("1111", format_title_0.year);
+        assert_eq!(1111, format_title_0.year);
         assert_eq!("en-US", format_title_0.language);
 
         let content_1 = String::from("Aaa.Bbbbbbbb.1.1111.TTTTT");
         let format_title_1 = format_title(&content_1);
 
         assert_eq!("Aaa Bbbbbbbb 1", format_title_1.title);
-        assert_eq!("1111", format_title_1.year);
+        assert_eq!(1111, format_title_1.year);
         assert_eq!("en-US", format_title_1.language);
     }
 
@@ -368,14 +368,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("Aaa Bbbbbbbb 1. Cccccc ddd", format_title_0.title);
-        assert_eq!("1111", format_title_0.year);
+        assert_eq!(1111, format_title_0.year);
         assert_eq!("en-US", format_title_0.language);
 
         let content_1 = String::from("Aaa.Bbbbbbbb.1.Cccccc.ddd (1111)");
         let format_title_1 = format_title(&content_1);
 
         assert_eq!("Aaa Bbbbbbbb 1. Cccccc ddd", format_title_1.title);
-        assert_eq!("1111", format_title_1.year);
+        assert_eq!(1111, format_title_1.year);
         assert_eq!("en-US", format_title_1.language);
     }
 
@@ -385,7 +385,7 @@ mod test {
         let format_title = format_title(&content);
 
         assert_eq!("aaa zzzz ee rrrrrrr", format_title.title);
-        assert!(format_title.year.is_empty());
+        assert_eq!(0, format_title.year);
         assert!(format_title.language.is_empty());
     }
 
@@ -395,14 +395,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("00 000 AA", format_title_0.title);
-        assert!(format_title_0.year.is_empty());
+        assert_eq!(0, format_title_0.year);
         assert!(format_title_0.language.is_empty());
 
         let content_1 = String::from("00 000 AA");
         let format_title_1 = format_title(&content_1);
 
         assert_eq!("00 000 AA", format_title_1.title);
-        assert!(format_title_1.year.is_empty());
+        assert_eq!(0, format_title_1.year);
         assert!(format_title_1.language.is_empty());
     }
 
@@ -412,14 +412,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("12", format_title_0.title);
-        assert_eq!("3456", format_title_0.year);
+        assert_eq!(3456, format_title_0.year);
         assert_eq!("en-US", format_title_0.language);
 
         let content_1 = String::from("12.3456");
         let format_title_1 = format_title(&content_1);
 
         assert_eq!("12", format_title_1.title);
-        assert_eq!("3456", format_title_1.year);
+        assert_eq!(3456, format_title_1.year);
         assert_eq!("en-US", format_title_1.language);
     }
 
@@ -429,14 +429,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("1234", format_title_0.title);
-        assert_eq!("5678", format_title_0.year);
+        assert_eq!(5678, format_title_0.year);
         assert_eq!("en-US", format_title_0.language);
 
         let content_0 = String::from("1234 (5678)");
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("1234", format_title_0.title);
-        assert_eq!("5678", format_title_0.year);
+        assert_eq!(5678, format_title_0.year);
         assert_eq!("en-US", format_title_0.language);
     }
     
@@ -446,14 +446,14 @@ mod test {
         let format_title_0 = format_title(&content_0);
 
         assert_eq!("Azerty 1234", format_title_0.title);
-        assert!(format_title_0.year.is_empty());
+        assert_eq!(0, format_title_0.year);
         assert!(format_title_0.language.is_empty());
 
         let content_1 = String::from("Azerty 1234");
         let format_title_1 = format_title(&content_1);
 
         assert_eq!("Azerty 1234", format_title_0.title);
-        assert!(format_title_1.year.is_empty());
+        assert_eq!(0, format_title_1.year);
         assert!(format_title_1.language.is_empty());
     }
     
