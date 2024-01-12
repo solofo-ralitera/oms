@@ -9,13 +9,32 @@ export class MediasComponent extends HTMLElement {
     static observedAttributes = ["search"];
     isRendering = false;
     currentFrom = 0;
-    pageSize = 100;
+    pageSize = 80;
     numMedias = 0;
+
+    css = `<style type="text/css">
+#container {
+    display: flex;
+    justify-content: center;
+    flex-flow: wrap row;
+    align-items: flex-start;
+    gap: 4px;
+}
+</style>`;
 
     constructor() {
         super();
         this.root = this.attachShadow({mode: "closed"});
         this.searchTerm = this.getAttribute('search') ?? "";
+
+        // Display next on scroll
+        this.observer = new IntersectionObserver((entries, observer) => entries.forEach((entry) => {
+            if (entry.isIntersecting) this.searchAll();
+        }), {
+            root: window.document,
+            rootMargin: "0px",
+            threshold: 0.1,
+        });
 
         eventBus.register("media-search", ({detail}) => {
             this.setAttribute("search", detail);
@@ -33,25 +52,12 @@ export class MediasComponent extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        if (oldValue !== newValue) {
+        if (oldValue !== newValue || !newValue) {
             if (name === "search") {
                 this.searchTerm = newValue
                 this.render();
             }
         }
-    }
-
-    css() {
-return `<style type="text/css">
-:host {
-    display: flex;
-    justify-content: center;
-    flex-flow: wrap row;
-    align-items: flex-start;
-    height: 100vh;
-    gap: 4px;
-}
-</style>`;
     }
 
     async searchAll() {
@@ -60,11 +66,16 @@ return `<style type="text/css">
             this.numMedias++;
             const appMedia = new MediaComponent();
             appMedia.media = media;
-            this.root.append(appMedia);
+            this.root.querySelector("#container")?.append(appMedia);
         });
         if (medias.length) {
             this.currentFrom += this.pageSize;
-            await this.searchAll();
+        }
+        // If no result: display setting
+        if (["", "*", ":latest", ":last"].includes(this.searchTerm) && this.numMedias === 0) {
+            eventBus.fire("navigate-search", {
+                term: `:setting`,
+            });
         }
     }
 
@@ -76,32 +87,28 @@ return `<style type="text/css">
             this.currentFrom = 0;
             this.numMedias = 0;
             this.isRendering = true;
-            this.root.innerHTML = this.css();
-            this.searchAll().then(() => {
-                // Display setting if no result
-                if (["", "*"].includes(this.searchTerm) && this.numMedias === 0) {
-                    eventBus.fire("navigate-search", {
-                        term: `:setting`,
-                    });
-                }
-            });
+            this.root.innerHTML = `${this.css}
+            <div id="container"></div>
+            <div id="scroll">&nbsp;</div>
+            `;
+            this.observer.observe(this.root.querySelector("#scroll"));
         } finally {
             this.isRendering = false;
         }
     }
 
     renderConfig() {
-        this.root.innerHTML = this.css();
+        this.root.innerHTML = this.css;
         this.root.append(new ConfigComponent());
     }
 
     renderGenre() {
-        this.root.innerHTML = this.css();
+        this.root.innerHTML = this.css;
         this.root.append(new Genres());
     }
 
     renderCast() {
-        this.root.innerHTML = this.css();
+        this.root.innerHTML = this.css;
         this.root.append(new Casts());
     }
 }
