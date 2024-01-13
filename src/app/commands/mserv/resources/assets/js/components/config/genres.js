@@ -21,14 +21,15 @@ li.genre~li.genre::before {
         this.render();
     }
 
-    render() {
+    async render() {
+        const genres = await elasticMedia.getGenres();
         this.root.innerHTML = `${this.css}
             <article>
                 <h3>Genres</h3>
                 <ul>
-                ${elasticMedia.getGenres().map(genre => {
-                    return `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`;
-                }).join("")}
+                ${genres.map(genre => 
+                    `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`
+                ).join("")}
                 </ul>
             </article>`;
         this.root.querySelectorAll("li.genre").forEach(el => el.addEventListener("click", li => {

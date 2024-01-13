@@ -86,6 +86,11 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
+            let output = if output.eq("av1") {
+                String::from("mkv")
+            } else {
+                output.to_string()
+            };
             re.replace(file_path.as_str(), format!(".{output}")).to_string()
         },
         Some(d) => d.to_string(),
@@ -100,10 +105,11 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
     }
 
     println!("Transcoding start {file_path}");
-    command::exec(
-        "ffmpeg",
-        ["-i", file_path, &dest_path]
-    );
+    if output.eq("av1") {
+        command::exec("ffmpeg",["-i", file_path, "-c:v", "libaom-av1", "-crf", "31", &dest_path]);
+    } else {
+        command::exec("ffmpeg",["-i", file_path, &dest_path]);
+    }
 
     return match fs::metadata(&dest_path) {
         Ok(metadata) if metadata.is_file() && metadata.len() > 0 => {

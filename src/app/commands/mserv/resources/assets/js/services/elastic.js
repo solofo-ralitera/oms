@@ -1,15 +1,20 @@
 const ELASTIC_URL = "ELASTIC_URL";
 
 class ElasticMedia {
-    casts = new Set();
-    genres = new Set();
-
     getCasts() {
-        return Array.from(this.casts).sort();
+        return this.getAll().then(medias => medias
+            .map(m => m.casts)
+            .flat()
+            .filter(cast => !!cast)
+            .sort());            
     }
 
     getGenres() {
-        return Array.from(this.genres).sort();
+        return this.getAll().then(medias => medias
+            .map(m => m.genres)
+            .flat()
+            .filter(genre => !!genre)
+            .sort());
     }
 
     totalCount() {
@@ -206,15 +211,6 @@ class ElasticMedia {
         })
             .then(r => r.json())
             .then(r => r?.hits?.hits?.map(hit => hit._source) ?? [])
-            .then(medias => {
-                medias.map(m => m.genres).flat().forEach(g => {
-                    if (g) this.genres.add(g)
-                });
-                medias.map(m => m.casts).flat().forEach(g => {
-                    if (g) this.casts.add(g)
-                });
-                return medias;
-            })
             .catch(() => []);
     }
 

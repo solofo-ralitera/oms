@@ -26,43 +26,42 @@ li.cast~li.cast::before {
         this.render();
     }
 
-    renderCasts() {
+    async renderCasts() {
         let str = '';
         for (let i=0; i < this.alphaCast.length; i++) {
-            str += this.renderCastLetter(this.alphaCast[i]);
+            str += await this.renderCastLetter(this.alphaCast[i]);
         }
         return str;
     }
 
-    renderCastLetter(letter) {
+    async renderCastLetter(letter) {
+        const casts = await elasticMedia.getCasts();
+        console.log(casts);
         return `<article>
             <h3>
                 ${letter.toUpperCase()}
                 <hr>
             </h3>
             <ul>
-                ${ elasticMedia
-                    .getCasts()
-                    .filter(c => !!c)
-                    .filter(c => {
-                        if (letter === '_') {
-                            return !this.alphaCast.includes(c.normalize('NFC').toLowerCase().charAt(0));
+                ${casts.filter(c => {
+                    if (letter === '_') {
+                        return !this.alphaCast.includes(c.normalize('NFC').toLowerCase().charAt(0));
                         }
-                        return c.toLowerCase().normalize('NFC').charAt(0) === letter
-                    })
-                    .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast}</li>`)
-                    .join("")}
+                    return c.toLowerCase().normalize('NFC').charAt(0) === letter
+                })
+                .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast}</li>`)
+                .join("")}
             </ul>
         </article>`;
     }
 
-    render() {
+    async render() {
         this.root.innerHTML = `${this.css}
             <article>
                 <header>
                     <u>Casts</u>
                 </header>
-                ${this.renderCasts()}
+                ${await this.renderCasts()}
             </article>`;
         this.root.querySelectorAll("li.cast").forEach(el => el.addEventListener("click", li => {
             li.preventDefault();
