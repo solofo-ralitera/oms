@@ -1,0 +1,16 @@
+[Unit]
+Description=OMS Movies
+After=network.target mnt-wd2to.mount
+Requires=mnt-wd2to.mount
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=solofo
+Environment="TMDB_ACCESS_TOKEN=xxxxxxxxxxx"
+Environment="OMDB_KEY=xxxxxxxxx"
+ExecStart=oms mserv --cache-path="/mnt/wd2to/.movies" --base-path="/mnt/wd2to/movies" --provider="api" --elastic-url="http://192.168.33.77:9200/movies" --url="192.168.33.77:7777" --transcode-output="webm"
+
+[Install]
+WantedBy=multi-user.target

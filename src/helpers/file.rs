@@ -191,6 +191,30 @@ pub fn get_creation_time(file_path: &str) -> u64 {
    return 0;
 }
 
+pub fn rename_file(file_path: &String, new_name: &String) -> Result<()> {
+   if let Some(dir) = get_file_dir(file_path) {
+      let new_file = Path::new(&dir).join(new_name);
+      if !new_file.exists() {
+         match fs::rename(file_path, new_file) {
+            Ok(_) => return Ok(()),
+            Err(err) => return Err(io::Error::new(
+               io::ErrorKind::PermissionDenied,
+               format!("{}", err.to_string())
+            ))
+         }
+      } else {
+         return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("{} already exists", new_file.as_path().display().to_string())
+         ));
+      }
+   }
+   return Err(io::Error::new(
+      io::ErrorKind::InvalidData,
+      format!("Parent directory not found")
+   ));
+}
+
 pub fn remove_extension(filename: &str) -> String {
    return Path::new(filename)
       .file_stem()

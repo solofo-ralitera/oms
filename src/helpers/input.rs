@@ -1,8 +1,19 @@
-use std::{collections::HashMap, io, cmp::max};
+use std::{collections::HashMap, io::{self, Write}, cmp::max};
 use regex::Regex;
 use super::cache;
 
-
+pub fn read_line(message: &str) -> String {
+    if !message.is_empty() {
+       print!("{message}");
+       io::stdout().flush().unwrap_or_default();
+    }
+    let mut line_value = String::new();
+    match io::stdin().read_line(&mut line_value) {
+       Ok(_) => line_value.trim().to_string(),
+       Err(_) => "".to_string(),
+    }
+ }
+ 
 ///
 /// TODO: parse options: https://stackoverflow.com/questions/15619320/how-can-i-access-command-line-parameters-in-rust
 pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {

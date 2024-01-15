@@ -65,7 +65,7 @@ fn read_text_file(file_path: &String) -> JoinHandle<Result<()>> {
 /// Help message for this command
 pub fn usage() -> &'static str {
     "\
-read [file_path]        Display the content of the file
+read [OPTIONS] <file_path>        Display the content of the file
 "
 }
 

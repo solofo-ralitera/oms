@@ -36,7 +36,6 @@ li.cast~li.cast::before {
 
     async renderCastLetter(letter) {
         const casts = await elasticMedia.getCasts();
-        console.log(casts);
         return `<article>
             <h3>
                 ${letter.toUpperCase()}

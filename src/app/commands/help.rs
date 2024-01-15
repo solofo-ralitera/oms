@@ -1,5 +1,5 @@
 use std::{io, collections::HashMap};
-use super::{Runnable, info, read, search, mserv, transcode};
+use super::{Runnable, info, read, search, mserv, transcode, renamemovie};
 
 
 /// # Help command
@@ -25,6 +25,7 @@ Available commands:
 {}
 {}
 {}
+{}
 ",
         self::usage(),
         info::usage(),
@@ -32,6 +33,7 @@ Available commands:
         search::usage(),
         mserv::usage(),
         transcode::usage(),
+        renamemovie::usage(),
 );
         Ok(())
     }

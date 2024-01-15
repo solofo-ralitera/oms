@@ -281,7 +281,10 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
             } else if let Ok(result) = OMDb::info(&video_title) {
                 Some(result)
             } else {
-                print!("Unable to find information about the video: {}, fallback to local provider\n\n", file_path.on_red());
+                println!(
+                    "{}",
+                    format!("Unable to find information about the video: {}, fallback to local provider", file_path).yellow()
+                );
                 None
             },
             _ => None,

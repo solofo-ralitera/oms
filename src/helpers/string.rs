@@ -1,4 +1,5 @@
 use diacritics::remove_diacritics;
+use regex::Regex;
 use super::{file, ltrim};
 
 /// Find each line of content content containing query
@@ -78,6 +79,10 @@ pub fn normalize_media_title(title: &String) -> String {
     for extension in file::AUDIO_EXTENSIONS {
         title = ltrim(&title, &(".".to_owned() + extension));
     }
+
+    let re_space = Regex::new(r" {1,}").unwrap();
+    title = re_space.replace(&title, " ").to_string();
+
     return title;
 }
 

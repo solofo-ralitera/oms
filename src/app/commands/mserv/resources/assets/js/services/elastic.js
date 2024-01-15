@@ -6,7 +6,7 @@ class ElasticMedia {
             .map(m => m.casts)
             .flat()
             .filter(cast => !!cast)
-            .sort());            
+            .sort()).then(casts => Array.from(new Set(casts)));            
     }
 
     getGenres() {
@@ -14,7 +14,7 @@ class ElasticMedia {
             .map(m => m.genres)
             .flat()
             .filter(genre => !!genre)
-            .sort());
+            .sort()).then(casts => Array.from(new Set(casts)));
     }
 
     totalCount() {
