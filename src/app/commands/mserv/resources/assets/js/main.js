@@ -20,6 +20,10 @@ String.prototype.escape_path_attribute = function () {
     return encodeURIComponent(this).escape_quote();
 };
 
+String.prototype.file_name = function () {
+    return this.split(/[\\\/]/).pop();
+}
+
 Number.prototype.escape_path_attribute = function () {
     return this.toString().escape_path_attribute();
 };

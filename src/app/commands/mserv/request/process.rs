@@ -6,7 +6,7 @@ use super::{utils::get_file_path, summary};
 
 pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
     if path.starts_with("/scan-dir") {
-        scan_media_dir(None, serv_option);
+        scan_media_dir(path, serv_option);
         return Some((String::from("200 OK"), vec![], None, None));
     }
     else if path.starts_with("/transcode-dir") {
@@ -40,11 +40,14 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
     None
 }
 
-fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
-    let file_path = match file_path {
-        None => serv_option.base_path.to_string(),
-        Some(p) => p,
+fn scan_media_dir(path: &str, serv_option: &MservOption) {
+    let file_path = path.replace("/scan-dir", "").trim().to_string();
+    let file_path = if file_path.is_empty() {
+        serv_option.base_path.to_string()
+    } else {
+        get_file_path(&serv_option.base_path, &file_path.replace(&serv_option.base_path, "")).unwrap_or_default()
     };
+
     if file_path.is_empty() {
         return;
     }
@@ -56,8 +59,10 @@ fn scan_media_dir(file_path: Option<String>, serv_option: &MservOption) {
 
     if let Some(elastic) = serv_option.elastic.as_ref() {
         option.insert(String::from("elastic-url"), elastic.url.to_string());
-        // Drop index
-        elastic.drop_index();
+        // Drop whole index
+        if file_path.eq(&serv_option.base_path) {
+            elastic.drop_index();
+        }
     }
 
     let file_path_thread = file_path.clone();

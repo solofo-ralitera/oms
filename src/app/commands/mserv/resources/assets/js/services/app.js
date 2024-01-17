@@ -40,8 +40,8 @@ export const app = new class {
         }
     }
 
-    async scanDir() {
-        return fetch("./scan-dir");
+    async scanDir(path = "") {
+        return fetch("./scan-dir" + path);
     }
 
     async transcodeDir(extension = "") {

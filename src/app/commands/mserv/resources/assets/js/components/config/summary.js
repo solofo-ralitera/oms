@@ -43,18 +43,25 @@ export class Summary extends HTMLElement {
             app.getAllFiles(),
         ])
             .then(([elasticAll, allFiles]) => {
-                const elasticNormalizedNames = elasticAll.map(e => e.file_path.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
-                const allFilesNormalized = allFiles.map(e => e.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
+                const elasticFiles = elasticAll.map(f => f.file_path);
+
+                // const elasticNormalizedNames = elasticAll.map(e => e.file_path.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
+                // const allFilesNormalized = allFiles.map(e => e.split(/[\\\/]/).pop().normalize('NFC').toLowerCase());
+
                 // TODO check full path
-                const difference = allFilesNormalized.filter(af => !elasticNormalizedNames.find(ef => af === ef));
+                const difference = allFiles.filter(allFile => !elasticFiles.find(elasticFile => allFile.endsWith(elasticFile)));
                 return difference; 
             })
             .then(files => {
                 if (files.length) {
                     this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
                         Files not indexed:
-                        <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
+                        <ul>${files.map(f => `<li class="not-indexed pointer" data-filepath="${f.escape_path_attribute()}">${f.file_name()}</li>`).join('')}</ul>
                     `;
+                    this.root.querySelectorAll(".not-indexed").forEach(li => li.addEventListener("click", e => {
+                        app.scanDir(e.target.getAttribute("data-filepath"));
+                    }))
+                    scanDir
                 }
             })
             .catch(() => []);
@@ -67,7 +74,10 @@ export class Summary extends HTMLElement {
         ])
             .then(([elasticCount, dirSummary]) => this.root.innerHTML = `${this.css}
 <article>
-    <h3>Directory summary</h3>
+    <h3>
+        Directory summary
+        <button id="refresh-button">&#10227;</button>
+    </h3>
     <p>
         Full path: ${BASE_URL}
     </p>
@@ -82,6 +92,10 @@ export class Summary extends HTMLElement {
 </article>        
             `)
             .then(() => {
+                this.root.querySelector("#refresh-button").addEventListener("click", () => {
+                    this.render();
+                });
+                
                 this.root.querySelector(".summary-detail-link")?.addEventListener("click", () => {
                     this.summaryDetail();
                 });
