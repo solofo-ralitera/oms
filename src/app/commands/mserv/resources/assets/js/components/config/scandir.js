@@ -14,12 +14,22 @@ button {
     padding: 1em;
     width: 100%;
 }
+#transcode-dir {
+    text-align: left;
+}
     </style>`;
     
     constructor() {
         super();
         this.root = this.attachShadow({mode: "closed"});
         this.render();
+    }
+
+    transcodeOutput() {
+        return TRANSCODE_OUTPUT
+            .split(",")
+            .map(output => output.replace(">", " -> "))
+            .join("<br>");
     }
 
     render() {
@@ -29,9 +39,9 @@ button {
     <section class="container">
         <button id="scan-dir">Scan directory</button>
         <button id="transcode-dir">
-            Transcode directory
+            Transcode directory (x${TRANSCODE_THREAD})
             <br>
-            (${TRANSCODE_OUTPUT} x ${TRANSCODE_THREAD})
+            <span style="font-size:0.9em;color:lightgray;">${app.transcodeOutput()}</span>            
         </button>
     </section>        
 </article>`;

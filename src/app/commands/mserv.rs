@@ -32,7 +32,7 @@ impl Runnable for Mserv {
                 "base-path" => mserv_option.set_basepath(value)?,
                 "elastic-url" => mserv_option.set_elastic(value)?,
                 "url" => mserv_option.set_url(value)?,
-                "transcode-output" => mserv_option.set_transcode_output(value)?,
+                "transcode-output" => mserv_option.set_transcode_output(value),
                 "transcode-thread" => mserv_option.set_transcode_thread(value)?,
                 arg => return Err(io::Error::new(
                     io::ErrorKind::InvalidInput, 
@@ -131,6 +131,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
         - Elsastic search for indexing, with cors allowed, see elastic configuration
         - [Optional] ffmpeg and ffprobe, for video duration
         - [Optional] ImageMagick (convert + ghostscript) with pdf enabled, for pdf and image thumbnail
+        - [Optional] exiftool to update video metadata
 
     --help
     --cache-path=<string>   Cache path, default ./.oms/

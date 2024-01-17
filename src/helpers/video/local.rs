@@ -1,4 +1,4 @@
-use super::{VideoTitle, VideoResult};
+use super::{result::VideoResult, title::VideoTitle, metadata::VideoMetadata};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
@@ -14,13 +14,16 @@ pub struct Local {
 impl Local {
     pub fn info(video_param: LocalParam) -> Result<Vec<VideoResult>> {
         let mut result = vec![] ;
-        
+
+        let metadata = VideoMetadata::from(video_param.file_path);
+    
         result.push(VideoResult {
-            title: video_param.video_title.title.clone(),
-            summary: sumarize(&video_param),
-            year: video_param.video_title.year.clone(),
-            casts: vec![],
-            genres: vec![],
+            title: metadata.title,
+            summary: metadata.summary,
+            year: metadata.year,
+            casts: metadata.casts,
+            genres: metadata.genres,
+
             thumb_url: String::new(),
             poster_url: String::new(),
             rating: 1.,
@@ -41,14 +44,4 @@ impl Local {
 
         return Ok(result);
     }
-}
-
-fn sumarize(video_param: &LocalParam) -> String {
-    return format!(
-        "{} {} {} {}", 
-        video_param.video_title.title, 
-        video_param.video_title.year,
-        video_param.raw_title,
-        video_param.file_path,
-    );
 }

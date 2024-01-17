@@ -1,8 +1,11 @@
 import {elasticMedia} from '../../services/elastic.js';
 import {eventBus} from '../../services/EventBus.js';
 
+const CASTS = await elasticMedia.getCasts();
+
 export class Casts extends HTMLElement {
     alphaCast = 'abcdefghijklmnopqrstuvwxyz_';
+
     css = `<style type="text/css">
 ul {
     line-height: 1.5em;
@@ -27,7 +30,7 @@ li.cast~li.cast::before {
     }
 
     async renderCasts() {
-        let str = '';
+        let str = "";
         for (let i=0; i < this.alphaCast.length; i++) {
             str += await this.renderCastLetter(this.alphaCast[i]);
         }
@@ -35,17 +38,16 @@ li.cast~li.cast::before {
     }
 
     async renderCastLetter(letter) {
-        const casts = await elasticMedia.getCasts();
         return `<article>
             <h3>
                 ${letter.toUpperCase()}
                 <hr>
             </h3>
             <ul>
-                ${casts.filter(c => {
+                ${CASTS.filter(c => {
                     if (letter === '_') {
                         return !this.alphaCast.includes(c.normalize('NFC').toLowerCase().charAt(0));
-                        }
+                    }
                     return c.toLowerCase().normalize('NFC').charAt(0) === letter
                 })
                 .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast}</li>`)

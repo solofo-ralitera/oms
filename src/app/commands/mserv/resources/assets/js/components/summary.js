@@ -93,8 +93,10 @@ time {
     }
 
     renderTranscode() {
-        if (this.media.file_path.isVideoFile() && this.media.file_path.extension().toLowerCase() !== TRANSCODE_OUTPUT) {
-            return `&nbsp;(<span class="info pointer transcode-path">transcode to ${TRANSCODE_OUTPUT}</span>)`
+        let extension = this.media.file_path.extension();
+        let transcodeOutput = app.transcodeOutput(extension);
+        if (this.media.file_path.isVideoFile() && !transcodeOutput.endsWith(extension)) {
+            return `&nbsp;(<span class="info pointer transcode-path">transcode to ${transcodeOutput}</span>)`
         }
         return '';
     }

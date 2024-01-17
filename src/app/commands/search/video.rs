@@ -22,7 +22,7 @@ impl<'a> VideoSearch<'a> {
             found.push(("File".to_string(), file_name.clone()));
         }
 
-        let videos = video::get_video_result(
+        let videos = video::result::get_video_result(
             &file::get_file_name(
                 &self.file_path), 
                 &self.file_path,

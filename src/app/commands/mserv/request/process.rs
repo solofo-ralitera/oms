@@ -86,6 +86,7 @@ fn get_prerequistes_version(serv_option: &MservOption) -> HashMap<&str, String> 
     result.insert("ffmpeg", command::exec("ffmpeg",["-version"]).split('\n').next().unwrap_or("").to_string());
     result.insert("ffprobe", command::exec("ffprobe",["-version"]).split('\n').next().unwrap_or("").to_string());
     result.insert("convert", command::exec("convert",["-version"]).split('\n').next().unwrap_or("").to_string());
+    // result.insert("exiftool", command::exec("exiftool",["-ver"]).split('\n').next().unwrap_or("").to_string());
     result.insert("elastic", match serv_option.elastic.as_ref() {
         Some(elastic) => elastic.url.to_string(),
         None => String::new(),

@@ -4,7 +4,8 @@ use std::env;
 use std::io::{Error, ErrorKind};
 use crate::helpers::http::{self, get_image};
 use self::movie::OMDbMovie;
-use super::{VideoTitle, VideoResult};
+use super::result::VideoResult;
+use super::title::VideoTitle;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 

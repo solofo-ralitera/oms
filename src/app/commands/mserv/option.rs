@@ -67,16 +67,8 @@ impl MservOption {
         }
     }
 
-    pub fn set_transcode_output(&mut self, value: &String) -> Result<()> {
-        let value = value.to_lowercase();
-        if file::VIDEO_EXTENSIONS.contains(&value.as_str()) {
-            self.transcode_output = value;
-            return Ok(());
-        }
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound, 
-            format!("Invalid value for transcode format")
-        ));
+    pub fn set_transcode_output(&mut self, value: &String) {
+        self.transcode_output = value.to_string();
     }
 
     pub fn set_transcode_thread(&mut self, value: &String) -> Result<()> {

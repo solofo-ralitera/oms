@@ -1,4 +1,4 @@
-use std::{io::{Error, ErrorKind}, cmp::max};
+use std::{io::{Error, ErrorKind}, cmp::max, collections::HashMap};
 use crate::{app::commands::OPTION_SEPARATOR, helpers::file};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -7,7 +7,7 @@ pub struct TranscodeOption {
     pub extensions: Vec<String>,
     pub thread: usize,
     pub delete: bool,
-    pub output_format: String,
+    output_formats: HashMap<String, String>,
 }
 
 impl TranscodeOption {
@@ -16,7 +16,7 @@ impl TranscodeOption {
             extensions: vec![],
             thread: max(1, num_cpus::get() - 1),
             delete: false,
-            output_format: String::from("mp4"),
+            output_formats: HashMap::new(),
         }
     }
 
@@ -37,16 +37,48 @@ impl TranscodeOption {
         }
     }
 
+    /// flv>webm,avi>mp4,mp4
     pub fn set_output(&mut self, value: &String) -> Result<()> {
-        let value = value.to_lowercase();
-        if file::VIDEO_EXTENSIONS.contains(&value.as_str()) {
-            self.output_format = value;
-            return Ok(());
+        for extension in value.split(",").into_iter() {
+            if extension.is_empty() {
+                continue;
+            }
+            let mut a_extension = extension.split(">");
+            let extension_from = a_extension.next().unwrap_or("");
+            let extension_to = a_extension.next().unwrap_or("");
+            if extension_from.is_empty() {
+                continue;
+            }
+            let from;
+            let to;
+            if extension_to.is_empty() {
+                // If no >, its the default output format
+                from = String::from("*");
+                to = extension_from.to_lowercase().to_string();
+            } else {
+                from = extension_from.to_string();
+                to = extension_to.to_lowercase().to_string();
+            }
+            if file::VIDEO_EXTENSIONS.contains(&to.as_str()) {
+                self.output_formats.insert(from, to);
+            } else {
+                return Err(Error::new(
+                    ErrorKind::NotFound, 
+                    format!("Invalid value for output")
+                ));
+            }
         }
-        return Err(Error::new(
-            ErrorKind::NotFound, 
-            format!("Invalid value for output")
-        ));
+        Ok(())
+    }
+
+    pub fn get_output(&self, extension: &String) -> String {
+        if let Some(output) = self.output_formats.get(&extension.to_lowercase()) {
+            return output.to_string();
+        }
+        if let Some(output) = self.output_formats.get(&String::from("*")) {
+            return output.to_string();
+        }
+        return String::from("mp4");
     }
 
     pub fn extensions_from(&mut self, value: &String) -> Result<()> {

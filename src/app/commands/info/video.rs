@@ -1,7 +1,7 @@
 use std::{sync::mpsc::Sender, time::SystemTime};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
-use crate::helpers::{video::{self, VideoResult}, cache, db::elastic::Elastic};
+use crate::helpers::{video, cache, db::elastic::Elastic};
 use super::option::InfoOption;
 
 /// 
@@ -19,7 +19,7 @@ pub struct VideoInfo<'a> {
 
 impl<'a> VideoInfo<'a> {
     pub fn info(&self, tx: Sender<String>) {
-        match video::get_video_result(&self.video_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
+        match video::result::get_video_result(&self.video_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
             Ok(mut videos) => {
                 save_elastic(&mut videos, &self.info_option.elastic);
                 for video in videos {
@@ -40,7 +40,7 @@ impl<'a> VideoInfo<'a> {
     }
 }
 
-fn save_elastic(videos: &mut Vec<VideoResult>, elastic: &Option<Elastic>) {
+fn save_elastic(videos: &mut Vec<video::result::VideoResult>, elastic: &Option<Elastic>) {
     if let Some(el) = elastic {
         // Get and save only first result
         if let Some(video) = videos.iter_mut().next() {

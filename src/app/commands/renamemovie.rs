@@ -1,9 +1,6 @@
 use std::{collections::HashMap, fs, io, path::Path};
-
 use colored::Colorize;
-
-use crate::helpers::{video::{self, format_title}, file, input};
-
+use crate::helpers::{video::{self, title::VideoTitle}, file, input};
 use super::{Runnable, get_args_parameter};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -83,7 +80,7 @@ fn rename_dir(dir_path: &String, rename_option: &RenameMovieOption) {
 }
 
 fn get_title_year_from_provider(file_path: &String, file_name: &String) -> Result<(String, String)> {
-    let videos = video::get_video_result(
+    let videos = video::result::get_video_result(
         &file_name, 
             &file_path,
             &String::new(),
@@ -129,7 +126,7 @@ fn rename_file(file_path: &String, rename_option: &RenameMovieOption) {
     let file_name = file::get_file_name(file_path);
     let extenstion = file::get_extension(&file_name).to_lowercase();
 
-    let video_title = format_title(&file_name);
+    let video_title = VideoTitle::from(&file_name);
 
     // Check if the current file is already in the new format
     let check_new_name = format!("{} ({}).{extenstion}", video_title.title, video_title.year);

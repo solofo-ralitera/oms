@@ -108,11 +108,11 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
 
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
-    let output_format = transcode_option.output_format.clone();
+    let output_format = transcode_option.get_output(&extension);
+    if extension.eq(&output_format) {
+        return;
+    }
     thread_pool.execute(move || {
-        if extension.eq(&output_format) {
-            return;
-        }
         match video::transcode(&file_path, None, &output_format) {
             Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Err(err) => {
@@ -154,7 +154,7 @@ transcode [options] <file_path|directory_path>
     -d  Delete original file after transcoding
     -e <string> --extensions=<string>    only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'
     -t <int> --thread=<int>    Number of max thread used
-    -o <string> --output=<string>   Output extension
+    -o <string> --output=<string>   Output extension, or something like flv>webm,avi>mp4,mp4
 ")
 }
 

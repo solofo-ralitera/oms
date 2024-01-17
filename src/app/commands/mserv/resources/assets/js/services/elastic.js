@@ -42,25 +42,14 @@ class ElasticMedia {
 
         const sort = [];
 
-        // sort latest
-        if (term.startsWith(':latest') || term.startsWith(':last')) {
-            term = term.replace(":latest", "").replace(":last", "").trim();
-            query = {
-                "query_string": {
-                    "query": term || "*",
-                }
-            };
-            sort.push({
-                "modification_time": "desc",
-            });
-        }
         // sort by key asc or desc
-        else if (/^[><][a-z_0-9]{1,}/i.test(term)) {
+        if (/^[><][a-z_0-9]{1,}/i.test(term)) {
             const regex = /^([><])([a-z_0-9]{1,})(.{0,})/g;
             [...term.matchAll(regex)].forEach(m => {
                 const order = m[1];
                 let field = m[2];
                 if (field === "size") field = "file_size";
+                if (field === "add" || field === "added") field = "modification_time";                
                 const term = m[3];
 
                 sort.push({

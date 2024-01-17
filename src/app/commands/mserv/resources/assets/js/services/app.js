@@ -1,5 +1,7 @@
 import {eventBus} from './EventBus.js';
 
+const TRANSCODE_OUTPUT = "TRANSCODE_OUTPUT";
+
 // init start volume, and keep value during this session
 let PLAYER_VOLUME = getPLayerVolume();
 
@@ -82,5 +84,22 @@ export const app = new class {
         } else {
             window.open(`/open${media.file_path.escape_path()}`);
         }        
+    }
+
+    transcodeOutput(extension = "") {
+        extension = extension.toLowerCase();
+        const listOuput = TRANSCODE_OUTPUT
+            .split(",")
+            .map(output => output.replace(">", " -> "));
+        const extensionOutput = listOuput.filter(output => {
+                if (extension === "") return true;
+                if (output.startsWith(extension)) return true;
+                return false;
+            });
+        if (!extensionOutput.length) {
+            extensionOutput.push(listOuput.find(o => !o.includes("->")));
+        }
+
+        return extensionOutput.join("<br>");
     }
 }
