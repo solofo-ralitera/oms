@@ -71,6 +71,7 @@ String.prototype.toClipBoard = function () {
 
 Number.prototype.secondsToHMS = function() {
     if (typeof this === "undefined") return "";
+    if (this === "0" || this === 0) return "";
     return new Date(this * 1000).toISOString().slice(11, 19);
 }
 

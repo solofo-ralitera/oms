@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::{video, file, string::text_contains};
+use crate::helpers::{file, string::text_contains, media::video};
 use super::{option::SearchOption, format_file_display, format_line_found};
 
 ///

@@ -5,11 +5,12 @@ mod cast;
 use std::env;
 use std::io::{Error, ErrorKind};
 use crate::helpers::http::{self, get_image};
-use super::result::VideoResult;
-use super::title::VideoTitle;
-use movie::TMDbMovie;
-use genre::TMDbGenre;
-use cast::TMDbCast;
+use crate::helpers::media::video::result::VideoResult;
+use crate::helpers::media::video::title::VideoTitle;
+
+use self::cast::TMDbCast;
+use self::genre::TMDbGenre;
+use self::movie::TMDbMovie;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 

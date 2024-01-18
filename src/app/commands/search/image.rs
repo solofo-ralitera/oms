@@ -1,7 +1,5 @@
 use std::sync::mpsc::Sender;
-
-use crate::helpers::image;
-
+use crate::helpers::media::image::get_image_result;
 use super::{option::SearchOption, format_file_display, format_line_found};
 
 pub struct ImageSearch<'a> {
@@ -13,7 +11,7 @@ pub struct ImageSearch<'a> {
 impl<'a> ImageSearch<'a> {
     pub fn search(&self, tx: Sender<String>) {
         let mut result = String::new();
-        if let Ok(image) = image::get_image_result(&String::new(), self.file_path) {
+        if let Ok(image) = get_image_result(&String::new(), self.file_path) {
             let search_results = image.search(self.search_term);
             if search_results.len() > 0 {
                 result.push_str(&format_file_display(&self.file_path));

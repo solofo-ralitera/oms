@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fs, io, path::Path};
 use colored::Colorize;
-use crate::helpers::{video::{self, title::VideoTitle}, file, input};
+use crate::helpers::{media::video::{self, title::VideoTitle}, input, file};
 use super::{Runnable, get_args_parameter};
 
 type Result<T> = std::result::Result<T, std::io::Error>;

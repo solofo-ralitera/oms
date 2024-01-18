@@ -1,6 +1,7 @@
 use std::sync::mpsc::Sender;
 use colored::Colorize;
-use crate::helpers::{audio::{get_audio_result, AudioResult}, db::elastic::Elastic};
+use crate::helpers::{media::audio::{get_audio_result, AudioResult}, db::elastic::Elastic};
+
 use super::option::InfoOption;
 
 ///

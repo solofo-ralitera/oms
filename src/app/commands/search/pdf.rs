@@ -1,7 +1,6 @@
 use std::sync::mpsc::Sender;
-
+use crate::helpers::media::pdf::{get_pdf_result, content::PdfContent};
 use super::{format_file_display, format_line_found, SearchOption, text_reg_contains};
-use crate::helpers::pdf::{PdfInfo, get_pdf_result};
 
 
 ///
@@ -36,31 +35,30 @@ impl<'a> PdfSearch<'a> {
             }
         }
 
-        if let Ok(pdf_info) = PdfInfo::read(&self.file_path) {
-            for (page, content) in pdf_info.content.enumerate() {
-                if self.skip_file(&found) {
-                    break;
-                }
-                match text_reg_contains(&content, &self.search_term) {
-                    None => (),
-                    Some(results) => {
-                        for line in results {
-                            if self.skip_file(&found) {
-                                break;
-                            }
-                            let text_page = "Page ".to_string() + &page.to_string();
-                            found.push((text_page, line));
+        let content = PdfContent::new(&self.file_path);
+        for (page, content) in content.enumerate() {
+            if self.skip_file(&found) {
+                break;
+            }
+            match text_reg_contains(&content, &self.search_term) {
+                None => (),
+                Some(results) => {
+                    for line in results {
+                        if self.skip_file(&found) {
+                            break;
                         }
+                        let text_page = "Page ".to_string() + &page.to_string();
+                        found.push((text_page, line));
                     }
                 }
             }
+        }
 
-            if found.len() > 0 {
-                result.push_str(&format_file_display(&self.file_path));
-                found.iter().for_each(|(item, text)| {
-                    result.push_str(&format_line_found(&item.to_string(), &text, &self.search_option));
-                });
-            }
+        if found.len() > 0 {
+            result.push_str(&format_file_display(&self.file_path));
+            found.iter().for_each(|(item, text)| {
+                result.push_str(&format_line_found(&item.to_string(), &text, &self.search_option));
+            });
         }
 
         if !result.is_empty() {

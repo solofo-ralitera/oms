@@ -1,6 +1,5 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::audio;
-
+use crate::helpers::media::audio;
 use super::{option::SearchOption, format_file_display, format_line_found};
 
 pub struct AudioSearch<'a> {

@@ -1,8 +1,6 @@
 use std::sync::mpsc::Sender;
-
 use colored::Colorize;
-
-use crate::helpers::{pdf::{get_pdf_result, PdfResult}, db::elastic::Elastic};
+use crate::helpers::{media::pdf::{get_pdf_result, result::PdfResult}, db::elastic::Elastic};
 
 use super::option::InfoOption;
 

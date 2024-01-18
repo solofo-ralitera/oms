@@ -198,14 +198,14 @@ li.genre:hover, li.cast:hover {
             this.root.querySelectorAll("li.genre").forEach(li => {
                 li.addEventListener("click", e => {
                     eventBus.fire("navigate-search", {
-                        term: `:genre ${e.target.innerHTML.trim()}`,
+                        term: `genres="${e.target.innerHTML.trim()}"`,
                     });
                 });
             });
             this.root.querySelectorAll("li.cast").forEach(li => {
                 li.addEventListener("click", e => {
                     eventBus.fire("navigate-search", {
-                        term: `:cast ${e.target.innerHTML.trim()}`,
+                        term: `casts="${e.target.innerHTML.trim()}"`,
                     });
                 });
             });

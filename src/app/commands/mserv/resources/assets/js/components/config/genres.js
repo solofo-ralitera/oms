@@ -38,7 +38,7 @@ li.genre~li.genre::before {
             const genre = li.target.getAttribute('data-genre');
             if (genre) {
                 eventBus.fire("navigate-search", {
-                    term: `:genre ${genre}`,
+                    term: `genres="${genre}"`,
                 });
             }
         }))

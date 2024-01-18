@@ -1,6 +1,6 @@
 use std::ops::Deref;
 use regex::Regex;
-use crate::helpers::{string::normalize_media_title, file};
+use crate::helpers::{file, media};
 
 pub struct VideoTitle {
     pub title: String,
@@ -17,7 +17,7 @@ impl VideoTitle {
             let title = format_title_remove_point(title);
     
             return VideoTitle { 
-                title: normalize_media_title(&title), 
+                title: media::normalize_media_title(&title), 
                 year: year.parse::<u16>().unwrap_or_default(),
                 language: "en-US".to_string().clone(),
                 adult: false,
@@ -28,7 +28,7 @@ impl VideoTitle {
         let title = format_title_remove_point(&title);
     
         return VideoTitle { 
-            title: normalize_media_title(&title), 
+            title: media::normalize_media_title(&title), 
             year: 0,
             language: String::new(),
             adult: false,

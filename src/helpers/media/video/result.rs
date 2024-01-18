@@ -6,7 +6,7 @@ use sha256::digest;
 
 use crate::helpers::{self, string::text_contains, file, cache};
 
-use super::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}, video_duration, title::VideoTitle};
+use super::{video_duration, title::VideoTitle, provider::{tmdb::TMDb, omdb::OMDb, local::{Local, LocalParam}}};
 
 
 #[derive(Debug, Deserialize, Serialize)]

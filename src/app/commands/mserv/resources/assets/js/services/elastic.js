@@ -33,156 +33,92 @@ class ElasticMedia {
     search(term = "*", from = 0, size = 100) {
         term = term.trim();
 
-        // Search all field by default
-        let query = {
-            "query_string": {
-                "query": term || "*",
-            }
-        };
-
+        const query = [];
         const sort = [];
 
-        // sort by key asc or desc
-        if (/^[><][a-z_0-9]{1,}/i.test(term)) {
-            const regex = /^([><])([a-z_0-9]{1,})(.{0,})/g;
+        // sort by key asc or desc (<field, >field)
+        if (/[><][a-z_0-9]{1,}/i.test(term)) {
+            const regex = /([><])([a-z_0-9]{1,})/g;
             [...term.matchAll(regex)].forEach(m => {
                 const order = m[1];
                 let field = m[2];
                 if (field === "size") field = "file_size";
-                if (field === "add" || field === "added") field = "modification_time";                
-                const term = m[3];
+                if (field === "add" || field === "added" || field === "date") field = "modification_time";                
 
                 sort.push({
                     [field]: order === '>' ? 'desc' : 'asc',
                 });
-                query = {
-                    "query_string": {
-                        "query": term.trim() || "*",
+            });
+            term = term.replace(/[><][a-z_0-9]{1,}/i, "").trim();
+        }
+
+        // Filter fields (field="term")
+        if (/[a-z_0-9]{1,}="[^"]{1,}"/i.test(term)) {
+            const regex = /([a-z_0-9]{1,})="([^"]{1,})"/g;
+            [...term.matchAll(regex)].forEach(m => {
+                const value = m[2];
+                let field = m[1].toLowerCase();
+                if (field === "type") field = "file_type";
+
+                if (["ext", "extension"].includes(field)) query.push({
+                        "query_string": {
+                            "query": `*.${value}`,
+                            "fields": ["file_path", "full_path"],
+                            "boost": 20,
+                        }
+                    })
+                else query.push({
+                    "multi_match": {
+                        "query": value,
+                        "fields": [field],
+                        "type" : "phrase",
+                        "boost": 20,
                     }
-                };
+                });
+            });
+            term = term.replace(/[a-z_0-9]{1,}="[^"]{1,}"/i, "").trim();
+            sort.push("_score");
+            sort.push({ "rating": "desc" });
+        }
+
+        // Search phrase ("...")
+        if (/".{1,}"/i.test(term)) {
+            const regex = /"(.{1,})"/g;
+            [...term.matchAll(regex)].forEach(m => {
+                const value = m[1];
+                query.push({
+                    "multi_match": {
+                        "query": value,
+                        "fields": ["*"],
+                        "type" : "phrase",
+                        "boost": 30,
+                    }
+                });
+            });
+
+            term = term.replace(/".{1,}"/i, "").trim();
+            sort.push("_score");
+            sort.push({ "rating": "desc" });
+        }
+
+        if (term) {
+            query.push({
+                "query_string": {
+                    "query": term || "*",
+                    "boost": 10,
+                }
             });
             sort.push("_score");
         }
-        // Search by year
-        else if (/^[0-9]{4}$/.test(term)) {
-            query = {
-                "bool": {
-                    "should": [
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "year^1.5"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "title^1"
-                            }
-                        },
-                    ]
-                }
-            };
-            sort.push([
-                "_score",
-                { "rating": "desc"},
-                {"modification_time": "desc"}
-            ]);
-        }
-        // Search by actor
-        else if (term.startsWith(':cast')) {
-            term = term.replace(":cast", "").trim();
-            query = {
-                "match_phrase": {
-                    "casts": term || "*",
-                }
-            };
-            sort.push([
-                "_score",
-                { "rating": "desc" }
-            ]);
-        }
-        // Search by genre
-        else if (term.startsWith(':genre')) {
-            term = term.replace(":genre", "").trim();
-            query = {
-                "match_phrase": {
-                    "genres": term || "*",
-                }
-            };
-            sort.push([
-                "_score",
-                { "rating": "desc" }
-            ]);
-        }
-        // Search in filename
-        else if (term.startsWith(':file')) {
-            term = term.replace(":file", "").trim();
-            query = {
-                "multi_match": {
-                    "query": `${term}` || "*",
-                    "fields": ["file_path"],
-                }
-            };
-            sort.push([
-                "_score",
-                { "rating": "desc" }
-            ]);
-        }
-        // Search non empty term
-        else if (term && term !== '*' && term && term !== '*:*') {
-            query = {
-                "bool": {
-                    "should": [
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "title^1.8"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "file_path^1.5"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "genres^1"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "casts^1"
-                            }
-                        },
-                        {
-                            "multi_match": {
-                                "query": term,
-                                "fields": "summary^0.7"
-                            }
-                        },
-                    ]
-                }
-            };
-            sort.push([
-                "_score",
-                { "rating": "desc" },
-                {"modification_time": "desc"}
-            ]);
-        }
+
         // Random sort by default
-        if (!sort.length) {
-            sort.push({
-                "_script" : { 
-                    "script" : "Math.random()",
-                    "type" : "number",
-                    "order" : "asc"
-                }
-            });
-        }
+        sort.push({
+            "_script" : { 
+                "script" : "Math.random()",
+                "type" : "number",
+                "order" : "asc"
+            }
+        });
 
         return fetch(ELASTIC_URL + "/_search", {
             method: "POST",
@@ -192,7 +128,11 @@ class ElasticMedia {
                 "Accept-Encoding": "gzip, deflate, br",
             },
             body: JSON.stringify({
-                "query": query,
+                "query": {
+                    "bool": {
+                        "should": query
+                    }
+                },
                 "size": size,
                 "from": from,
                 "sort": sort.flat(),

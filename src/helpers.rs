@@ -1,12 +1,9 @@
 pub mod string;
 pub mod file;
-pub mod pdf;
 pub mod http;
 pub mod output;
 pub mod input;
-pub mod video;
-pub mod audio;
-pub mod image;
+pub mod media;
 pub mod cache;
 pub mod db;
 pub mod threadpool;

@@ -1,4 +1,5 @@
-use super::{result::VideoResult, title::VideoTitle, metadata::VideoMetadata};
+use crate::helpers::media::{video::{title::VideoTitle, result::VideoResult, metadata::VideoMetadata}, normalize_media_title};
+
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
@@ -18,7 +19,7 @@ impl Local {
         let metadata = VideoMetadata::from(video_param.file_path);
     
         result.push(VideoResult {
-            title: metadata.title,
+            title: normalize_media_title(&metadata.title),
             summary: metadata.summary,
             year: metadata.year,
             casts: metadata.casts,

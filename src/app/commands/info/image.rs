@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 use colored::Colorize;
+use crate::helpers::{media::image::{get_image_result, ImageResult}, db::elastic::Elastic};
 
-use crate::helpers::{db::elastic::Elastic, image::{ImageResult, get_image_result}};
 use super::option::InfoOption;
 
 pub struct ImageInfo<'a> {

@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 use rand::Rng;
 use sha256::digest;
-use crate::helpers::{file, ltrim_char, rtrim_char, cache, video, pdf};
+use crate::helpers::{file, ltrim_char, rtrim_char, cache, media::{video, pdf}};
 
 
 /// Return the required file_path, with checking traversal

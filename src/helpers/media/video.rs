@@ -1,14 +1,11 @@
-pub mod tmdb;
-pub mod omdb;
-pub mod local;
 pub mod metadata;
 pub mod result;
 pub mod title;
-use std::{io, fs};
-use crate::helpers::file;
-use regex::Regex;
-use super::command;
 
+use std::{io, fs};
+use crate::helpers::{file, command};
+use regex::Regex;
+pub mod provider;
 
 ///
 /// cargo run -- info --cache-path="/media/solofo/MEDIA/.oms" "/media/solofo/MEDIA/films/"
