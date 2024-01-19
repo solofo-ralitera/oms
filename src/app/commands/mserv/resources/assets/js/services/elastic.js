@@ -38,7 +38,7 @@ class ElasticMedia {
 
         // sort by key asc or desc (<field, >field)
         if (/[><][a-z_0-9]{1,}/i.test(term)) {
-            const regex = /([><])([a-z_0-9]{1,})/g;
+            const regex = /([><])([a-z_0-9]{1,})/ig;
             [...term.matchAll(regex)].forEach(m => {
                 const order = m[1];
                 let field = m[2];
@@ -49,24 +49,24 @@ class ElasticMedia {
                     [field]: order === '>' ? 'desc' : 'asc',
                 });
             });
-            term = term.replace(/[><][a-z_0-9]{1,}/i, "").trim();
+            term = term.replace(/[><][a-z_0-9]{1,}/gi, "").trim();
         }
 
         // Filter fields (field="term")
         if (/[a-z_0-9]{1,}="[^"]{1,}"/i.test(term)) {
-            const regex = /([a-z_0-9]{1,})="([^"]{1,})"/g;
+            const regex = /([a-z_0-9]{1,})="([^"]{1,})"/ig;
             [...term.matchAll(regex)].forEach(m => {
                 const value = m[2];
                 let field = m[1].toLowerCase();
                 if (field === "type") field = "file_type";
 
                 if (["ext", "extension"].includes(field)) query.push({
-                        "query_string": {
-                            "query": `*.${value}`,
-                            "fields": ["file_path", "full_path"],
-                            "boost": 20,
-                        }
-                    })
+                    "query_string": {
+                        "query": `*.${value}`,
+                        "fields": ["file_path", "full_path"],
+                        "boost": 20,
+                    }
+                });
                 else query.push({
                     "multi_match": {
                         "query": value,
@@ -76,14 +76,14 @@ class ElasticMedia {
                     }
                 });
             });
-            term = term.replace(/[a-z_0-9]{1,}="[^"]{1,}"/i, "").trim();
+            term = term.replace(/[a-z_0-9]{1,}="[^"]{1,}"/ig, "").trim();
             sort.push("_score");
             sort.push({ "rating": "desc" });
         }
 
         // Search phrase ("...")
         if (/".{1,}"/i.test(term)) {
-            const regex = /"(.{1,})"/g;
+            const regex = /"(.{1,})"/ig;
             [...term.matchAll(regex)].forEach(m => {
                 const value = m[1];
                 query.push({
@@ -96,7 +96,7 @@ class ElasticMedia {
                 });
             });
 
-            term = term.replace(/".{1,}"/i, "").trim();
+            term = term.replace(/".{1,}"/ig, "").trim();
             sort.push("_score");
             sort.push({ "rating": "desc" });
         }

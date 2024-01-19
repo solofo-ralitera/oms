@@ -111,7 +111,7 @@ time {
     <h2 class="title">
         ${this.renderPlay()}
         &nbsp;&nbsp;
-        ${this.media.title} ${this.media.year ? `(${this.media.year})` : ''}
+        ${this.media.title} ${this.media.year ? `(<span class="pointer year">${this.media.year}</span>)` : ''}
     </h2>
     <div style="text-align:center;">
         <img 
@@ -129,7 +129,7 @@ time {
         </ul>
         <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
         <footer>
-            <span class="info pointer media-path">${this.media.file_path}</span>
+            <span class="info pointer media-path" title="Sync metadata">${this.media.file_path}</span>
             ${this.renderTranscode()}
             <br>
             <time>${this.media.duration?.secondsToHMS() ?? ''}</time>
@@ -139,6 +139,13 @@ time {
 
         this.root.querySelector(".title").addEventListener("click", () => {
             this.close();
+        });
+        this.root.querySelector(".year").addEventListener("click", e => {
+            e.preventDefault();
+            e.stopPropagation();
+            eventBus.fire("navigate-search", {
+                term: `year="${e.target.innerHTML.trim()}"`,
+            });
         });
         this.root.querySelector("img").addEventListener("click", () => {
             this.close();
@@ -164,8 +171,9 @@ time {
             this.close();
         }));
         this.root.querySelector(".media-path")?.addEventListener("click", () => {
-            const text = this.media.file_path.split(/\/|\\/).pop();
-            if (text) text.toClipBoard();
+            // const text = this.media.file_path.split(/\/|\\/).pop();
+            // if (text) text.toClipBoard();
+            app.updateMetadata(this.media);
         });
         this.root.querySelector(".transcode-path")?.addEventListener("click", () => {
             app.transcodeDir(this.media.file_path);

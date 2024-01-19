@@ -94,10 +94,10 @@ h2,h3,h4 {
 ul.genres {
     margin-top: 0.5em;
 }
-li.genre, li.cast {
+.pointer {
     cursor: pointer;
 }
-li.genre:hover, li.cast:hover {
+.pointer:hover {
     text-decoration: underline;
 }
 .play {
@@ -214,10 +214,10 @@ li.genre:hover, li.cast:hover {
         return `<article class="card-body-summary">
             <p>${this._media.summary}</p>
             <hr>
-            <ul class="info"><li class="item cast">${this._media.casts.join("</li><li class=\"item cast\">")}</li></ul>
+            <ul class="info"><li class="item cast pointer">${this._media.casts.join("</li><li class=\"item cast\">")}</li></ul>
             <ul class="info genres">
                 <li class="item"><time>${this._media.duration?.secondsToHMS() ?? ''}</time></li>
-                <li class="item genre">${this._media.genres.join("</li><li class=\"item genre\">")}</li>
+                <li class="item genre pointer">${this._media.genres.join("</li><li class=\"item genre\">")}</li>
             </ul>
         </article>`;
     }
@@ -262,7 +262,9 @@ li.genre:hover, li.cast:hover {
                         ${this.renderPlay()}
                         ${this._media.title}
                     </span>
-                    <span class="info" aria-label="Year ${this._media.year?.escape_quote()}">${this._media.year ? `(${this._media.year})` : ''}</span>
+                    <span class="info" aria-label="Year ${this._media.year?.escape_quote()}">
+                        ${this._media.year ? `(<span class="pointer year">${this._media.year}</span>)` : ''}
+                    </span>
                 </header>
                 <div class="card-body">
                     <div class="card-body-bg"></div>
@@ -272,14 +274,21 @@ li.genre:hover, li.cast:hover {
                 </div>
             </article>`;
 
-        this.root.querySelector("#card-title").addEventListener("click", () => {
+        this.root.querySelector("#card-title")?.addEventListener("click", () => {
             this.fireCurrent();
         });
-        this.root.querySelector(".card-body-bg").addEventListener("click", () => {
+        this.root.querySelector(".card-body-bg")?.addEventListener("click", () => {
             this.fireCurrent();
+        });
+        this.root.querySelector(".year")?.addEventListener("click", e => {
+            e.preventDefault();
+            e.stopPropagation();
+            eventBus.fire("navigate-search", {
+                term: `year="${e.target.innerHTML.trim()}"`,
+            });
         });
 
-        this.root.querySelector("#thumb").addEventListener("error", e => {
+        this.root.querySelector("#thumb")?.addEventListener("error", e => {
             // If image cannot be loaded, generate thumb localy
             let attempt = parseInt(e.target.getAttribute("data-attempt"));
             if (isNaN(attempt)) attempt = 0;
@@ -294,11 +303,11 @@ li.genre:hover, li.cast:hover {
             }
         });
 
-        this.root.querySelector(".card-body-content").addEventListener("click", () => {
+        this.root.querySelector(".card-body-content")?.addEventListener("click", () => {
             this.displayContent();
         });
-        this.playEvent();
 
+        this.playEvent();
         this.observer.observe(this.root.querySelector("#card"));
     }
 }

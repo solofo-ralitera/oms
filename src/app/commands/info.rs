@@ -71,7 +71,8 @@ impl Runnable for Info {
                 "hide-preview" => info_option.hide_preview(),
                 "elastic-url" => info_option.set_elastic(value)?,
                 "t" | "thread" => info_option.set_thread(value)?,
-                "list" => { 
+                "u" | "update-metadata" => info_option.set_update_metadata(),
+                "list" => {
                     info_option.set_list(value)?; // Files are provided in option
                     file_path.clear(); // Ignore the file in last option
                 },
@@ -195,7 +196,7 @@ info [OPTIONS] <file_path/dir_path>
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse
     --base-path=<string>   Dir path of relative root
-
+    -u --update-metadata    Update file metadata (for api provider)
     For videos: info --elastic-url=<string> --cache-path=<string> [dir_path]
 "
 }

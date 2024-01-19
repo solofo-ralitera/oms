@@ -1,4 +1,5 @@
 use std::{collections::HashMap, thread};
+use colored::Colorize;
 use regex::Regex;
 use crate::{app::commands::{mserv::option::MservOption, transcode::Transcode, info::Info, Runnable}, helpers::{file::{self, get_file_name}, ltrim_char, rtrim_char, command}};
 use super::{utils::get_file_path, summary};
@@ -6,7 +7,15 @@ use super::{utils::get_file_path, summary};
 
 pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
     if path.starts_with("/scan-dir") {
-        scan_media_dir(path, serv_option);
+        let path = path.to_string().clone();
+        let serv_option = serv_option.clone();
+        thread::spawn(move || scan_media_dir(&path, &serv_option, false));
+        return Some((String::from("200 OK"), vec![], None, None));
+    }
+    else if path.starts_with("/update-metadata") {
+        let path = path.to_string().clone();
+        let serv_option = serv_option.clone();
+        thread::spawn(move || scan_media_dir(&path, &serv_option, true));
         return Some((String::from("200 OK"), vec![], None, None));
     }
     else if path.starts_with("/transcode-dir") {
@@ -40,8 +49,12 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
     None
 }
 
-fn scan_media_dir(path: &str, serv_option: &MservOption) {
-    let file_path = path.replace("/scan-dir", "").trim().to_string();
+fn scan_media_dir(path: &str, serv_option: &MservOption, update_metadata: bool) {
+    let file_path = path
+        .replace("/scan-dir", "")
+        .replace("/update-metadata", "")
+        .trim()
+        .to_string();
     let file_path = if file_path.is_empty() {
         serv_option.base_path.to_string()
     } else {
@@ -53,27 +66,28 @@ fn scan_media_dir(path: &str, serv_option: &MservOption) {
     }
     let mut option = HashMap::new();
     option.insert(String::from("hide-preview"), String::new());
-    option.insert(String::from("thread"), String::from("5"));
+    option.insert(String::from("thread"), serv_option.transcode_thread.to_string().clone());
     option.insert(String::from("provider"), serv_option.provider.clone());
     option.insert(String::from("base-path"), serv_option.base_path.clone());
+    if update_metadata == true {
+        option.insert(String::from("update-metadata"), String::new());
+        option.insert(String::from("thread"), "1".to_string());
+    }
 
     if let Some(elastic) = serv_option.elastic.as_ref() {
         option.insert(String::from("elastic-url"), elastic.url.to_string());
         // Drop whole index
-        if file_path.eq(&serv_option.base_path) {
+        if file_path.eq(&serv_option.base_path) && update_metadata == false {
             elastic.drop_index();
         }
     }
-
     let file_path_thread = file_path.clone();
     match thread::spawn(move || Info {
         file_path: file_path_thread.to_string(),
         cmd_options: option,
     }.run()).join() {
-        Ok(_) => {
-            println!("Scan finished on {file_path}");
-        },
-        _ => (),
+        Ok(_) => println!("Scan finished on {file_path}"),
+        _ => println!("{} {}", "Scan finished with error on".red(), file_path.red()),
     }
 }
 

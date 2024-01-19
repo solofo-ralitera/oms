@@ -37,7 +37,12 @@ button {
 <article>
     <h3>Tools</h3>
     <section class="container">
-        <button id="scan-dir">Scan directory</button>
+        <button id="scan-dir">
+            Scan directory
+        </button>
+        <button id="update-metadata">
+            Update all movie file metadata
+        </button>
         <button id="transcode-dir">
             Transcode directory (x${TRANSCODE_THREAD})
             <br>
@@ -48,6 +53,9 @@ button {
 
         this.root.querySelector("#scan-dir").addEventListener("click", () => {
             app.scanDir();
+        });
+        this.root.querySelector("#update-metadata").addEventListener("click", () => {
+            app.updateMetadata();
         });
         this.root.querySelector("#transcode-dir").addEventListener("click", () => {
             app.transcodeDir();

@@ -44,6 +44,15 @@ export const app = new class {
         return fetch("./scan-dir" + path);
     }
 
+    async updateMetadata(media = null) {
+        if (media.provider === "local") {
+            // Display form
+            return Promise.resolve(true);
+        } else {
+            return fetch("./update-metadata" + (media ? media.file_path : ''));
+        }
+    }
+    
     async transcodeDir(extension = "") {
         return fetch(`./transcode-dir/${extension}`);
     }

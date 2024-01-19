@@ -1,4 +1,5 @@
 use diacritics::remove_diacritics;
+use regex::Regex;
 
 /// Find each line of content content containing query
 /// 
@@ -65,6 +66,13 @@ pub fn remove_null_char(str: &String) -> String {
     .replace(r"\376", "")
     .replace(r"\377", "")
     .to_string();
+}
+
+pub fn compare_normalize(s1: &String, s2: &String) -> bool {
+    let re_space = Regex::new(r"[ \n\t\r]{1,}").unwrap();
+    let s1 = re_space.replace(&s1.to_lowercase(), " ").trim().to_string();
+    let s2 = re_space.replace(&s2.to_lowercase(), " ").trim().to_string();
+    return s1.eq(&s2);
 }
 
 #[cfg(test)]

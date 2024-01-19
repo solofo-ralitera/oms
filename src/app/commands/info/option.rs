@@ -10,6 +10,7 @@ pub struct InfoOption {
     pub elastic: Option<Elastic>,
     pub thread: usize,
     pub provider: String,
+    pub update_metadata: bool,
 }
 
 impl InfoOption {
@@ -21,6 +22,7 @@ impl InfoOption {
             elastic: None,
             thread: max(1, num_cpus::get() - 1),
             provider: String::from("api"),
+            update_metadata: false,
         }
     }
 
@@ -83,6 +85,10 @@ impl InfoOption {
         self.elastic = Some(Elastic::new(value)?);
         return Ok(());
     }
+    
+    pub fn set_update_metadata(&mut self) {
+        self.update_metadata = true;
+    }
 
     pub fn set_thread(&mut self, value: &String) -> Result<()> {
         match value.parse::<usize>() {
@@ -107,6 +113,7 @@ impl Clone for InfoOption {
             elastic: self.elastic.clone(),
             thread: self.thread,
             provider: self.provider.clone(),
+            update_metadata: self.update_metadata,
         }
     }
 }

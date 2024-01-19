@@ -1,7 +1,7 @@
 use std::{sync::mpsc::Sender, time::SystemTime};
 use chrono::{DateTime, Utc};
 use colored::Colorize;
-use crate::helpers::{cache, db::elastic::Elastic, media::video::{self, result::get_video_result}};
+use crate::helpers::{cache, db::elastic::Elastic, media::video::{self, result::get_video_result, metadata::VideoMetadata}};
 use super::option::InfoOption;
 
 /// 
@@ -22,10 +22,19 @@ impl<'a> VideoInfo<'a> {
         match get_video_result(&self.video_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
             Ok(mut videos) => {
                 save_elastic(&mut videos, &self.info_option.elastic);
-                for video in videos {
+                for video in &videos {
                     tx.send(format!("\
 \n------------------------------------------------------------------------
 {video}\n")).unwrap_or_default();
+                }
+                // Update file metadata if required
+                if self.info_option.update_metadata == true {
+                    if let Some(info) = videos.into_iter().next() {
+                        if info.provider.eq("api") && VideoMetadata::write_from_result(&self.file_path, info) {
+                            println!("Metadata updated: {}", self.file_path);
+                        }
+                    }
+                    
                 }
             },
             Err(err) => {
@@ -33,7 +42,7 @@ impl<'a> VideoInfo<'a> {
                 if self.info_option.display_preview == false {
                     println!("\n{}\n", err.to_string().on_red());
                 } else {
-                    return tx.send(format!("\n{}\n", err.to_string().on_red())).unwrap_or_default();
+                    tx.send(format!("\n{}\n", err.to_string().on_red())).unwrap_or_default();
                 }
             }
         }
