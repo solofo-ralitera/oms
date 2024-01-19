@@ -145,7 +145,7 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     }
     if !base_path.is_empty() {
         // TODO: dis/enable cache
-        // cache::write_cache_json(&video_hash, &result, ".video");
+        cache::write_cache_json(&video_hash, &result, ".video");
     }
     return Ok(result);
 }

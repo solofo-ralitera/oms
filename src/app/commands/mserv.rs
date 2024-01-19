@@ -1,11 +1,11 @@
 mod option;
 mod request;
 
-use std::{collections::HashMap, io::{BufReader, BufRead, Write, self}, net::{TcpListener, TcpStream}, thread};
+use std::{collections::HashMap, io::{Write, self, Read}, net::{TcpListener, TcpStream}, thread};
+use image::EncodableLayout;
 use regex::Regex;
-
+use std::str;
 use self::{option::MservOption, request::ProcessParam};
-
 use super::Runnable;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -70,16 +70,34 @@ impl Runnable for Mserv {
 }
 
 fn handle_connection(mut stream: TcpStream, option: MservOption) {
-    let reader = BufReader::new(&mut stream);
     let mut request_headers = vec![];
-    for line in reader.lines() {
-        let line = line.unwrap_or_default();
-        if line.len() < 3 {
-            //detect empty line
-            break;
-        }
-        request_headers.push(line);
+    let mut request_buf: Vec<u8> = vec![];
+    let mut buf = [0 as u8; 16384]; // 16k buffer
+    let mut lines = String::new();
+    let mut content_length: usize = 0;
+
+    // https://stackoverflow.com/questions/67422948/rust-reading-a-stream-into-a-buffer-till-it-is-complete
+    // TODO: loop request complete
+    if let Ok(size) = stream.read(&mut buf) {
+        request_buf.extend(&buf[0..size]);
     }
+
+    let _ = request_buf.as_bytes().read_to_string(&mut lines);
+    if lines.is_empty() {
+        let _ = stream.write_all(b"");
+        let _ = stream.flush();
+        return;
+    }
+
+    for line in lines.lines() {
+        if line.starts_with("Content-Length") {
+            if let Ok(s) = line.replace("Content-Length:", "").trim().parse::<usize>() {
+                content_length = s;
+            }
+        }
+        request_headers.push(line.to_string());
+    }
+    let body_content = &lines[(lines.len() - content_length)..(lines.len())].to_string();
 
     let re = Regex::new(r"^([A-Z]{3,7}) (/.{0,}) (HTTP/.{1,})$").unwrap();
     if let Some((_, [verb, path, _])) = re.captures(&request_headers.get(0).unwrap_or(&String::new())).map(|c| c.extract()) {
@@ -88,10 +106,11 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
             headers, 
             str_content, 
             bytes_content
-        ) = request::process(ProcessParam {
+        ) = request::process(&ProcessParam {
             path: path, 
             verb: verb, 
             request_header: &request_headers,
+            body_content: &body_content,
             serv_option: &option,
         });
         
@@ -113,12 +132,12 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
                 println!("Stream write error: {}", err.to_string());
             }
         }
-        stream.flush().unwrap();
+        let _ = stream.flush();
         return;
     }
     // Send empty response
-    stream.write_all(b"").unwrap();
-    stream.flush().unwrap();
+    let _ = stream.write_all(b"");
+    let _ = stream.flush();
 }
 
 /// Help message for this command

@@ -1,8 +1,6 @@
 use std::{fs, os::unix::fs::MetadataExt};
-
 use serde::{Deserialize, Serialize};
 use crate::helpers::{command, string, file};
-
 use super::{title::VideoTitle, result::VideoResult};
 
 
@@ -81,7 +79,7 @@ impl VideoMetadata {
         };
     }
 
-    pub fn compare_to_videoresult(&self, result: &VideoResult) -> bool {
+    pub fn eq_videoresult(&self, result: &VideoResult) -> bool {
         if string::compare_normalize(&self.title, &result.title) &&
         string::compare_normalize(&self.summary, &result.summary) &&
         self.year == result.year
@@ -91,40 +89,49 @@ impl VideoMetadata {
         return false;
     }
 
-    pub fn write_from_result(file_path: &String, result: VideoResult) -> bool {
-        // TAG:title -> title
-        // TAG:artist -> casts
-        // TAG:comment -> summary
-        // TAG:genre -> genres
-        // TAG:date -> year
-        let current_metadata = Self::from(file_path);
-        if current_metadata.compare_to_videoresult(&result) {
-            return false;
-        }
+    pub fn write(&self, file_path: &String) -> bool {
         let extension = file::get_extension(file_path);
         let file_size = file::file_size(file_path).unwrap_or(1);
         let output_file = format!("{file_path}.oms_metadata_updated.{extension}");
         command::exec("ffmpeg", [
             "-i", file_path,
-            "-metadata", &format!("title={}", result.title),
-            "-metadata", &format!("artist={}", result.casts.join(", ")),
-            "-metadata", &format!("comment={}", result.summary),
-            "-metadata", &format!("genre={}", result.genres.join(", ")),
-            "-metadata", &format!("date={}", result.year),
+            "-metadata", &format!("title={}", self.title),
+            "-metadata", &format!("artist={}", self.casts.join(", ")),
+            "-metadata", &format!("comment={}", self.summary),
+            "-metadata", &format!("genre={}", self.genres.join(", ")),
+            "-metadata", &format!("date={}", self.year),
             "-codec", "copy",
             "-y", &output_file
         ]);
-        match fs::metadata(&output_file) {
-            Ok(m) if m.is_file() => {
-                let delta = m.size() as f64 / file_size as f64;
-                if delta < 1.1 {
-                    if let Ok(_) = fs::rename(output_file, file_path) {
-                        return true;
-                    }
+        if let Ok(m) = fs::metadata(&output_file) {
+            let delta = m.size() as f64 / file_size as f64;
+            if m.is_file() && delta > 0.97 {
+                if let Ok(_) = fs::rename(output_file, file_path) {
+                    return true;
                 }
-            },
-            _ => (),
-        };
+            }
+        }
+        return false;
+    }
+
+    pub fn write_from_result(file_path: &String, result: VideoResult) -> bool {
+        let current_metadata = Self::from(file_path);
+        if current_metadata.eq_videoresult(&result) {
+            return false;
+        }
+        return VideoMetadata {
+            title: result.title,
+            summary: result.summary,
+            year: result.year,
+            casts: result.casts,
+            genres: result.genres,
+        }.write(file_path);
+    }
+
+    pub fn write_from_body_content(file_path: &String, body_content: &String) -> bool {
+        if let Ok(video_metadata) = serde_json::from_str::<VideoMetadata>(body_content) {
+            return video_metadata.write(file_path);
+        }
         return false;
     }
 }

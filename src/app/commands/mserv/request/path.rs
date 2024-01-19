@@ -1,20 +1,20 @@
 use std::{cmp::min, fs};
-use crate::{app::commands::mserv::option::MservOption, helpers::{file, input::get_range_params, media::video}};
-use super::utils;
+use crate::helpers::{file, input::get_range_params, media::video};
+use super::{utils, ProcessParam};
 
 
-pub fn process(path: &str, request_header: &Vec<String>, serv_option: &MservOption) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
+pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
     // Video files
     if path.starts_with("/stream/") {
-        let file_path = utils::get_file_path(&serv_option.base_path, &path.replace("/stream/", "/"));
+        let file_path = utils::get_file_path(&request_param.serv_option.base_path, &path.replace("/stream/", "/"));
         if file_path.is_none() {
             return Some((String::from("404 Not Found"), vec![], None, None));
         }
-        return Some(process_stream(&file_path.unwrap(), &request_header));
+        return Some(process_stream(&file_path.unwrap(), &request_param.request_header));
     }
     // Thumb files (width=300)
     if path.starts_with("/thumb/") {
-        let file_path = utils::get_file_path(&serv_option.base_path, &path.replace("/thumb/", "/"));
+        let file_path = utils::get_file_path(&request_param.serv_option.base_path, &path.replace("/thumb/", "/"));
         if file_path.is_none() {
             return Some((String::from("404 Not Found"), vec![], None, None));
         }
@@ -22,7 +22,7 @@ pub fn process(path: &str, request_header: &Vec<String>, serv_option: &MservOpti
     }
     // Poster files (no resize)
     if path.starts_with("/poster/") {
-        let file_path = utils::get_file_path(&serv_option.base_path, &path.replace("/poster/", "/"));
+        let file_path = utils::get_file_path(&request_param.serv_option.base_path, &path.replace("/poster/", "/"));
         if file_path.is_none() {
             return Some((String::from("404 Not Found"), vec![], None, None));
         }
@@ -30,7 +30,7 @@ pub fn process(path: &str, request_header: &Vec<String>, serv_option: &MservOpti
     }
     // open/download files
     if path.starts_with("/open/") {
-        let file_path = utils::get_file_path(&serv_option.base_path, &path.replace("/open/", "/"));
+        let file_path = utils::get_file_path(&request_param.serv_option.base_path, &path.replace("/open/", "/"));
         if file_path.is_none() {
             return Some((String::from("404 Not Found"), vec![], None, None));
         }

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use image::EncodableLayout;
 use once_cell::sync::Lazy;
 
-use crate::{app::{commands::mserv::option::MservOption, APP_VERSION}, helpers::{string, file}};
+use crate::{app::APP_VERSION, helpers::{string, file}};
+
+use super::ProcessParam;
 
 
 static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
@@ -38,7 +40,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     return static_resources;
 });
 
-pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
+pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
     match STATIC_RESOURCES.get(path) {
         None => None,
         Some((content_type, content)) => Some((
@@ -48,13 +50,13 @@ pub fn process(path: &str, _: &Vec<String>, serv_option: &MservOption) -> Option
             ], 
             None,
             if path.ends_with(".js") {
-                let mut content = string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", serv_option.base_path).as_bytes());
-                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", serv_option.transcode_output).as_bytes());
-                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", serv_option.transcode_thread).as_bytes());
+                let mut content = string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", request_param.serv_option.base_path).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", request_param.serv_option.transcode_output).as_bytes());
+                content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", request_param.serv_option.transcode_thread).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"[\"VIDEO_EXTENSIONS\"]", serde_json::to_string(&file::VIDEO_EXTENSIONS).unwrap_or(String::new()).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"\"APP_VERSION\"", format!("\"{}\"", APP_VERSION).as_bytes());
                 
-                if let Some(elastic) = serv_option.elastic.as_ref() {
+                if let Some(elastic) = request_param.serv_option.elastic.as_ref() {
                     content = string::bytes_replace(content.as_bytes(), b"\"ELASTIC_URL\"", format!("\"{}\"", elastic.url).as_bytes());
                 }
                 Some(content)
