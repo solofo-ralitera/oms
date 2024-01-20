@@ -45,12 +45,15 @@ export const app = new class {
     }
 
     async updateMetadata(media = null) {
-        if (media.provider === "local") {
-            // Display form
-            return Promise.resolve(true);
-        } else {
-            return fetch("./update-metadata" + (media ? media.file_path : ''));
-        }
+        return fetch("./update-metadata" + (media ? media.file_path : ''));
+    }
+
+    async saveMetadata(filePath, madatada) {
+        if (!filePath) return;
+        return fetch(`./update-metadata${filePath}`, {
+            method: "POST",
+            body: JSON.stringify(madatada),
+        });
     }
     
     async transcodeDir(extension = "") {

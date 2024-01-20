@@ -44,7 +44,7 @@ button {
             Update all movie file metadata
         </button>
         <button id="transcode-dir">
-            Transcode directory (x${TRANSCODE_THREAD})
+            Transcode directory (x${TRANSCODE_THREAD.sanitize()})
             <br>
             <span style="font-size:0.9em;color:lightgray;">${app.transcodeOutput()}</span>            
         </button>

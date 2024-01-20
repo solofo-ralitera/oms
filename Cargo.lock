@@ -1286,6 +1286,7 @@ dependencies = [
  "data-encoding",
  "diacritics",
  "dotext",
+ "httparse",
  "image",
  "lopdf",
  "mime_guess",

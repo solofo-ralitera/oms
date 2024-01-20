@@ -29,7 +29,7 @@ li.genre~li.genre::before {
                 <h3>Genres</h3>
                 <ul>
                 ${GENRES.map(genre => 
-                    `<li class="genre" data-genre="${genre?.escape_quote()}">${genre}</li>`
+                    `<li class="genre" data-genre="${genre?.escape_quote()}">${genre.sanitize()}</li>`
                 ).join("")}
                 </ul>
             </article>`;

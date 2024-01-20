@@ -1,13 +1,14 @@
 import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
 import {app} from '../services/app.js';
+import {MetadataComponent} from './metadata.js';
 
-const TRANSCODE_OUTPUT = "TRANSCODE_OUTPUT";
-
-export class SummaryComponent extends HTMLElement {
-    css = `<style type="text/css">
+const CSS = `<style type="text/css">
 :host {
     position: relative;
+}
+.container {
+    height: 100%;
 }
 ul {
     padding: 0;
@@ -23,17 +24,21 @@ img {
 }
 #poster {
     min-width: 295px;
+    max-width: 691px;
 }
 .title {
     padding: 0 1em;
 }
 .summary {
-    position: fixed;
+    position: absolute;
     bottom: 0;
+    left: 0;
+    right: 0;
     line-height: 1.5em;
-    padding: 1em;
-    background-color: black;
-    opacity: 0.7;
+    padding: 1em 1em 2em 1em;
+    background: rgb(0, 0, 0, 0.7);
+    overflow: auto;
+    max-height: 100vh;
 }
 .info {
     font-size: 0.8em;
@@ -52,6 +57,9 @@ time {
     font-size: 0.8em;
 }
 </style>`;
+
+export class SummaryComponent extends HTMLElement {
+ 
 
     media = null;
 
@@ -101,17 +109,51 @@ time {
         return '';
     }
 
+    renderSummary() {
+        return `
+        <p>${this.media.summary}</p>
+        <ul class="info">
+            <span class="all-cast pointer">Casts</span>:
+            <li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">").sanitize()}</li>
+        </ul>
+        <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">").sanitize()}</li></ul>
+        <footer>
+            <span class="info pointer media-path" title="Sync metadata">${this.media.file_path.sanitize()}</span>
+            ${this.renderTranscode()}
+            <br>
+            <time>${(this.media.duration?.secondsToHMS() ?? '').sanitize()}</time>
+        </footer>        
+        `;
+    }
+
+    renderEditMetadata() {
+        const summary = this.root.querySelector("#summary");
+        if (!summary) return;
+
+        const elMetadata = new MetadataComponent();
+        elMetadata.media = this.media;
+        elMetadata.addEventListener("cancel", () => {
+            this.render();
+        });
+        elMetadata.addEventListener("saved", () => {
+            this.render();
+        });
+
+        summary.innerHTML = '';
+        summary.append(elMetadata);
+    }
+
     render() {
         if (!this.media) {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `${this.css}
-<article>
+        this.root.innerHTML = `${CSS}
+<article class="container">
     <h2 class="title">
         ${this.renderPlay()}
         &nbsp;&nbsp;
-        ${this.media.title} ${this.media.year ? `(<span class="pointer year">${this.media.year}</span>)` : ''}
+        ${this.media.title.sanitize()} ${this.media.year ? `(<span class="pointer year">${this.media.year.sanitize()}</span>)` : ''}
     </h2>
     <div style="text-align:center;">
         <img 
@@ -121,39 +163,28 @@ time {
             src="${this.media.poster_url.escape_path_attribute()}"
             alt="${this.media.title.escape_quote()}">
     </div>
-    <section class="summary">
-        <p>${this.media.summary}</p>
-        <ul class="info">
-            <span class="all-cast pointer">Casts</span>:
-            <li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">")}</li>
-        </ul>
-        <ul class="info"><li class="item genre pointer">${this.media.genres.join("</li><li class=\"item genre pointer\">")}</li></ul>
-        <footer>
-            <span class="info pointer media-path" title="Sync metadata">${this.media.file_path}</span>
-            ${this.renderTranscode()}
-            <br>
-            <time>${this.media.duration?.secondsToHMS() ?? ''}</time>
-        </footer>
+    <section class="summary" id="summary">
+        ${this.renderSummary()}
     </section>
 </article>`;
 
-        this.root.querySelector(".title").addEventListener("click", () => {
+        this.root.querySelector(".title")?.addEventListener("click", () => {
             this.close();
         });
-        this.root.querySelector(".year").addEventListener("click", e => {
+        this.root.querySelector(".year")?.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();
             eventBus.fire("navigate-search", {
                 term: `year="${e.target.innerHTML.trim()}"`,
             });
         });
-        this.root.querySelector("img").addEventListener("click", () => {
+        this.root.querySelector("img")?.addEventListener("click", () => {
             this.close();
         });
         this.root.querySelector(".play")?.addEventListener("click", () => {
             app.openMedia(this.media);
         });
-        this.root.querySelectorAll("li.genre").forEach(li => li.addEventListener("click", e => {
+        this.root.querySelectorAll("li.genre")?.forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
                 term: `genres="${e.target.innerHTML.trim()}"`,
             });
@@ -164,22 +195,24 @@ time {
                 term: `:cast`,
             });
         });
-        this.root.querySelectorAll("li.cast").forEach(li => li.addEventListener("click", e => {
+        this.root.querySelectorAll("li.cast")?.forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
                 term: `casts="${e.target.innerHTML.trim()}"`,
             });
             this.close();
         }));
         this.root.querySelector(".media-path")?.addEventListener("click", () => {
-            // const text = this.media.file_path.split(/\/|\\/).pop();
-            // if (text) text.toClipBoard();
-            app.updateMetadata(this.media);
+            if (this.media.provider === "local") {
+                this.renderEditMetadata();
+            } else {
+                app.updateMetadata(this.media);
+            }
         });
         this.root.querySelector(".transcode-path")?.addEventListener("click", () => {
             app.transcodeDir(this.media.file_path);
         });
         
-        this.root.querySelector("#poster").addEventListener("error", e => {
+        this.root.querySelector("#poster")?.addEventListener("error", e => {
             let attempt = parseInt(e.target.getAttribute("data-attempt"));
             if (isNaN(attempt)) attempt = 0;
             if (attempt > 0) {

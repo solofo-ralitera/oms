@@ -1,8 +1,7 @@
 import {eventBus} from '../../services/EventBus.js';
 import {app} from '../../services/app.js';
 
-export class PlayerVideoComponent extends HTMLElement {
-    css = `<style type="text/css">
+const CSS = `<style type="text/css">
     .video-container {
         position: relative;
         background-color: black;
@@ -51,6 +50,7 @@ export class PlayerVideoComponent extends HTMLElement {
     }
     </style>`;
 
+export class PlayerVideoComponent extends HTMLElement {
     mediaItem = null;
 
     constructor() {
@@ -68,10 +68,10 @@ export class PlayerVideoComponent extends HTMLElement {
             this.root.innerHTML = '';
             return;
         };
-        this.root.innerHTML = `${this.css}
+        this.root.innerHTML = `${CSS}
             <div class="video-container" data-size="mini">
                 <div class="tool">
-                    <span class="info title">${this.mediaItem.title}</span>
+                    <span class="info title">${this.mediaItem.title.sanitize()}</span>
                     <button class="full" arial-label="Extend player">&#9634;</button>
                     <button class="close" arial-label="Close video player">x</button>
                     <span></span>
@@ -81,7 +81,7 @@ export class PlayerVideoComponent extends HTMLElement {
                     <source src="./stream${this.mediaItem.file_path.escape_path_attribute()}" type="video/mp4" />
                     <p>
                         Your browser doesn't support this video. Here is the path of the file:
-                        ${this.mediaItem.file_path}
+                        ${this.mediaItem.file_path.sanitize()}
                     </p>
                 </video>
                 <footer class="footer">&nbsp;</footer>

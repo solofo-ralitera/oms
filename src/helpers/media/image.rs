@@ -14,6 +14,8 @@ pub struct ImageResult {
     pub title: String,
     pub summary: String,
 
+    pub provider: String,
+
     pub rating: f32,
     pub file_type: String,
     pub file_path: String,
@@ -62,6 +64,8 @@ pub fn get_image_result(base_path: &String, file_path: &String) -> Result<ImageR
     Ok(ImageResult {
         title: normalize_media_title(&file_name),
         summary: String::new(),
+
+        provider: String::from("local"),
 
         rating: 1.,
         file_type: String::from("image"),

@@ -16,6 +16,8 @@ pub struct AudioResult {
     pub thumb_url: String,
     pub poster_url: String,
 
+    pub provider: String,
+
     pub rating: f32,
     pub file_type: String,
     pub file_path: String,
@@ -72,6 +74,8 @@ pub fn get_audio_result(base_path: &String, file_path: &String) -> Result<AudioR
         thumb_url: String::from("/assets/img/audio.png"),
         poster_url: String::from("/assets/img/audio.png"),
     
+        provider: String::from("local"),
+        
         rating: 1.,
         file_type: String::from("audio"),
         file_path: relative_file_path,

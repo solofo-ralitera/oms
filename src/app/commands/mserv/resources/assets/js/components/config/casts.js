@@ -40,7 +40,7 @@ li.cast~li.cast::before {
     async renderCastLetter(letter) {
         return `<article>
             <h3>
-                ${letter.toUpperCase()}
+                ${letter.toUpperCase().sanitize()}
                 <hr>
             </h3>
             <ul>
@@ -50,7 +50,7 @@ li.cast~li.cast::before {
                     }
                     return c.toLowerCase().normalize('NFC').charAt(0) === letter
                 })
-                .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast}</li>`)
+                .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast.sanitize()}</li>`)
                 .join("")}
             </ul>
         </article>`;

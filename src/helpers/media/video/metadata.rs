@@ -93,6 +93,10 @@ impl VideoMetadata {
         let extension = file::get_extension(file_path);
         let file_size = file::file_size(file_path).unwrap_or(1);
         let output_file = format!("{file_path}.oms_metadata_updated.{extension}");
+        if let Ok(_) = fs::metadata(&output_file) {
+            println!("exists");
+            return false;
+        }
         command::exec("ffmpeg", [
             "-i", file_path,
             "-metadata", &format!("title={}", self.title),

@@ -2,9 +2,12 @@ mod option;
 mod request;
 
 use std::{collections::HashMap, io::{Write, self, Read}, net::{TcpListener, TcpStream}, thread};
+use httparse::Request;
 use image::EncodableLayout;
 use regex::Regex;
 use std::str;
+use crate::helpers;
+
 use self::{option::MservOption, request::ProcessParam};
 use super::Runnable;
 
@@ -76,10 +79,20 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
     let mut lines = String::new();
     let mut content_length: usize = 0;
 
+    // loop until whole request is received
     // https://stackoverflow.com/questions/67422948/rust-reading-a-stream-into-a-buffer-till-it-is-complete
-    // TODO: loop request complete
-    if let Ok(size) = stream.read(&mut buf) {
-        request_buf.extend(&buf[0..size]);
+    loop {
+        if let Ok(size) = stream.read(&mut buf) {
+            request_buf.extend(&buf[0..size]);
+        }
+        let mut headers = [httparse::EMPTY_HEADER; 16];
+        let mut req = Request::new(&mut headers);
+        if req.parse(&request_buf).unwrap().is_complete() {
+            break;
+        } else {
+            // May be not needed
+            helpers::sleep(10);
+        }
     }
 
     let _ = request_buf.as_bytes().read_to_string(&mut lines);
@@ -97,7 +110,10 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
         }
         request_headers.push(line.to_string());
     }
-    let body_content = &lines[(lines.len() - content_length)..(lines.len())].to_string();
+    let body_content = &lines
+        .get((lines.len() - content_length)..(lines.len()))
+        .unwrap_or_default()
+        .to_string();
 
     let re = Regex::new(r"^([A-Z]{3,7}) (/.{0,}) (HTTP/.{1,})$").unwrap();
     if let Some((_, [verb, path, _])) = re.captures(&request_headers.get(0).unwrap_or(&String::new())).map(|c| c.extract()) {

@@ -28,10 +28,10 @@ export class Summary extends HTMLElement {
         Object.keys(files_extension).sort().forEach(extension => {
             if (extension.isVideoFile()) {
                 str += `<li class="extension pointer" data-extension="${extension.escape_quote()}" title="Transcode to ${app.transcodeOutput(extension).escape_quote()}">
-                    ${extension}: ${files_extension[extension]}
+                    ${extension.sanitize()}: ${files_extension[extension].sanitize()}
                 </li>`;
             } else {
-                str += `<li>${extension}: ${files_extension[extension]}</li>`;
+                str += `<li>${extension.sanitize()}: ${files_extension[extension].sanitize()}</li>`;
             }
         });
         return str;
@@ -56,7 +56,7 @@ export class Summary extends HTMLElement {
                 if (files.length) {
                     this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
                         Files not indexed:
-                        <ul>${files.map(f => `<li class="not-indexed pointer" data-filepath="${f.escape_path_attribute()}">${f.file_name()}</li>`).join('')}</ul>
+                        <ul>${files.map(f => `<li class="not-indexed pointer" data-filepath="${f.escape_path_attribute()}">${f.file_name().sanitize()}</li>`).join('')}</ul>
                     `;
                     this.root.querySelectorAll(".not-indexed").forEach(li => li.addEventListener("click", e => {
                         app.scanDir(e.target.getAttribute("data-filepath"));
@@ -82,7 +82,7 @@ export class Summary extends HTMLElement {
         Full path: ${BASE_URL}
     </p>
     <p>
-        Number of files / indexed files: <span class="summary-detail-link pointer">${dirSummary.files_count} / ${elasticCount}</span>
+        Number of files / indexed files: <span class="summary-detail-link pointer">${dirSummary.files_count.sanitize()} / ${elasticCount.sanitize()}</span>
         <span id="summary-detail-content"></span>
     </p>
     <p>

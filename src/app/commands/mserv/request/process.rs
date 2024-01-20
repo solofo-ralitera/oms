@@ -15,7 +15,11 @@ pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<
             .trim()
             .to_string();
         let serv_option = request_param.serv_option.clone();
-        thread::spawn(move || metadata::scan_media_dir(&file_path, &serv_option, false));
+        if file_path.is_empty() {
+            thread::spawn(move || metadata::scan_media_dir(&file_path, &serv_option, false));
+        } else {
+            metadata::scan_media_dir(&file_path, &serv_option, false);
+        };
         return Some((String::from("200 OK"), vec![], None, None));
     }
     else if path.starts_with("/update-metadata") {

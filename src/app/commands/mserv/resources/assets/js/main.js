@@ -5,6 +5,14 @@ import { PLayerComponent } from "./components/player.js";
 
 const VIDEO_EXTENSIONS = ["VIDEO_EXTENSIONS"];
 
+String.prototype.sanitize = function () {
+    return this;
+};
+
+Number.prototype.sanitize = function () {
+    return this.toString().escape_quote();
+};
+
 String.prototype.escape_quote = function () {
     return this.replace(/"/g, "'");
 };

@@ -35,6 +35,8 @@ pub fn get_pdf_result(base_path: &String, file_path: &String) -> Result<PdfResul
         genres: metadata.genres,
         year: metadata.year,
 
+        provider: String::from("local"),
+
         rating: 1.,
         file_type: String::from("pdf"),
         file_path: relative_file_path,

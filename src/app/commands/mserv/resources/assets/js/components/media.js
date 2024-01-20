@@ -1,8 +1,7 @@
 import {eventBus} from '../services/EventBus.js';
 import {app} from '../services/app.js';
 
-export class MediaComponent extends HTMLElement {
-    css = `<style type="text/css">
+const CSS = `<style type="text/css">
 ul {
     padding: 0;
     margin: 0;
@@ -107,6 +106,8 @@ ul.genres {
     margin: 0 0.5em 0 0;
 }
 </style>`;
+
+export class MediaComponent extends HTMLElement {
     _media = null;
 
     constructor() {
@@ -212,12 +213,12 @@ ul.genres {
         }, 500);
 
         return `<article class="card-body-summary">
-            <p>${this._media.summary}</p>
+            <p>${this._media.summary.sanitize()}</p>
             <hr>
-            <ul class="info"><li class="item cast pointer">${this._media.casts.join("</li><li class=\"item cast\">")}</li></ul>
+            <ul class="info"><li class="item cast pointer">${this._media.casts.join("</li><li class=\"item cast\">").sanitize()}</li></ul>
             <ul class="info genres">
-                <li class="item"><time>${this._media.duration?.secondsToHMS() ?? ''}</time></li>
-                <li class="item genre pointer">${this._media.genres.join("</li><li class=\"item genre\">")}</li>
+                <li class="item"><time>${(this._media.duration?.secondsToHMS() ?? '').sanitize()}</time></li>
+                <li class="item genre pointer">${this._media.genres.join("</li><li class=\"item genre\">").sanitize()}</li>
             </ul>
         </article>`;
     }
@@ -255,15 +256,15 @@ ul.genres {
             return;
         }
 
-        this.root.innerHTML = `${this.css}
+        this.root.innerHTML = `${CSS}
             <article class="card" id="card">
                 <header id="card-title">
                     <span>
                         ${this.renderPlay()}
-                        ${this._media.title}
+                        ${this._media.title.sanitize()}
                     </span>
                     <span class="info" aria-label="Year ${this._media.year?.escape_quote()}">
-                        ${this._media.year ? `(<span class="pointer year">${this._media.year}</span>)` : ''}
+                        ${this._media.year ? `(<span class="pointer year">${this._media.year.sanitize()}</span>)` : ''}
                     </span>
                 </header>
                 <div class="card-body">

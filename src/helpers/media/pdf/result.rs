@@ -15,6 +15,8 @@ pub struct PdfResult {
     pub genres: Vec<String>, 
     pub casts: Vec<String>, 
 
+    pub provider: String,
+
     pub rating: f32,
     pub file_type: String,
     pub file_path: String,

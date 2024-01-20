@@ -59,14 +59,14 @@ footer {
 <article>
     <h3>Prerequistes</h3>
     <div id="prerequistes-container"></div>
-    <footer>oms v${APP_VERSION}</footer>
+    <footer>oms v${APP_VERSION.sanitize()}</footer>
 </article>`;
         app.prerequistes().then(prerequistes => {
             let str = '<ul>';
             Object.keys(prerequistes).sort().map(cmd => {
                 if (cmd === 'elastic') {
                     str += `<li id="elastic">
-                    <span id="elastic-cmd">${cmd}</span>&nbsp;&nbsp;<span id="elastic-url" class="version">${prerequistes[cmd]}</span>
+                    <span id="elastic-cmd">${cmd.sanitize()}</span>&nbsp;&nbsp;<span id="elastic-url" class="version">${prerequistes[cmd].sanitize()}</span>
                     </li>`;
                     this.checkElastic(prerequistes[cmd]).then(version => {
                         if (version) {
@@ -87,7 +87,7 @@ footer {
                     })
                 } else {
                     str += `<li class="${prerequistes[cmd] ? "ok" : "ko"}">
-                    <span>${cmd}</span>&nbsp;&nbsp;<span class="version">${prerequistes[cmd]}</span>
+                    <span>${cmd.sanitize()}</span>&nbsp;&nbsp;<span class="version">${prerequistes[cmd].sanitize()}</span>
                     </li>`;
                 }
             });

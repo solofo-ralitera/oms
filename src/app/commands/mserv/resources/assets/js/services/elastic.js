@@ -29,6 +29,21 @@ class ElasticMedia {
             .then(count => this.search("*:*", 0, count))
             .catch(() => []);
     }
+ 
+    getItem(hash) {
+        return fetch(ELASTIC_URL + `/_doc/${hash}`)
+            .then(async response => {
+                if (response.status >= 400) {
+                    throw new Error(await response.text());
+                }
+            });
+    }
+
+    deleteItem(hash) {
+        return fetch(ELASTIC_URL + `/_doc/${hash}`, {
+            method: "DELETE",
+        });
+    }
 
     search(term = "*", from = 0, size = 100) {
         term = term.trim();
