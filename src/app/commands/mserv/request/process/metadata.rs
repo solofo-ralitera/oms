@@ -1,13 +1,22 @@
 use std::{collections::HashMap, thread};
 use colored::Colorize;
-use crate::{app::commands::{mserv::{option::MservOption, request::utils}, info::Info, Runnable}, helpers::{file, media::video}};
+use crate::{app::commands::{mserv::{option::MservOption, request::utils}, info::Info, Runnable}, helpers::{file, media::{video, self}}};
 
 
 pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_metadata: bool) {
     let file_path = if file_path.is_empty() {
         serv_option.base_path.to_string()
     } else {
-        utils::get_file_path(&serv_option.base_path, &file_path.replace(&serv_option.base_path, "")).unwrap_or_default()
+        match utils::get_file_path(&serv_option.base_path, &file_path.replace(&serv_option.base_path, "")) {
+            Some(path) => {
+                if file::is_video_file(&path) {
+                    video::result::clear_cache(&path);
+                }
+                path
+            },
+            None => String::new(),
+        }
+
     };
 
     if file_path.is_empty() {
@@ -52,6 +61,8 @@ pub fn update_metadata(file_path: &String, serv_option: &MservOption, body_conte
     }
     if file::is_video_file(&file_path) {
         return video::metadata::VideoMetadata::write_from_body_content(&file_path, body_content);
+    } else if file::is_pdf_file(&file_path) {
+        return media::pdf::metadata::PdfMetadata::write_from_body_content(&file_path, body_content);
     }
     return false;
 }

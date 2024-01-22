@@ -50,7 +50,7 @@ pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<
                 (String::from("Content-type"), content_type.to_string()),
             ], 
             None,
-            if path.ends_with(".js") {
+            if path.ends_with(".js") || path.ends_with(".html") {
                 let mut content = string::bytes_replace(content, b"\"BASE_URL\"", format!("\"{}\"", request_param.serv_option.base_path).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_OUTPUT\"", format!("\"{}\"", request_param.serv_option.transcode_output).as_bytes());
                 content = string::bytes_replace(content.as_bytes(), b"\"TRANSCODE_THREAD\"", format!("{}", request_param.serv_option.transcode_thread).as_bytes());

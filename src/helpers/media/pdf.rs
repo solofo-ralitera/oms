@@ -1,6 +1,6 @@
 pub mod content;
 pub mod result;
-mod metadata;
+pub mod metadata;
 mod provider;
 
 use std::{io, fs};

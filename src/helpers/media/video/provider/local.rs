@@ -5,7 +5,6 @@ type Result<T> = std::result::Result<T, std::io::Error>;
 
 pub struct LocalParam<'a> {
     pub video_title: &'a VideoTitle,
-    pub raw_title: &'a String,
     pub file_path: &'a String,
     pub base_path: &'a String,
 }

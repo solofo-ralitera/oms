@@ -7,7 +7,7 @@ mod audio;
 use std::{io::{self, Error, ErrorKind}, collections::HashMap, fs, path::Path, sync::{mpsc::{self, Sender}, Arc, Mutex}};
 use once_cell::sync::Lazy;
 
-use crate::helpers::{file::{get_extension, get_file_name, self}, threadpool::ThreadPool};
+use crate::helpers::{file::{get_extension, self}, threadpool::ThreadPool};
 use super::{Runnable, get_args_parameter};
 use self::{pdf::PdfInfo, video::VideoInfo, option::InfoOption, image::ImageInfo, audio::AudioInfo};
 
@@ -158,7 +158,6 @@ fn file_info(file_path: &String, info_option: &InfoOption, thread_pool: &ThreadP
         }
         else if file::is_video_file(&file_path) || get_extension(&file_path).is_empty() {
             VideoInfo { 
-                video_raw_name: &get_file_name(&file_path),
                 file_path: &file_path,
                 info_option: &info_option,
             }.info(tx);

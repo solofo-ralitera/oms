@@ -41,23 +41,28 @@ export const app = new class {
     }
 
     async scanDir(path = "") {
-        return fetch("./scan-dir" + path);
+        return fetch("./scan-dir" + path.escape_path());
     }
 
     async updateMetadata(media = null) {
-        return fetch("./update-metadata" + (media ? media.file_path : ''));
+        return fetch("./update-metadata" + (media ? media.file_path.escape_path() : ''));
     }
 
     async saveMetadata(filePath, madatada) {
         if (!filePath) return;
-        return fetch(`./update-metadata${filePath}`, {
+        return fetch(`./update-metadata${filePath.escape_path()}`, {
             method: "POST",
             body: JSON.stringify(madatada),
+        }).then(async response => {
+            if (response.status >= 400) {
+                throw new Error(await response.text());
+            }
+            return response;
         });
     }
     
     async transcodeDir(extension = "") {
-        return fetch(`./transcode-dir/${extension}`);
+        return fetch(`./transcode-dir/${extension.escape_path()}`);
     }
 
     async getAllFiles() {

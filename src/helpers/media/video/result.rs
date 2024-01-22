@@ -66,21 +66,31 @@ impl VideoResult {
     }
 }
 
-pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &String, provider: &String) -> Result<Vec<VideoResult>, io::Error> {
-    let video_title = VideoTitle::from(raw_title);
+fn get_video_hash(file_path: &String) -> (VideoTitle, usize, String) {
+    let video_title = VideoTitle::from(file_path);
     let file_size = file::file_size(file_path).unwrap_or_default() as usize;
     let video_hash = digest(format!("{}.{file_size}", video_title.normalized()));
+    return (video_title, file_size, video_hash);
+}
+
+pub fn clear_cache(file_path: &String) {
+    let (_, _, video_hash) = get_video_hash(file_path);
+    cache::clear_cache(&video_hash, ".video");
+}
+
+pub fn get_video_result(file_path: &String, base_path: &String, provider: &String) -> Result<Vec<VideoResult>, io::Error> {
+    let (video_title, file_size, video_hash) = get_video_hash(file_path);
 
     // Warn if year is empty, (omdb and tmdb need year for more accuracy)
     if provider.eq("api") && video_title.year == 0 {
         print!("{}: empty year\n", file_path.yellow());
     }
 
-    // Fist check if result is in cache
+    // Fist check if result is in cache (! pour api)
     //  If provider in cache is different from supplied provider => force none to reload data
     let mut videos = if let Some((_, content)) = cache::get_cache(&video_hash, ".video") {
         match serde_json::from_str::<Vec<VideoResult>>(&content) {
-            Ok(result) if result.len() > 0 => {
+            Ok(result) if result.len() > 0 && provider.eq("api") => {
                 if result.iter().any(|r| r.provider.ne(provider)) {
                     None
                 } else {
@@ -115,7 +125,6 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     if videos.is_none() {
         videos = if let Ok(result) = Local::info(LocalParam {
             video_title: &video_title,
-            raw_title: raw_title,
             file_path: file_path,
             base_path: base_path,
         }) {
@@ -145,7 +154,7 @@ pub fn get_video_result(raw_title: &String, file_path: &String, base_path: &Stri
     }
     if !base_path.is_empty() {
         // TODO: dis/enable cache
-        cache::write_cache_json(&video_hash, &result, ".video");
+        // cache::write_cache_json(&video_hash, &result, ".video");
     }
     return Ok(result);
 }

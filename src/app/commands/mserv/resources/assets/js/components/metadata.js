@@ -22,6 +22,9 @@ button {
 footer {
     text-align: right;
 }
+button#scan-dir {
+    font-size: 1.02em;
+}
 button#save {
     font-weight: bold;
     font-size: 1.02em;
@@ -85,6 +88,7 @@ export class MetadataComponent extends HTMLElement {
 </div>
 <footer>
     <button id="cancel">Cancel</button>
+    <button id="scan-dir">Update index</button>
     <button id="save">Save</button>
 </footer>
 `;
@@ -93,9 +97,15 @@ export class MetadataComponent extends HTMLElement {
         this.root.querySelector("#year").value = this._media.year;
         this.root.querySelector("#casts").value = this._media.casts?.join(",") ?? "";
         this.root.querySelector("#genres").value = this._media.genres?.join(",") ?? "";
+
         this.root.querySelector("#cancel")?.addEventListener("click", () => {
             this.dispatchEvent(CancelEvent);
         });
+
+        this.root.querySelector("#scan-dir")?.addEventListener("click", () => {
+            app.scanDir(this._media.file_path);
+        });
+
         this.root.querySelector("#save")?.addEventListener("click", e => {
             e.target.disabled = true;
             const year = parseInt(this.root.querySelector("#year").value.trim());
@@ -108,11 +118,13 @@ export class MetadataComponent extends HTMLElement {
             })
             .then(() => elasticMedia.deleteItem(this._media.hash))
             .then(() => app.scanDir(this._media.file_path))
+            .then(() => this.dispatchEvent(SavedEvent))
+            .catch(() => {
+                e.target.disabled = false;
+            })
             .finally(() => {
                 e.target.disabled = false;
-                this.dispatchEvent(SavedEvent);                
             });
-            
         });
 
     }

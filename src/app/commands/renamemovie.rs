@@ -81,7 +81,6 @@ fn rename_dir(dir_path: &String, rename_option: &RenameMovieOption) {
 
 fn get_title_year_from_provider(file_path: &String, file_name: &String) -> Result<(String, String)> {
     let videos = video::result::get_video_result(
-        &file_name, 
             &file_path,
             &String::new(),
             &String::from("api")

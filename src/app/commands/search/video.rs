@@ -23,8 +23,6 @@ impl<'a> VideoSearch<'a> {
         }
 
         let videos = video::result::get_video_result(
-            &file::get_file_name(
-                &self.file_path), 
                 &self.file_path,
                 &String::new(),
                 &self.search_option.provider

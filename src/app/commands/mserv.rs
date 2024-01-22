@@ -6,7 +6,7 @@ use httparse::Request;
 use image::EncodableLayout;
 use regex::Regex;
 use std::str;
-use crate::helpers;
+use buf_redux::BufReader;
 
 use self::{option::MservOption, request::ProcessParam};
 use super::Runnable;
@@ -75,23 +75,27 @@ impl Runnable for Mserv {
 fn handle_connection(mut stream: TcpStream, option: MservOption) {
     let mut request_headers = vec![];
     let mut request_buf: Vec<u8> = vec![];
-    let mut buf = [0 as u8; 16384]; // 16k buffer
+    let mut buf: [u8; 16384] = [0 as u8; 16384]; // 16k buffer
     let mut lines = String::new();
     let mut content_length: usize = 0;
 
+
+    let mut buff_reader = BufReader::new_ringbuf( &mut stream);
+ 
     // loop until whole request is received
     // https://stackoverflow.com/questions/67422948/rust-reading-a-stream-into-a-buffer-till-it-is-complete
+    // stream.read() issue: https://stackoverflow.com/questions/69964703/tcp-stream-read-post-file-in-edge-or-chrome-browsers
+    // TODO fix deprecated
     loop {
-        if let Ok(size) = stream.read(&mut buf) {
-            request_buf.extend(&buf[0..size]);
+        if let Ok(size) = buff_reader.read(&mut buf) {
+            request_buf.extend_from_slice(&buf[..size]);
         }
+
         let mut headers = [httparse::EMPTY_HEADER; 16];
         let mut req = Request::new(&mut headers);
-        if req.parse(&request_buf).unwrap().is_complete() {
-            break;
-        } else {
-            // May be not needed
-            helpers::sleep(10);
+        match req.parse(&request_buf) {
+            Ok(r) if r.is_complete() => break,
+            _ => (),
         }
     }
 
@@ -110,8 +114,13 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
         }
         request_headers.push(line.to_string());
     }
+    let start_index = if lines.len() > content_length {
+        lines.len() - content_length
+    } else {
+        lines.len()
+    };
     let body_content = &lines
-        .get((lines.len() - content_length)..(lines.len()))
+        .get(start_index..lines.len())
         .unwrap_or_default()
         .to_string();
 
@@ -148,6 +157,7 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
                 println!("Stream write error: {}", err.to_string());
             }
         }
+        let _ = stream.write_all(b"");
         let _ = stream.flush();
         return;
     }

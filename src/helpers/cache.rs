@@ -87,6 +87,10 @@ impl Cache {
         return None;
     }
     
+    pub fn clear_cache(&self, key: &String, subdir: &str) {
+        let cache_path = self.get_cache_path(key, subdir);
+        let _ = fs::remove_file(cache_path);
+    }
 
     pub fn get_cache_bytes(&self, key: &String, subdir: &str) -> Option<(String, Vec<u8>)> {
         let cache_path = self.get_cache_path(key, subdir);
@@ -146,6 +150,12 @@ pub fn set_base_path(path: &str) {
 pub fn get_cache(key: &String, subdir: &str) -> Option<(String, String)> {
     unsafe {
         return CACHE.get_cache(key, subdir);
+    }
+}
+
+pub fn clear_cache(key: &String, subdir: &str) {
+    unsafe {
+        CACHE.clear_cache(key, subdir);
     }
 }
 

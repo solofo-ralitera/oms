@@ -12,14 +12,13 @@ use super::option::InfoOption;
 /// https://developer.themoviedb.org/reference/search-movie
 ///
 pub struct VideoInfo<'a> {
-    pub video_raw_name: &'a String,
     pub file_path: &'a String,
     pub info_option: &'a InfoOption,
 }
 
 impl<'a> VideoInfo<'a> {
     pub fn info(&self, tx: Sender<String>) {
-        match get_video_result(&self.video_raw_name, &self.file_path, &self.info_option.base_path, &self.info_option.provider) {
+        match get_video_result(&self.file_path, &self.info_option.base_path, &self.info_option.provider) {
             Ok(mut videos) => {
                 save_elastic(&mut videos, &self.info_option.elastic);
                 for video in &videos {

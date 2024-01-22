@@ -44,21 +44,65 @@ impl VideoMetadata {
             if line.starts_with("TAG:title") {
                 title = line.replace("TAG:title=", "").trim().to_string();
             }
-            if line.starts_with("TAG:artist") {
+            else if line.starts_with("TAG:Title") {
+                title = line.replace("TAG:Title=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:TITLE") {
+                title = line.replace("TAG:TITLE=", "").trim().to_string();
+            }
+
+            else if line.starts_with("TAG:artist") {
                 casts = line.replace("TAG:artist=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
             }
-            if line.starts_with("TAG:genre") {
+            else if line.starts_with("TAG:Artist") {
+                casts = line.replace("TAG:Artist=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
+            }
+            else if line.starts_with("TAG:ARTIST") {
+                casts = line.replace("TAG:ARTIST=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
+            }
+
+            else if line.starts_with("TAG:genre") {
                 genres = line.replace("TAG:genre=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
             }
-            if line.starts_with("TAG:date") {
+            else if line.starts_with("TAG:Genre") {
+                genres = line.replace("TAG:Genre=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
+            }
+            else if line.starts_with("TAG:GENRE") {
+                genres = line.replace("TAG:GENRE=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
+            }
+
+            else if line.starts_with("TAG:date") {
                 date = line.replace("TAG:date=", "").trim().to_string();
             }
-            if line.starts_with("TAG:creation_time") {
+            else if line.starts_with("TAG:Date") {
+                date = line.replace("TAG:Date=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:DATE") {
+                date = line.replace("TAG:DATE=", "").trim().to_string();
+            }
+
+
+            else if line.starts_with("TAG:creation_time") {
                 creation_time = line.replace("TAG:creation_time=", "").trim().to_string();
             }
+            else if line.starts_with("TAG:Creation_time") {
+                creation_time = line.replace("TAG:Creation_time=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:Creation_Time") {
+                creation_time = line.replace("TAG:Creation_Time=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:CREATION_TIME") {
+                creation_time = line.replace("TAG:CREATION_TIME=", "").trim().to_string();
+            }
             
-            if line.starts_with("TAG:comment") {
+            else if line.starts_with("TAG:comment") {
                 summary = line.replace("TAG:comment=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:Comment") {
+                summary = line.replace("TAG:Comment=", "").trim().to_string();
+            }
+            else if line.starts_with("TAG:COMMENT") {
+                summary = line.replace("TAG:COMMENT=", "").trim().to_string();
             }
         }
 
@@ -97,6 +141,7 @@ impl VideoMetadata {
             println!("exists");
             return false;
         }
+
         command::exec("ffmpeg", [
             "-i", file_path,
             "-metadata", &format!("title={}", self.title),
@@ -109,11 +154,19 @@ impl VideoMetadata {
         ]);
         if let Ok(m) = fs::metadata(&output_file) {
             let delta = m.size() as f64 / file_size as f64;
-            if m.is_file() && delta > 0.97 {
-                if let Ok(_) = fs::rename(output_file, file_path) {
-                    return true;
+            if m.is_file() && delta > 0.95 {
+                match fs::rename(output_file, file_path) {
+                    Ok(_) => return true,
+                    Err(err) => {
+                        println!("Metadata write error: {}", err.to_string());
+                        return false;
+                    }
                 }
+            } else {
+                println!("Metadata write error: insufficient delta {delta}");
             }
+        } else {
+            println!("Metadata write error: ouput {output_file} not created");
         }
         return false;
     }
