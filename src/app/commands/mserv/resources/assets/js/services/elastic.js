@@ -6,7 +6,7 @@ class ElasticMedia {
             .map(m => m.casts)
             .flat()
             .filter(cast => !!cast)
-            .map(genre => genre.toLowerCase().trim().capitalize())
+            .map(genre => genre.toLowerCase().trim().upper_case_words())
             .sort()).then(casts => Array.from(new Set(casts)));            
     }
 

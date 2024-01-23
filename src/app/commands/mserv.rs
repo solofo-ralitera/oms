@@ -75,10 +75,9 @@ impl Runnable for Mserv {
 fn handle_connection(mut stream: TcpStream, option: MservOption) {
     let mut request_headers = vec![];
     let mut request_buf: Vec<u8> = vec![];
-    let mut buf: [u8; 16384] = [0 as u8; 16384]; // 16k buffer
+    let mut buf: [u8; 32768] = [0 as u8; 32768]; // 32k buffer
     let mut lines = String::new();
     let mut content_length: usize = 0;
-
 
     let mut buff_reader = BufReader::new_ringbuf( &mut stream);
  

@@ -1,7 +1,8 @@
-use std::{collections::HashMap, thread};
+use std::{collections::HashMap, io, thread};
 use colored::Colorize;
 use crate::{app::commands::{mserv::{option::MservOption, request::utils}, info::Info, Runnable}, helpers::{file, media::{video, self}}};
 
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_metadata: bool) {
     let file_path = if file_path.is_empty() {
@@ -49,20 +50,29 @@ pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_meta
     }
 }
 
-pub fn update_metadata(file_path: &String, serv_option: &MservOption, body_content: &String) -> bool {
+pub fn update_metadata(file_path: &String, serv_option: &MservOption, body_content: &String) -> Result<bool> {
     let file_path = if file_path.is_empty() {
-        return false;
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput, 
+            format!("Update metadata: error file_path is empty")
+        ))
     } else {
         utils::get_file_path(&serv_option.base_path, &file_path.replace(&serv_option.base_path, "")).unwrap_or_default()
     };
 
     if file_path.is_empty() {
-        return false;
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput, 
+            format!("Update metadata: error file_path is empty")
+        ))
     }
     if file::is_video_file(&file_path) {
         return video::metadata::VideoMetadata::write_from_body_content(&file_path, body_content);
     } else if file::is_pdf_file(&file_path) {
         return media::pdf::metadata::PdfMetadata::write_from_body_content(&file_path, body_content);
     }
-    return false;
+    return Err(io::Error::new(
+        io::ErrorKind::Unsupported, 
+        format!("Update metadata: error file not supported")
+    ))
 }

@@ -4,6 +4,8 @@ mod summary;
 mod setting;
 
 use std::thread;
+use colored::Colorize;
+
 use crate::helpers::file;
 use super::ProcessParam;
 
@@ -27,21 +29,25 @@ pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<
             .replace("/update-metadata", "")
             .trim()
             .to_string();
-        match request_param.verb {
+        return match request_param.verb {
             "GET" => {
                 let serv_option = request_param.serv_option.clone();
                 thread::spawn(move || metadata::scan_media_dir(&file_path, &serv_option, true));
-                return Some((String::from("200 OK"), vec![], None, None));
+                Some((String::from("200 OK"), vec![], None, None))
             },
-            "POST" => {
-                if metadata::update_metadata(&file_path, &request_param.serv_option, &request_param.body_content) == true {
-                    return Some((String::from("200 OK"), vec![], None, None));
+            "POST" => match metadata::update_metadata(&file_path, &request_param.serv_option, &request_param.body_content) {
+                Ok(_) => Some((String::from("200 OK"), vec![], None, None)),
+                Err(err) => {
+                    println!("{}", err.to_string().red());
+                    Some((
+                        String::from("500 Internal Server Error"),
+                        vec![],
+                        None,
+                        Some(err.to_string().as_bytes().to_vec())
+                    ))
                 }
-                return Some((String::from("500 Internal Server Error"), vec![], None, None));
             },
-            _ => {
-                return Some((String::from("404 Not Found"), vec![], None, None));
-            },
+            _ => Some((String::from("404 Not Found"), vec![], None, None)),
         };
     }
     else if path.starts_with("/transcode-dir") {

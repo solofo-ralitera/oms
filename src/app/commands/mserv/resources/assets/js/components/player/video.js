@@ -6,7 +6,7 @@ const CSS = `<style type="text/css">
         position: relative;
         background-color: black;
         z-index: 3;
-        max-width: 100vw;
+        max-width: 50vw;
         max-height: 100vh;
     }
     .tool {
@@ -103,16 +103,19 @@ export class PlayerVideoComponent extends HTMLElement {
                 switch (player.getAttribute("data-size")) {
                     case "mini":
                         player.style.width = "100vw";
+                        player.style.maxWidth = "inherit";
                         player.style.height = "inherit";
                         player.setAttribute("data-size", "full-width");
                         break;
                     case "full-width":
                             player.style.width = "100vw";
+                            player.style.maxWidth = "inherit";
                             player.style.height = "100vh";
                             player.setAttribute("data-size", "full");
                             break;
                     case "full":
                             player.style.width = "inherit";
+                            player.style.maxWidth = "50vw";
                             player.style.height = "inherit";
                             player.setAttribute("data-size", "mini");
                             break;

@@ -1,8 +1,9 @@
-use std::{fs, os::unix::fs::MetadataExt};
+use std::{fs, io, os::unix::fs::MetadataExt};
 use serde::{Deserialize, Serialize};
 use crate::helpers::{command, string, file};
 use super::{title::VideoTitle, result::VideoResult};
 
+type Result<T> = std::result::Result<T, std::io::Error>;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct VideoMetadata {
@@ -133,13 +134,15 @@ impl VideoMetadata {
         return false;
     }
 
-    pub fn write(&self, file_path: &String) -> bool {
+    pub fn write(&self, file_path: &String) -> Result<bool> {
         let extension = file::get_extension(file_path);
         let file_size = file::file_size(file_path).unwrap_or(1);
         let output_file = format!("{file_path}.oms_metadata_updated.{extension}");
         if let Ok(_) = fs::metadata(&output_file) {
-            println!("exists");
-            return false;
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists, 
+                format!("Update metadata: error: Temp file {} exists", output_file)
+            ));
         }
 
         command::exec("ffmpeg", [
@@ -156,25 +159,32 @@ impl VideoMetadata {
             let delta = m.size() as f64 / file_size as f64;
             if m.is_file() && delta > 0.95 {
                 match fs::rename(output_file, file_path) {
-                    Ok(_) => return true,
+                    Ok(_) => return Ok(true),
                     Err(err) => {
-                        println!("Metadata write error: {}", err.to_string());
-                        return false;
+                        return Err(io::Error::new(
+                            io::ErrorKind::PermissionDenied, 
+                            format!("Metadata write error: {}", err.to_string())
+                        ));
                     }
                 }
             } else {
-                println!("Metadata write error: insufficient delta {delta}");
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData, 
+                    format!("Metadata write error: insufficient delta {delta}")
+                ));
             }
         } else {
-            println!("Metadata write error: ouput {output_file} not created");
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted, 
+                format!("Metadata write error: ouput {output_file} not created")
+            ));
         }
-        return false;
     }
 
-    pub fn write_from_result(file_path: &String, result: VideoResult) -> bool {
+    pub fn write_from_result(file_path: &String, result: VideoResult) -> Result<bool> {
         let current_metadata = Self::from(file_path);
         if current_metadata.eq_videoresult(&result) {
-            return false;
+            return Ok(false);
         }
         return VideoMetadata {
             title: result.title,
@@ -185,10 +195,15 @@ impl VideoMetadata {
         }.write(file_path);
     }
 
-    pub fn write_from_body_content(file_path: &String, body_content: &String) -> bool {
-        if let Ok(video_metadata) = serde_json::from_str::<VideoMetadata>(body_content) {
-            return video_metadata.write(file_path);
+    pub fn write_from_body_content(file_path: &String, body_content: &String) -> Result<bool> {
+        match serde_json::from_str::<VideoMetadata>(body_content) {
+            Ok(video_metadata) => return video_metadata.write(file_path),
+            Err(err) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput, 
+                    format!("Update video metadata: invalid json {}", err.to_string())
+                ));
+            }
         }
-        return false;
     }
 }

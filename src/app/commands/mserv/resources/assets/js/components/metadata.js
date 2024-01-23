@@ -29,6 +29,14 @@ button#save {
     font-weight: bold;
     font-size: 1.02em;
 }
+pre#error-container {
+    display:none;
+    background-color: darkred;
+    color: white;
+    padding: 0.5em;
+    fonf-size: 0.8em;
+    text-align: left;
+}
 </style>`;
 
 const CancelEvent = new Event("cancel");
@@ -87,6 +95,7 @@ export class MetadataComponent extends HTMLElement {
     <input type="text" id="genres" name="genres" class="f100">
 </div>
 <footer>
+    <pre id="error-container"></pre>
     <button id="cancel">Cancel</button>
     <button id="scan-dir">Update index</button>
     <button id="save">Save</button>
@@ -107,23 +116,28 @@ export class MetadataComponent extends HTMLElement {
         });
 
         this.root.querySelector("#save")?.addEventListener("click", e => {
-            e.target.disabled = true;
+            const btn = e.target;
+            btn.disabled = true;
+            this.root.querySelector("#error-container").style.display = 'none';
+            this.root.querySelector("#error-container").innerHTML = '';
+
             const year = parseInt(this.root.querySelector("#year").value.trim());
             app.saveMetadata(this._media.file_path, {
                 "title": this.root.querySelector("#title").value.trim(),
                 "summary": this.root.querySelector("#summary").value.trim(),
                 "year": isNaN(year) ? 0 : year,
-                "casts": this.root.querySelector("#casts").value.trim().split(","),
-                "genres": this.root.querySelector("#genres").value.trim().split(","),
+                "casts": this.root.querySelector("#casts").value.trim().split(",").map(c => c.trim()),
+                "genres": this.root.querySelector("#genres").value.trim().split(",").map(c => c.trim()),
             })
             .then(() => elasticMedia.deleteItem(this._media.hash))
             .then(() => app.scanDir(this._media.file_path))
             .then(() => this.dispatchEvent(SavedEvent))
-            .catch(() => {
-                e.target.disabled = false;
+            .catch(err => {
+                this.root.querySelector("#error-container").style.display = 'inherit';
+                this.root.querySelector("#error-container").innerHTML = err.message;
             })
             .finally(() => {
-                e.target.disabled = false;
+                btn.disabled = false;
             });
         });
 

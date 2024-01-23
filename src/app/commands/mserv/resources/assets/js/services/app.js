@@ -55,9 +55,9 @@ export const app = new class {
             body: JSON.stringify(madatada),
         }).then(async response => {
             if (response.status >= 400) {
-                throw new Error(await response.text());
+                return Promise.reject(new Error(await response.text()));
             }
-            return response;
+            return await response.text();
         });
     }
     

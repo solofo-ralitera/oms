@@ -29,8 +29,15 @@ impl<'a> VideoInfo<'a> {
                 // Update file metadata if required
                 if self.info_option.update_metadata == true {
                     if let Some(info) = videos.into_iter().next() {
-                        if info.provider.eq("api") && VideoMetadata::write_from_result(&self.file_path, info) {
-                            println!("Metadata updated: {}", self.file_path);
+                        if info.provider.eq("api") {
+                            match VideoMetadata::write_from_result(&self.file_path, info) {
+                                Ok(r) if r == true => {
+                                    println!("Metadata updated: {}", self.file_path);
+                                },
+                                _ => {
+                                    println!("{} {}", "Metadata not updated:".red(), self.file_path.red());
+                                }
+                            }
                         }
                     }
                     

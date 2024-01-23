@@ -12,6 +12,12 @@ pub struct VideoTitle {
 impl VideoTitle {
     pub fn from(file_path: &String) -> Self {
         let raw_title = file::get_file_name(file_path);
+        
+        // Remove first [...]
+        let re_brakets = Regex::new(r"^\[[^\]]{1,}\]").unwrap();
+        let raw_title = re_brakets.replace(&raw_title, "").trim().to_string();
+        
+        // Get title and Year
         let re_year = Regex::new(r"^(.{1,})[\.\(]([0-9]{4})(.{0,})").unwrap();
         if let Some((_, [title, year, _])) = re_year.captures(&raw_title).map(|c| c.extract()) {
             let title = format_title_remove_point(title);
