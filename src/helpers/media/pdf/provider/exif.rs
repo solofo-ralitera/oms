@@ -10,7 +10,6 @@ pub fn from_exif(file_path: &String) -> Option<PdfMetadata> {
 
     let mut title = String::new();
     // Summary
-    let mut subject = String::new();
     let mut description = String::new();
     // Year
     let mut date = String::new();
@@ -37,9 +36,6 @@ pub fn from_exif(file_path: &String) -> Option<PdfMetadata> {
         if line.starts_with("Description :") {
             description = line.replace("Description :", "").trim().to_string();
         }
-        if line.starts_with("Subject :") {
-            subject = line.replace("Subject :", "").trim().to_string();
-        }            
         if line.starts_with("Title :") {
             title = line.replace("Title :", "").trim().to_string();
         }
@@ -67,7 +63,7 @@ pub fn from_exif(file_path: &String) -> Option<PdfMetadata> {
 
     return Some(PdfMetadata {
         title: title,
-        summary: format!("{subject}\n\n{description}").trim().to_string(),
+        summary: description,
         year: year, // Date
         casts: casts,
         genres: genres,

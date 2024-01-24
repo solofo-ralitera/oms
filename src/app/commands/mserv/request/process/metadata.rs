@@ -19,8 +19,8 @@ pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_meta
         }
 
     };
-
     if file_path.is_empty() {
+        println!("Scan media: file_path does not exist");
         return;
     }
     let mut option = HashMap::new();

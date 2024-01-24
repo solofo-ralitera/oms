@@ -41,11 +41,11 @@ export const app = new class {
     }
 
     async scanDir(path = "") {
-        return fetch("./scan-dir" + path.escape_path());
+        return fetch("./scan-dir" + (path.includes("%") ? path : path.escape_path()));
     }
 
     async updateMetadata(media = null) {
-        return fetch("./update-metadata" + (media ? media.file_path.escape_path() : ''));
+        return fetch("./update-metadata" + (!media ? "" : (media.file_path.includes("%") ? "" : media.file_path.escape_path())));
     }
 
     async saveMetadata(filePath, madatada) {

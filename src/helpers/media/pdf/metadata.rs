@@ -18,20 +18,18 @@ pub struct PdfMetadata {
 impl PdfMetadata {
     /*
     title => Title
-    summary => 
-        Subject
-        Description
+    summary => Description
     year => Date
     casts => Author
     genres => Keywords
     */
     pub fn write(&self, file_path: &String) -> Result<bool> {
-        let (subject, description) = self.summary.split_once("\n\n").unwrap_or(("", ""));
         let res = command::exec("exiftool", [
+            &format!("-overwrite_original"),
             &format!("-Title={}", self.title),
             &format!("-Date={}", self.year),
-            &format!("-Subject={}", subject),
-            &format!("-Description={}", description),
+            // &format!("-Subject={}", subject),
+            &format!("-Description={}", self.summary),
             &format!("-Author={}", self.casts.join(",")),
             &format!("-Keywords={}", self.genres.join(",")),
             &file_path
@@ -39,6 +37,7 @@ impl PdfMetadata {
         if res.contains("updated") {
             return Ok(true);
         }
+
         return Err(io::Error::new(
             io::ErrorKind::Interrupted, 
             format!("Update metadata: file not updated")
