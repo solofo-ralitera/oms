@@ -23,7 +23,12 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
             format!("Video transcode: unknown extension {output}")
         ))
     }
-
+    let extension = file::get_extension(file_path);
+    let output = if output.to_lowercase().eq(&extension.to_lowercase()) {
+        format!("{output}.{output}")
+    } else {
+        output.to_string()
+    };
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
@@ -84,6 +89,23 @@ pub fn video_duration(file_path: &String) -> usize {
     return size;
 }
 
+pub fn video_codec(file_path: &String) -> String {
+    if !file::is_video_file(file_path) {
+        return String::new();
+    }
+    let output = command::exec(
+        "ffprobe",
+        ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", file_path]
+    );
+    return output.trim().to_lowercase().to_string();
+}
+
+pub fn need_reencode(file_path: &String) -> bool {
+    let codec = video_codec(file_path);
+    // Check if codec is hXXX,vpX, avX
+    let re_codec = Regex::new("^(vp8|vp9|h26|av|ogg)").unwrap();
+    return !re_codec.is_match(&codec);
+}
 
 /// Search if file with .mp4 extension existe in the same directory,
 /// if found use this mp4 file for next process

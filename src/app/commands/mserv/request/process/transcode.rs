@@ -17,27 +17,15 @@ pub fn transcode_media_dir(path: &str, serv_option: &MservOption) {
     option.insert(String::from("d"), String::new());
     option.insert(String::from("output"), serv_option.transcode_output.clone());
     option.insert(String::from("thread"), serv_option.transcode_thread.to_string());
-    
-    if path.is_empty() {
-        // transcode all file in base_path
-        // do not transcode known streaming formats
-        let mut extension = file::VIDEO_EXTENSIONS.join(",");
-        extension = extension.replace("mp4", "");
-        extension = extension.replace("ts", "");
-        extension = extension.replace("webm", "");        
-        extension = extension.replace(",,", ",");
-        extension = helpers::rtrim_char(&extension, ',');
-        extension = helpers::ltrim_char(&extension, ',');
-        option.insert(String::from("extensions"), extension);
-    }
-    else if re_extension.is_match(&path) {
+
+    if re_extension.is_match(&path) {
         // if path is an extension => transcode all file with this extension in base_path
         if !file::VIDEO_EXTENSIONS.contains(&path.to_lowercase().as_str()) {
             return;
         }
         option.insert(String::from("extensions"), path);
     }
-    else {
+    else if !path.is_empty(){
         // if path is a file => transcode this file to transcode_output
         file_path = utils::get_file_path(&serv_option.base_path, &path).unwrap_or_default();
         if file_path.is_empty() {

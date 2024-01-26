@@ -97,34 +97,37 @@ impl Runnable for Transcode {
 
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
     let extension = get_extension(file_path).to_lowercase();
-
     if !file::is_video_file(file_path) {
         return ();
     }
-
     if !transcode_option.has_extension(&extension) {
         return ();
     }
-
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
     let output_format = transcode_option.get_output(&extension);
-    if extension.eq(&output_format) {
+    if !video::need_reencode(&file_path)  {
         return;
     }
     thread_pool.execute(move || {
         match video::transcode(&file_path, None, &output_format) {
             Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
-                Err(err) => {
-                    println!("{}", err.to_string().on_red());
+                Ok(_) => {
+                    let dest_output = dest_output.unwrap_or_default();
+                    if dest_output.eq(&format!("{file_path}.{output_format}")) {
+                        // Rename output if same extension but need to re-encode .mp4.mp4
+                        if let Err(err) = file::rename_file(&dest_output, &file_path) {
+                            println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
+                        }
+                    }
                 },
-                _ => (),
+                Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
             },
             Ok(dest_output) if dest_output.is_none() => {
-                println!("{}: Output already exists", file_path.blue());
+                println!("{}{}", "Transcode warn: Output already exists ".blue(), file_path.blue());
             },
             Err(err) => {
-                println!("{}", err.to_string().on_red())
+                println!("{}{}", "Transcode error: ", err.to_string().on_red())
             },
             _ => (),
         }
