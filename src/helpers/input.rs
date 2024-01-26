@@ -15,7 +15,6 @@ pub fn read_line(message: &str) -> String {
  }
  
 ///
-/// TODO: parse options: https://stackoverflow.com/questions/15619320/how-can-i-access-command-line-parameters-in-rust
 pub fn parse_command_option(args: &Vec<String>) -> HashMap<String, String> {
     let mut options = HashMap::new();
     for (index, option) in args.iter().enumerate() {

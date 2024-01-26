@@ -5,14 +5,7 @@ import {elasticMedia} from '../services/elastic.js';
 import { Genres } from "./config/genres.js";
 import { Casts } from "./config/casts.js";
 
-export class MediasComponent extends HTMLElement {
-    static observedAttributes = ["search"];
-    isRendering = false;
-    currentFrom = 0;
-    pageSize = 80;
-    numMedias = 0;
-
-    css = `<style type="text/css">
+const CSS = `<style type="text/css">
 #container {
     display: flex;
     justify-content: center;
@@ -21,6 +14,13 @@ export class MediasComponent extends HTMLElement {
     gap: 4px;
 }
 </style>`;
+
+export class MediasComponent extends HTMLElement {
+    static observedAttributes = ["search"];
+    isRendering = false;
+    currentFrom = 0;
+    pageSize = 80;
+    numMedias = 0;
 
     constructor() {
         super();
@@ -74,6 +74,7 @@ export class MediasComponent extends HTMLElement {
         // If no result: display setting
         if (["", "*", ":latest", ":last"].includes(this.searchTerm) && this.numMedias === 0) {
             eventBus.fire("navigate-search", {
+                initiator: "medias.searchAll.setting",
                 term: `:setting`,
             });
         }
@@ -87,7 +88,7 @@ export class MediasComponent extends HTMLElement {
             this.currentFrom = 0;
             this.numMedias = 0;
             this.isRendering = true;
-            this.root.innerHTML = `${this.css}
+            this.root.innerHTML = `${CSS}
             <div id="container"></div>
             <div id="scroll">&nbsp;</div>
             `;

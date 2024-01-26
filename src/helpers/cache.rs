@@ -13,7 +13,20 @@ struct Cache {
 }
 
 impl Cache {
+    // Cache only enable is base_path is set
+    pub fn set_base_path(&mut self, path: &str) {
+        self.base_path = path.to_string();
+        self.set_kv();
+    }
+
+    fn is_enable(&self) -> bool {
+        return !self.base_path.is_empty();
+    }
+
     fn base_file_path(&self, file_name: &String) -> String {
+        if !self.is_enable() {
+            return String::new();
+        }
         let cache_path = Path::new(&self.base_path);
         let _ = fs::create_dir_all(&cache_path);
         let cache_path = cache_path.join(file_name);
@@ -21,17 +34,19 @@ impl Cache {
     }    
 
     fn set_kv(&mut self) {
+        if !self.is_enable() {
+            return;
+        }
         self.kv_store = Some(KVStore::new(self.base_file_path(&"oms.cab".to_string())));
-    }
-
-    pub fn set_base_path(&mut self, path: &str) {
-        self.base_path = path.to_string();
-        self.set_kv();
     }
 }
 
 impl Cache {
     fn get_cache_path(&self, key: &String, subdir: &str) -> String {
+        if !self.is_enable() {
+            return String::new();
+        }
+
         let mut hash = digest(key);
 
         // If key is a date (YYYY-MM-DD): keep original key as hash
@@ -52,6 +67,9 @@ impl Cache {
     }
 
     pub fn check_cache_path(&self, key: &String, subdir: &str) -> Option<String> {
+        if !self.is_enable() {
+            return None;
+        }
         let cache_path = self.get_cache_path(key, subdir);
         match fs::metadata(&cache_path) {
             Ok(m) => match m.is_file() {
@@ -65,10 +83,16 @@ impl Cache {
 
 impl Cache {
     pub fn kv_get(&mut self, key: &String) -> Option<String> {
+        if !self.is_enable() {
+            return None;
+        }
         return self.kv_store.as_mut()?.get(key);
     }
 
     pub fn kv_add(&mut self, key: &String, value: &String) {
+        if !self.is_enable() {
+            return;
+        }
         match self.kv_store.as_mut() {
             None => (),
             Some(kv) => {
@@ -80,6 +104,9 @@ impl Cache {
 
 impl Cache {
     pub fn get_cache(&self, key: &String, subdir: &str) -> Option<(String, String)> {
+        if !self.is_enable() {
+            return None;
+        }
         let cache_path = self.get_cache_path(key, subdir);
         if let Ok(contents) = fs::read_to_string(&cache_path) {
             return Some((cache_path, contents));
@@ -88,11 +115,17 @@ impl Cache {
     }
     
     pub fn clear_cache(&self, key: &String, subdir: &str) {
+        if !self.is_enable() {
+            return;
+        }
         let cache_path = self.get_cache_path(key, subdir);
         let _ = fs::remove_file(cache_path);
     }
 
     pub fn get_cache_bytes(&self, key: &String, subdir: &str) -> Option<(String, Vec<u8>)> {
+        if !self.is_enable() {
+            return None;
+        }
         let cache_path = self.get_cache_path(key, subdir);
         if let Ok(contents) = fs::read(&cache_path) {
             return Some((cache_path, contents));
@@ -101,6 +134,9 @@ impl Cache {
     }
 
     pub fn write_cache_string(&self, key: &String, content: &String, subdir: &str) -> Option<String> {
+        if !self.is_enable() {
+            return None;
+        }
         let cache_path = self.get_cache_path(key, subdir);
         if let Ok(_) = write_file_content(&Path::new(&cache_path), content,false) {
             return Some(cache_path);
@@ -112,31 +148,40 @@ impl Cache {
     where
         T: Serialize
     {
+        if !self.is_enable() {
+            return None;
+        }
         let str_json = serde_json::to_string(&json).unwrap();
         return self.write_cache_string(key, &str_json, subdir);
     }
     
     pub fn write_cache_bytes(&self, key: &String, content: &Bytes, subdir: &str) -> Option<String> {
-        let cache_path = self.get_cache_path(key, subdir);
-        if let Ok(_) = write_file_bytes(Path::new(&cache_path), content) {
-            return Some(cache_path);
+        if !self.is_enable() {
+            return None;
         }
-        return None;
+        let cache_path = self.get_cache_path(key, subdir);
+        return match write_file_bytes(Path::new(&cache_path), content) {
+            Ok(_) => Some(cache_path),
+            _ => None,
+        };
     }
     
     pub fn append_cache_content(&self, key: &String, content: &String, subdir: &str) -> Option<String> {
-        let cache_path = self.get_cache_path(key, subdir);
-        if let Ok(_) = write_file_content(Path::new(&cache_path), content, true) {
-            return Some(cache_path);
+        if !self.is_enable() {
+            return None;
         }
-        return None;
+        let cache_path = self.get_cache_path(key, subdir);
+        return match write_file_content(Path::new(&cache_path), content, true) {
+            Ok(_) => Some(cache_path),
+            _ => None,
+        };
     }    
 }
 
 
 static mut CACHE: Lazy<Cache> = Lazy::new(|| {
     Cache {
-        base_path: String::from("./.oms/"),
+        base_path: String::new(),
         kv_store: None,
     }
 });

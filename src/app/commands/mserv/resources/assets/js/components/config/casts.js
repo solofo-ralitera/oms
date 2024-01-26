@@ -69,6 +69,7 @@ li.cast~li.cast::before {
             const cast = li.target.getAttribute('data-cast');
             if (cast) {
                 eventBus.fire("navigate-search", {
+                    initiator: "casts.render.casts",
                     term: `casts="${cast}"`,
                 });
             }

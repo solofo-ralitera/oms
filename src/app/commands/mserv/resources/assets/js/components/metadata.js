@@ -74,7 +74,7 @@ export class MetadataComponent extends HTMLElement {
 
         this.root.innerHTML = `${CSS}
 <code>${this._media.file_path}</code>
-<div class="field-container">
+<div class="field-container" id="form-metadata-${this._media.hash}">
     <label for="title">Title</label>
     <input type="text" id="title" name="title" class="f100">
 </div>
@@ -112,15 +112,17 @@ export class MetadataComponent extends HTMLElement {
         });
 
         this.root.querySelector("#scan-dir")?.addEventListener("click", () => {
-            app.scanDir(this._media.file_path);
+            app.scanDir(this._media.file_path).catch(err => {
+                if (confirm("Unable to update the metadata, remove this index ?")) {
+                    elasticMedia.deleteItem(this._media.hash);
+                }
+            });
         });
 
         this.root.querySelector("#save")?.addEventListener("click", e => {
             const btn = e.target;
-            btn.disabled = true;
-            this.root.querySelector("#error-container").style.display = 'none';
-            this.root.querySelector("#error-container").innerHTML = '';
-
+            btn.disabled = true;            
+            this.displayError();
             const year = parseInt(this.root.querySelector("#year").value.trim());
             app.saveMetadata(this._media.file_path, {
                 "title": this.root.querySelector("#title").value.trim(),
@@ -131,16 +133,31 @@ export class MetadataComponent extends HTMLElement {
             })
             .then(() => elasticMedia.deleteItem(this._media.hash))
             .then(() => app.scanDir(this._media.file_path))
-            .then(() => this.dispatchEvent(SavedEvent))
-            .catch(err => {
-                this.root.querySelector("#error-container").style.display = 'inherit';
-                this.root.querySelector("#error-container").innerHTML = err.message;
+            .then(() => {
+                if (this.formStillExists()) this.dispatchEvent(SavedEvent);
             })
+            .catch(err => this.displayError(err.message))
             .finally(() => {
                 btn.disabled = false;
             });
         });
+    }
+    
+    formStillExists() {
+        return !!this.root.querySelector(`#form-metadata-${this._media.hash}`);
+    }
 
+    displayError(text = '') {
+        if (!this.formStillExists()) {
+            return;
+        }
+        if (!text) {
+            this.root.querySelector("#error-container").style.display = 'none';
+            this.root.querySelector("#error-container").innerHTML = '';
+        } else {
+            this.root.querySelector("#error-container").style.display = 'inherit';
+            this.root.querySelector("#error-container").innerHTML = text;
+        }
     }
 }
 

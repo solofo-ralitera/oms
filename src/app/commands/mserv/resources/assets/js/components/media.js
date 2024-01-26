@@ -199,6 +199,7 @@ export class MediaComponent extends HTMLElement {
             this.root.querySelectorAll("li.genre").forEach(li => {
                 li.addEventListener("click", e => {
                     eventBus.fire("navigate-search", {
+                        initiator: "media.renderSummary.genres",
                         term: `genres="${e.target.innerHTML.trim()}"`,
                     });
                 });
@@ -206,6 +207,7 @@ export class MediaComponent extends HTMLElement {
             this.root.querySelectorAll("li.cast").forEach(li => {
                 li.addEventListener("click", e => {
                     eventBus.fire("navigate-search", {
+                        initiator: "media.renderSummary.casts",
                         term: `casts="${e.target.innerHTML.trim()}"`,
                     });
                 });
@@ -285,6 +287,7 @@ export class MediaComponent extends HTMLElement {
             e.preventDefault();
             e.stopPropagation();
             eventBus.fire("navigate-search", {
+                initiator: "media.render.year",
                 term: `year="${e.target.innerHTML.trim()}"`,
             });
         });

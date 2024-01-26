@@ -4,7 +4,7 @@ use crate::{app::commands::{mserv::{option::MservOption, request::utils}, info::
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
-pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_metadata: bool) {
+pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_metadata: bool) ->Result<bool> {
     let file_path = if file_path.is_empty() {
         serv_option.base_path.to_string()
     } else {
@@ -20,8 +20,10 @@ pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_meta
 
     };
     if file_path.is_empty() {
-        println!("Scan media: file_path does not exist");
-        return;
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound, 
+            format!("Scan media: file_path does not exist")
+        ));
     }
     let mut option = HashMap::new();
     option.insert(String::from("hide-preview"), String::new());
@@ -45,8 +47,16 @@ pub fn scan_media_dir(file_path: &String, serv_option: &MservOption, update_meta
         file_path: file_path_thread.to_string(),
         cmd_options: option,
     }.run()).join() {
-        Ok(_) => println!("Scan finished on {file_path}"),
-        _ => println!("{} {}", "Scan finished with error on".red(), file_path.red()),
+        Ok(_) => {
+            println!("Scan finished on {file_path}");
+            return Ok(true);
+        },
+        _ => {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound, 
+                format!("{} {}", "Scan finished with error on".red(), file_path.red())
+            ));            
+        },
     }
 }
 

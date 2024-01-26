@@ -133,8 +133,6 @@ fn rename_file(file_path: &String, rename_option: &RenameMovieOption) {
         return;
     }
 
-    println!("");
-
     let mut movie_title = format!("{}", video_title.title);
     let mut movie_year = format!("{}", video_title.year);
 
@@ -178,7 +176,7 @@ Rename video file to \"Title (year)\"
     
 --help
 -p <string> --provider=<string>   allowed value: local (default), api
---cache-path=<string>   Cache path, default ./.oms/
+--cache-path=<string>   Cache path
 "
 }
 

@@ -11,29 +11,45 @@ use super::ProcessParam;
 
 
 pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>)> {
-    if path.starts_with("/scan-dir") {
+    if path.starts_with("/scan-dir") || path.starts_with("/update-metadata") {
+        let update_metadata = if path.contains("/scan-dir") {
+            false
+        } else if path.contains("/update-metadata") {
+            true
+        } else {
+            false
+        };
+
         let file_path = path
             .replace("/scan-dir", "")
-            .trim()
-            .to_string();
-        let serv_option = request_param.serv_option.clone();
-        if file_path.is_empty() {
-            thread::spawn(move || metadata::scan_media_dir(&file_path, &serv_option, false));
-        } else {
-            metadata::scan_media_dir(&file_path, &serv_option, false);
-        };
-        return Some((String::from("200 OK"), vec![], None, None));
-    }
-    else if path.starts_with("/update-metadata") {
-        let file_path = path
             .replace("/update-metadata", "")
             .trim()
             .to_string();
+
         return match request_param.verb {
             "GET" => {
-                let serv_option = request_param.serv_option.clone();
-                thread::spawn(move || metadata::scan_media_dir(&file_path, &serv_option, true));
-                Some((String::from("200 OK"), vec![], None, None))
+                if file_path.is_empty() {
+                    // Scan whole dir in a thread (don't wait)
+                    let serv_option = request_param.serv_option.clone();
+                    thread::spawn(move || if let Err(err) = metadata::scan_media_dir(&file_path, &serv_option, true) {
+                        println!("{}", err.to_string().red());
+                    });
+                    return Some((String::from("200 OK"), vec![], None, None));
+                } else {
+                    // If scan single file, wait for it
+                    return match metadata::scan_media_dir(&file_path, &request_param.serv_option, update_metadata) {
+                        Ok(_) => Some((String::from("200 OK"), vec![], None, None)),
+                        Err(err) => {
+                            println!("{}", err.to_string().red());
+                            Some((
+                                String::from("500 Internal Server Error"),
+                                vec![],
+                                None,
+                                Some(err.to_string().as_bytes().to_vec())
+                            ))
+                        },
+                    };
+                }
             },
             "POST" => match metadata::update_metadata(&file_path, &request_param.serv_option, &request_param.body_content) {
                 Ok(_) => Some((String::from("200 OK"), vec![], None, None)),

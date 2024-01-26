@@ -1,5 +1,6 @@
 import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
+import {app} from '../services/app.js';
 
 export class SearchComponent extends HTMLElement {
     css = `<style type="text/css">
@@ -33,6 +34,7 @@ input[type=search]:focus {
         this.render();
 
         history.pushHistory("navigate-search", {
+            initiator: "search.constructor.pushHistory",
             term: "",
         });
 
@@ -51,14 +53,18 @@ input[type=search]:focus {
         if (typeof data.term === "undefined") data.term = term;
         window.clearTimeout(this.keyuptimer);
         this.keyuptimer = window.setTimeout(() => {
-            history.pushHistory("navigate-search", data);
+            history.pushHistory("navigate-search", {
+                initiator: "search.search.keyuptimer.history",
+                ...data,
+            });
+            app.saveSearchTerm(term);
 
             eventBus.fire("current-media", {
                 media: null,
                 fromHistory: true,
             });
 
-            if (term.startsWith(":setting")) {
+            if (term.startsWith(":setting") || term.startsWith(":parameter")) {
                 eventBus.fire("display-config", null);
                 return;
             }
@@ -72,7 +78,6 @@ input[type=search]:focus {
                 eventBus.fire("display-cast", null);
                 return;
             }
-
             eventBus.fire("media-search", term);
         }, 350);
     }
@@ -80,7 +85,7 @@ input[type=search]:focus {
     render() {
         this.root.innerHTML = `${this.css}
             <search>
-                <input placeholder="Search" type="search" id="search" aria-label="Search">
+                <input placeholder="Search" type="search" id="search" aria-label="Search" autocomplete="off">
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => {
             this.search();

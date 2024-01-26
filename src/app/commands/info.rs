@@ -190,7 +190,7 @@ info [OPTIONS] <file_path/dir_path>
     
     --help
     -p <string> --provider=<string>   possible value: local, api (default)
-    --cache-path=<string>   Cache path, default ./.oms/
+    --cache-path=<string>   Cache path
     --elastic-url=<string>  Elastic search server
     --hide-preview=<bool>   Mute display
     --list=<sting>          Path of a file containing the list of files to parse

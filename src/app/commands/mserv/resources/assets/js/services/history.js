@@ -13,7 +13,7 @@ export const history = new class {
         const state = { event, data: Object.assign({
             fromHistory: true,
         }, JSON.parse(JSON.stringify(data))) };
-        const url = "/";        
+        const url = window.location.href;
         window.history.pushState(state, "", url);
     }
 };

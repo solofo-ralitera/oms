@@ -1,6 +1,7 @@
 import {eventBus} from '../services/EventBus.js';
 import {history} from '../services/history.js';
 import {app} from '../services/app.js';
+import {elasticMedia} from '../services/elastic.js';
 import {MetadataComponent} from './metadata.js';
 
 const CSS = `<style type="text/css">
@@ -175,6 +176,7 @@ export class SummaryComponent extends HTMLElement {
             e.preventDefault();
             e.stopPropagation();
             eventBus.fire("navigate-search", {
+                initiator: "summary.render.year",
                 term: `year="${e.target.innerHTML.trim()}"`,
             });
         });
@@ -186,28 +188,44 @@ export class SummaryComponent extends HTMLElement {
         });
         this.root.querySelectorAll("li.genre")?.forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
+                initiator: "summary.render.genre",
                 term: `genres="${e.target.innerHTML.trim()}"`,
             });
             this.close();
         }));
         this.root.querySelector(".all-cast")?.addEventListener("click", () => {
             eventBus.fire("navigate-search", {
+                initiator: "summary.render.cast",
                 term: `:cast`,
             });
         });
         this.root.querySelectorAll("li.cast")?.forEach(li => li.addEventListener("click", e => {
             eventBus.fire("navigate-search", {
+                initiator: "summary.render.casts",
                 term: `casts="${e.target.innerHTML.trim()}"`,
             });
             this.close();
         }));
+
+        /**
+         * Update file metadata
+         * If local file: display metadata form to fill manualy
+         * If api: automaticaly update file metadata from api result
+        */
         this.root.querySelector(".media-path")?.addEventListener("click", () => {
-            if (this.media.provider === "local") {
+            if (this.media.provider === "local") 
                 this.renderEditMetadata();
-            } else {
-                app.updateMetadata(this.media);
-            }
+            else app.updateMetadata(this.media)
+                // Drop index and rebuild new one
+                .then(() => elasticMedia.deleteItem(this.media.hash))
+                .then(() => app.scanDir(this.media.file_path))
+                .catch(err => {
+                    if (confirm("Unable to update the metadata, remove this index ?")) {
+                        elasticMedia.deleteItem(this.media.hash);
+                    }
+                });
         });
+
         this.root.querySelector(".transcode-path")?.addEventListener("click", () => {
             app.transcodeDir(this.media.file_path);
         });

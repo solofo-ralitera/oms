@@ -19,6 +19,14 @@ function getPLayerVolume() {
 }
 
 export const app = new class {
+    saveSearchTerm(term) {
+        window.localStorage.setItem("SEARCH_TERM", term);
+    }
+
+    getSearchTerm() {
+        return window.localStorage.getItem("SEARCH_TERM") ?? "";
+    }
+
     initPLayerVolume(mediaElement) {
         if (!mediaElement) return;
 
@@ -41,11 +49,23 @@ export const app = new class {
     }
 
     async scanDir(path = "") {
-        return fetch("./scan-dir" + (path.includes("%") ? path : path.escape_path()));
+        return fetch("./scan-dir" + (path.includes("%") ? path : path.escape_path()))
+        .then(async response => {
+            if (response.status >= 400) {
+                return Promise.reject(new Error(await response.text()));
+            }
+            return await response.text();
+        });
     }
 
     async updateMetadata(media = null) {
-        return fetch("./update-metadata" + (!media ? "" : (media.file_path.includes("%") ? "" : media.file_path.escape_path())));
+        return fetch("./update-metadata" + (!media ? "" : (media.file_path.includes("%") ? "" : media.file_path.escape_path())))
+        .then(async response => {
+            if (response.status >= 400) {
+                return Promise.reject(new Error(await response.text()));
+            }
+            return await response.text();
+        });
     }
 
     async saveMetadata(filePath, madatada) {

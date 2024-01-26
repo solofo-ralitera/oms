@@ -178,7 +178,7 @@ mserv --elastic-url=<string> --url=<string>  --cache-path=<string> --base-path=<
         - [Optional] exiftool to update video metadata
 
     --help
-    --cache-path=<string>   Cache path, default ./.oms/
+    --cache-path=<string>   Cache path
     --base-path=<string>   Dir path of relative root
     -p <string> --provider=<string>   possible value: local, api (default)
         If you use api, set the environment variables 
