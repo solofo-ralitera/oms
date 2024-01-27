@@ -106,10 +106,11 @@ fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread
     let file_path = file_path.clone();
     let delete_after = transcode_option.delete;
     let output_format = transcode_option.get_output(&extension);
-    if !video::need_reencode(&file_path)  {
-        return;
-    }
+
     thread_pool.execute(move || {
+        if !video::need_reencode(&file_path) {
+            return;
+        }
         match video::transcode(&file_path, None, &output_format) {
             Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Ok(_) => {

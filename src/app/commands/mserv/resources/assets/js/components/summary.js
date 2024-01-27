@@ -169,9 +169,6 @@ export class SummaryComponent extends HTMLElement {
     </section>
 </article>`;
 
-        this.root.querySelector(".title")?.addEventListener("click", () => {
-            this.close();
-        });
         this.root.querySelector(".year")?.addEventListener("click", e => {
             e.preventDefault();
             e.stopPropagation();

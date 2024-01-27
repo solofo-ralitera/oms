@@ -21,11 +21,11 @@ export class MediasComponent extends HTMLElement {
     currentFrom = 0;
     pageSize = 80;
     numMedias = 0;
+    searchTerm = "";
 
     constructor() {
         super();
         this.root = this.attachShadow({mode: "closed"});
-        this.searchTerm = this.getAttribute('search') ?? "";
 
         // Display next on scroll
         this.observer = new IntersectionObserver((entries, observer) => entries.forEach((entry) => {
@@ -37,7 +37,8 @@ export class MediasComponent extends HTMLElement {
         });
 
         eventBus.register("media-search", ({detail}) => {
-            this.setAttribute("search", detail);
+            this.searchTerm = detail
+            this.render();
         });
 
         eventBus.register("display-config", () => {
@@ -49,15 +50,6 @@ export class MediasComponent extends HTMLElement {
         eventBus.register("display-cast", () => {
             this.renderCast();
         });
-    }
-
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (oldValue !== newValue || !newValue) {
-            if (name === "search") {
-                this.searchTerm = newValue
-                this.render();
-            }
-        }
     }
 
     async searchAll() {
@@ -99,17 +91,17 @@ export class MediasComponent extends HTMLElement {
     }
 
     renderConfig() {
-        this.root.innerHTML = this.css;
+        this.root.innerHTML = `${CSS}`;
         this.root.append(new ConfigComponent());
     }
 
     renderGenre() {
-        this.root.innerHTML = this.css;
+        this.root.innerHTML = `${CSS}`;
         this.root.append(new Genres());
     }
 
     renderCast() {
-        this.root.innerHTML = this.css;
+        this.root.innerHTML = `${CSS}`;
         this.root.append(new Casts());
     }
 }

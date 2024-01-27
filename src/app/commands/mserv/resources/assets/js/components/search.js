@@ -7,14 +7,24 @@ export class SearchComponent extends HTMLElement {
 search {
     position: relative;
     display: grid;
-    grid-template-columns: 1fr;   
-    opacity: 0.91;
+    grid-template-rows: 1fr auto;
+    background-color: rgb(0, 0, 0, 0.91);
     border-bottom: 1px solid #5f6368;
     border-top: 0px;
 }
+menu {
+    margin: 0;
+    padding: 2px;
+    font-size: 0.8em;
+    text-align: right;
+}
+menu li {
+    margin: 0 1em 0 0;
+    display:inline;
+}
 input[type=search] {
     width: 100%;
-    border: 1px solid #5f6368;
+    border-width: 0;
     box-shadow: none;
     padding: 15px 1em;
     background-color: #000;
@@ -22,8 +32,13 @@ input[type=search] {
 }
 input[type=search]:focus {
     background-color: #303134;
-    border: 1px solid #303134;
     opacity: 1;
+}
+.pointer {
+    cursor: pointer;
+}
+.pointer:hover {
+    text-decoration: underline;
 }
 </style>`;
     keyuptimer = 0;
@@ -85,16 +100,27 @@ input[type=search]:focus {
     render() {
         this.root.innerHTML = `${this.css}
             <search>
-                <input placeholder="Search" type="search" id="search" aria-label="Search" autocomplete="off">
+                <input 
+                    placeholder="Search"
+                    type="search"
+                    id="search"
+                    aria-label="Search"
+                    autocomplete="off">
+                <menu>
+                    <li class="pointer" role="button" data-term="%3Edate">Recent</li>
+                    <li class="pointer" role="button" data-term="%3Acasts">Casts</li>
+                    <li class="pointer" role="button" data-term="%3Agenres">Genres</li>
+                    <li class="pointer" role="button" data-term="%3Asetting">Settings</li>
+                </menu>
             </search>`;
-        this.root.querySelector("#search").addEventListener("input", e => {
-            this.search();
-        });
+        this.root.querySelector("#search").addEventListener("input", e => this.search());
         this.root.querySelector("#search").addEventListener("keypress", e => {
-            if (e.code === "Enter") {
-                this.search();
-            }
+            if (e.code === "Enter") this.search();
         });
+        this.root.querySelectorAll("menu li").forEach(li => li.addEventListener("click", e => eventBus.fire("navigate-search", {
+            initiator: "search.render.menu",
+            term: decodeURIComponent(e.target.getAttribute("data-term")),
+        })));
     }
 }
 

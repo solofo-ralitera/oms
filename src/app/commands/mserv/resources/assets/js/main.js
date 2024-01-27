@@ -6,10 +6,7 @@ import { app } from "./services/app.js";
 import { eventBus } from "./services/EventBus.js";
 
 const searchTerm = app.getSearchTerm();
-console.log(searchTerm);
-if (searchTerm) {
-    eventBus.fire("navigate-search", {
-        initiator: "main",
-        term: searchTerm,
-    });
-}
+eventBus.fire("navigate-search", {
+    initiator: "main",
+    term: searchTerm,
+});

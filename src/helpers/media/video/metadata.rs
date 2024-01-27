@@ -19,7 +19,7 @@ impl VideoMetadata {
         let video_title = VideoTitle::from(file_path);
 
         let mut title = video_title.title.clone();
-        let mut summary = file_path.to_string();
+        let mut summary = String::new();
         
         let mut date = String::new();
         let mut creation_time = String::new();
