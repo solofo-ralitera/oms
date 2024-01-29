@@ -44,6 +44,7 @@ const SavedEvent = new Event("saved");
 
 export class MetadataComponent extends HTMLElement {
     _media = null;
+    numTrySave = 0;
 
     constructor() {
         super();
@@ -120,29 +121,40 @@ export class MetadataComponent extends HTMLElement {
         });
 
         this.root.querySelector("#save")?.addEventListener("click", e => {
-            const btn = e.target;
-            btn.disabled = true;            
-            this.displayError();
-            const year = parseInt(this.root.querySelector("#year").value.trim());
-            app.saveMetadata(this._media.file_path, {
-                "title": this.root.querySelector("#title").value.trim(),
-                "summary": this.root.querySelector("#summary").value.trim(),
-                "year": isNaN(year) ? 0 : year,
-                "casts": this.root.querySelector("#casts").value.trim().split(",").map(c => c.trim()),
-                "genres": this.root.querySelector("#genres").value.trim().split(",").map(c => c.trim()),
-            })
-            .then(() => elasticMedia.deleteItem(this._media.hash))
-            .then(() => app.scanDir(this._media.file_path))
-            .then(() => {
-                if (this.formStillExists()) this.dispatchEvent(SavedEvent);
-            })
-            .catch(err => this.displayError(err.message))
-            .finally(() => {
-                btn.disabled = false;
-            });
+            this.save();
         });
     }
     
+    save() {
+        const btn = this.root.querySelector("#save");
+        btn.disabled = true;            
+        this.displayError();
+        const year = parseInt(this.root.querySelector("#year").value.trim());
+        app.saveMetadata(this._media.file_path, {
+            "title": this.root.querySelector("#title").value.trim(),
+            "summary": this.root.querySelector("#summary").value.trim(),
+            "year": isNaN(year) ? 0 : year,
+            "casts": this.root.querySelector("#casts").value.trim().split(",").map(c => c.trim()),
+            "genres": this.root.querySelector("#genres").value.trim().split(",").map(c => c.trim()),
+        })
+        .then(() => elasticMedia.deleteItem(this._media.hash))
+        .then(() => app.scanDir(this._media.file_path))
+        .then(() => {
+            if (this.formStillExists()) this.dispatchEvent(SavedEvent);
+            btn.disabled = false;
+        })
+        .catch(err => {
+            this.numTrySave++;
+            if (this.numTrySave < 10) {
+                this.save();
+            } else {
+                this.displayError(err.message);
+                this.numTrySave = 0;
+                btn.disabled = false;
+            }
+        })
+    }
+
     formStillExists() {
         return !!this.root.querySelector(`#form-metadata-${this._media.hash}`);
     }

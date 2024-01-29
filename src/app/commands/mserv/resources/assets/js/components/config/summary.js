@@ -48,10 +48,9 @@ export class Summary extends HTMLElement {
             return difference; 
         }).then(files => {
             if (!files.length) return;
-
             this.root.querySelector("#summary-detail-content").innerHTML = `<br><br>
                 Files not indexed:
-                <ul>${files.map(f => `<li class="not-indexed pointer" data-filepath="${f.escape_path_attribute()}">${f.file_name().sanitize()}</li>`).join('')}</ul>
+                <ul>${files.map(f => `<li role="button" class="not-indexed pointer" data-filepath="${f.escape_path_attribute()}">${f.file_name().sanitize()}</li>`).join('')}</ul>
             `;
             this.root.querySelectorAll(".not-indexed").forEach(li => li.addEventListener("click", e => {
                 app.scanDir(e.target.getAttribute("data-filepath"));

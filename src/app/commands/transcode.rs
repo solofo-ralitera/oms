@@ -150,7 +150,8 @@ fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_p
 pub fn usage() -> String {
     format!("\
 transcode [options] <file_path|directory_path>
-    Transcode video files.
+    Transcode video files into a streamable format.
+    Transcode only files that are not encoded in VP8, VP9, H.264, AV1, Ogg
     Prerequists:
         Need to install ffmpeg
 
@@ -158,7 +159,7 @@ transcode [options] <file_path|directory_path>
     -d  Delete original file after transcoding
     -e <string> --extensions=<string>    only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'
     -t <int> --thread=<int>    Number of max thread used
-    -o <string> --output=<string>   Output extension, or something like flv>webm,avi>mp4,mp4
+    -o <string> --output=<string>   Output extension, default mp4, (Out put can be something like flv>webm,avi>mp4,mp4)
 ")
 }
 

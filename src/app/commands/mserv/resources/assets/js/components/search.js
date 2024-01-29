@@ -79,22 +79,22 @@ input[type=search]:focus {
                 fromHistory: true,
             });
 
-            if (term.startsWith(":setting") || term.startsWith(":parameter")) {
+            if (term.startsWith(":setting") || term.startsWith(":parameter") || term.startsWith(":manage")) {
                 eventBus.fire("display-config", null);
                 return;
             }
 
-            if (term === ":genre" || term === ":genres" ) {
+            if (term.startsWith(":genre")) {
                 eventBus.fire("display-genre", null);
                 return;
             }
 
-            if (term === ":cast" || term === ":casts" ) {
+            if (term.startsWith(":cast")) {
                 eventBus.fire("display-cast", null);
                 return;
             }
             eventBus.fire("media-search", term);
-        }, 350);
+        }, 750);
     }
 
     render() {
@@ -105,12 +105,12 @@ input[type=search]:focus {
                     type="search"
                     id="search"
                     aria-label="Search"
-                    autocomplete="off">
+                    autocomplete="off" />
                 <menu>
                     <li class="pointer" role="button" data-term="%3Edate">Recent</li>
                     <li class="pointer" role="button" data-term="%3Acasts">Casts</li>
                     <li class="pointer" role="button" data-term="%3Agenres">Genres</li>
-                    <li class="pointer" role="button" data-term="%3Asetting">Settings</li>
+                    <li class="pointer" role="button" data-term="%3Amanage">Manage</li>
                 </menu>
             </search>`;
         this.root.querySelector("#search").addEventListener("input", e => this.search());

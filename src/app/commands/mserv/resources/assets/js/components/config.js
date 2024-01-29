@@ -34,7 +34,6 @@ footer {
             <app-config-prerequistes></app-config-prerequistes>
         </div>
         <div class="config-container">
-            <app-config-genres></app-config-genres>
             <app-config-scan-dir></app-config-scan-dir>
             <app-config-summary></app-config-summary>
             <app-config-service-log></app-config-service-log>

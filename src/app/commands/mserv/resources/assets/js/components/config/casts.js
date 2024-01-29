@@ -1,8 +1,6 @@
 import {elasticMedia} from '../../services/elastic.js';
 import {eventBus} from '../../services/EventBus.js';
 
-const CASTS = await elasticMedia.getCasts();
-
 export class Casts extends HTMLElement {
     alphaCast = 'abcdefghijklmnopqrstuvwxyz_';
 
@@ -22,7 +20,7 @@ li.cast~li.cast::before {
     content: " - ";
 }
     </style>`;
-    
+    casts = [];
     constructor() {
         super();
         this.root = this.attachShadow({mode: "closed"});
@@ -44,19 +42,20 @@ li.cast~li.cast::before {
                 <hr>
             </h3>
             <ul>
-                ${CASTS.filter(c => {
+                ${this.casts.filter(c => {
                     if (letter === '_') {
                         return !this.alphaCast.includes(c.normalize('NFC').toLowerCase().charAt(0));
                     }
                     return c.toLowerCase().normalize('NFC').charAt(0) === letter
                 })
-                .map(cast => `<li class="cast" data-cast="${cast?.escape_quote()}">${cast.sanitize()}</li>`)
+                .map(cast => `<li class="cast" role="button" data-cast="${cast?.escape_quote()}">${cast.sanitize()}</li>`)
                 .join("")}
             </ul>
         </article>`;
     }
 
     async render() {
+        this.casts = await elasticMedia.getCasts();
         this.root.innerHTML = `${this.css}
             <article>
                 <header>

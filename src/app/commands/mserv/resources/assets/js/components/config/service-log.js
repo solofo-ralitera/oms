@@ -5,10 +5,11 @@ export class ServiceLog extends HTMLElement {
 #log-container {
     white-space: pre;
     overflow: auto;
-    max-width: calc(100vw - 4em);
+    width: calc(100vw - 4em);
     font-size: 0.87em;
     color: lightslategrey;
     max-height: 400px;
+    padding-bottom: 1em;
 }
     </style>`;
     

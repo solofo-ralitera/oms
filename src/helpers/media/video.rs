@@ -103,7 +103,7 @@ pub fn video_codec(file_path: &String) -> String {
 pub fn need_reencode(file_path: &String) -> bool {
     let codec = video_codec(file_path);
     // Check if codec is hXXX,vpX, avX
-    let re_codec = Regex::new("^(vp8|vp9|h26|av|ogg)").unwrap();
+    let re_codec = Regex::new("^(vp8|vp9|h264|avc|av1|ogg)").unwrap();
     return !re_codec.is_match(&codec);
 }
 
