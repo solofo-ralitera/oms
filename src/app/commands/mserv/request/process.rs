@@ -31,7 +31,7 @@ pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<
                 if file_path.is_empty() {
                     // Scan whole dir in a thread (don't wait)
                     let serv_option = request_param.serv_option.clone();
-                    thread::spawn(move || if let Err(err) = metadata::scan_media_dir(&file_path, &serv_option, true) {
+                    thread::spawn(move || if let Err(err) = metadata::scan_media_dir(&file_path, &serv_option, update_metadata) {
                         println!("{}", err.to_string().red());
                     });
                     return Some((String::from("200 OK"), vec![], None, None));

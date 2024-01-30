@@ -245,7 +245,10 @@ pub fn usage() -> String {
     format!("\
 search [options] <file_path|directory_path> <query>
     Search in file or directory. Display each line of the file containing the query text
-    
+    Prerequisites:
+        - [Optional] tesseract to search text inside images
+        - [Optional] pdftotext to search text inside pdf
+
     --help    
     -p <string> --provider=<string>   possible value: local, api (default), use for external information provider
     -e <string> --extensions=<string>    Search only in these file extensions, separated by '{OPTION_SEPARATOR}'

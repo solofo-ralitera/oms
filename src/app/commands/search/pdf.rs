@@ -1,5 +1,5 @@
 use std::sync::mpsc::Sender;
-use crate::helpers::media::pdf::{get_pdf_result, content::PdfContent};
+use crate::helpers::{command, media::pdf::{get_pdf_result, content::PdfContent}};
 use super::{format_file_display, format_line_found, SearchOption, text_reg_contains};
 
 
@@ -22,21 +22,11 @@ pub struct PdfSearch<'a> {
 }
 
 impl<'a> PdfSearch<'a> {
-    pub fn search(&self, tx: Sender<String>) {
-        let mut result = String::new();
-        let mut found: Vec<(String, String)> = vec![];
-
-        if let Ok(pdf) = get_pdf_result(&String::new(), self.file_path) {
-            let search_results = pdf.search(self.search_term);
-            if search_results.len() > 0 {
-                search_results.iter().for_each(|(item, text)| {
-                    found.push((item.to_string(), text.to_string()));
-                });
-            }
-        }
-
-        let content = PdfContent::new(&self.file_path);
-        for (page, content) in content.enumerate() {
+    fn loop_content<I>(&self, contents: I, found: &mut Vec<(String, String)>)
+    where 
+        I: Iterator<Item = String>
+    {
+        for (page, content) in contents.enumerate() {
             if self.skip_file(&found) {
                 break;
             }
@@ -52,6 +42,31 @@ impl<'a> PdfSearch<'a> {
                     }
                 }
             }
+        }
+    }
+
+    pub fn search(&self, tx: Sender<String>) {
+        let mut result = String::new();
+        let mut found: Vec<(String, String)> = vec![];
+
+        if let Ok(pdf) = get_pdf_result(&String::new(), self.file_path) {
+            let search_results = pdf.search(self.search_term);
+            if search_results.len() > 0 {
+                search_results.iter().for_each(|(item, text)| {
+                    found.push((item.to_string(), text.to_string()));
+                });
+            }
+        }
+        // pdftotext is slower?
+        let content = command::exec("___pdftotext", ["-layout", &self.file_path, "-"]);
+        if !content.is_empty() {
+            self.loop_content(
+                content.lines().map(|l|l.to_string()),
+                &mut found
+            );
+        } else {
+            let content = PdfContent::new(&self.file_path);
+            self.loop_content(content, &mut found);
         }
 
         if found.len() > 0 {

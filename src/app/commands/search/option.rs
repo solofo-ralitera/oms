@@ -28,7 +28,7 @@ impl SearchOption {
             exclude_extensions: vec![],
             files: vec![],
             exclude_files: vec![],
-            provider: String::from("api"),
+            provider: String::from("local"),
         }
     }
     

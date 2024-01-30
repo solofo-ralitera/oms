@@ -28,7 +28,9 @@ pub fn process_thumb(file_path: &String, size: &str) -> (String, Vec<(String, St
     match cache::get_cache_bytes(&cache_key, ".thumb") {
         None => {
             let cache_path = cache::get_cache_path(&cache_key, ".thumb");
-            let content = if file::is_video_file(file_path) {
+            let content = if cache_path.is_empty() {
+                b"".to_vec()
+            } else if file::is_video_file(file_path) {
                 // Pick image at random time of video
                 let mut rng = rand::thread_rng();
                 let at = rng.gen_range(0.05..=0.5);

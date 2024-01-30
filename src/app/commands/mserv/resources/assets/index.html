@@ -135,6 +135,13 @@ String.prototype.isVideoFile = function () {
     return VIDEO_EXTENSIONS.includes(this.toLowerCase());
 };
 
+String.prototype.isPdfFile = function () {
+    if (/\./.test(this)) {
+        return ['pdf'].includes(this.extension().toLowerCase());
+    }
+    return ['pdf'].includes(this.toLowerCase());
+};
+
 String.prototype.toClipBoard = function () {
     try {
         navigator.clipboard.writeText(this);
@@ -156,7 +163,7 @@ String.prototype.toClipBoard = function () {
 
 Number.prototype.secondsToHMS = function() {
     if (typeof this === "undefined") return "";
-    if (this === "0" || this === 0) return "";
+    if (!this.valueOf()) return "";
     return new Date(this * 1000).toISOString().slice(11, 19);
 }
     </script>

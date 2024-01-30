@@ -27,7 +27,7 @@ impl VideoMetadata {
         let mut casts = vec![];
         let mut genres = vec![];
 
-        // Get media info from metadata (or exiftool ?)
+        // Get media info from metadata (or exiftool ?) use -print_format json
         let info = command::exec(
             "ffprobe",
              ["-loglevel", "error", "-show_entries", "stream_tags:format_tags", file_path]
@@ -144,7 +144,7 @@ impl VideoMetadata {
                 format!("Update metadata: error: Temp file {} exists", output_file)
             ));
         }
-
+        println!("{}", self.summary);
         command::exec("ffmpeg", [
             "-i", file_path,
             "-metadata", &format!("title={}", self.title),

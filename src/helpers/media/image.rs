@@ -4,7 +4,7 @@ use std::io;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use sha256::digest;
-use crate::helpers::{output::draw_image, string, file};
+use crate::helpers::{command, file, output::draw_image, string};
 
 use super::normalize_media_title;
 
@@ -13,6 +13,7 @@ use super::normalize_media_title;
 pub struct ImageResult {
     pub title: String,
     pub summary: String,
+    pub content: String,
 
     pub provider: String,
 
@@ -49,6 +50,9 @@ impl ImageResult {
         if string::text_contains(&self.summary, term) {
             result.push(("Summary", self.summary.to_string()));
         }
+        if string::text_contains(&self.content, term) {
+            result.push(("Content", self.content.to_string()));
+        }
         return result;
     }
 }
@@ -61,9 +65,11 @@ pub fn get_image_result(base_path: &String, file_path: &String) -> Result<ImageR
 
     let hash = file::sha256(file_path).unwrap_or(digest(&relative_file_path));
 
+    
     Ok(ImageResult {
         title: normalize_media_title(&file_name),
         summary: String::new(),
+        content: command::exec("tesseract",[file_path, "-", "--oem", "1"]),
 
         provider: String::from("local"),
 

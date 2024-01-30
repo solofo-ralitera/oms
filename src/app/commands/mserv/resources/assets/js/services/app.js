@@ -72,6 +72,9 @@ export const app = new class {
         if (!filePath) return;
         return fetch(`./update-metadata${filePath.escape_path()}`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify(madatada),
         }).then(async response => {
             if (response.status >= 400) {

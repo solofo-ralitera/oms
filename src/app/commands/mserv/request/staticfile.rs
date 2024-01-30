@@ -12,6 +12,7 @@ static STATIC_RESOURCES: Lazy<HashMap<&str, (&str, &[u8])>> = Lazy::new(|| {
     static_resources.insert("/", ("text/html; charset=utf-8", include_bytes!("../resources/assets/index.html")));
     static_resources.insert("/favicon.ico", ("image/x-icon", include_bytes!("../resources/assets/favicon.ico")));
     static_resources.insert("/assets/img/audio.png", ("image/png", include_bytes!("../resources/assets/img/audio.png")));
+    static_resources.insert("/assets/img/pdf.png", ("image/png", include_bytes!("../resources/assets/img/pdf.png")));
     static_resources.insert("/assets/js/main.js", ("text/javascript", include_bytes!("../resources/assets/js/main.js")));
     
     static_resources.insert("/assets/js/components/media.js", ("text/javascript", include_bytes!("../resources/assets/js/components/media.js")));

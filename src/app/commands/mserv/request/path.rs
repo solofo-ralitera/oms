@@ -36,7 +36,7 @@ pub fn process(path: &str, request_param: &ProcessParam) -> Option<(String, Vec<
         }
         return Some(open_file(&file_path.unwrap()));
     }
-    None
+    return None;
 }
 
 fn open_file(file_path: &String) -> (String, Vec<(String, String)>, Option<Box<dyn Iterator<Item = String>>>, Option<Vec<u8>>) {

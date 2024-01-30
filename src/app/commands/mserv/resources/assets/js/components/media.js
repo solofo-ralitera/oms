@@ -105,6 +105,12 @@ ul.genres {
     vertical-align: middle;
     margin: 0 0.5em 0 0;
 }
+.play.pdf {
+    color: #fff;
+    background-color: #ef6b6b;
+    border: medium none;
+    border-spacing: 0;
+}
 </style>`;
 
 export class MediaComponent extends HTMLElement {
@@ -231,7 +237,7 @@ export class MediaComponent extends HTMLElement {
         if (this._media.file_type === "image") {
             return `<button class="play" tabindex="1" aria-label="Display ${this._media.title.escape_quote()}">🖼</button>`;
         } else if (this._media.file_type === "pdf") {
-            return `<button class="play" tabindex="1" aria-label="Display ${this._media.title.escape_quote()}">pdf</button>`;
+            return `<button class="play pdf" tabindex="1" aria-label="Display ${this._media.title.escape_quote()}">pdf</button>`;
         } else if (["video", "audio"].includes(this._media.file_type)) {
             return `<button class="play" tabindex="1" aria-label="Play ${this._media.title.escape_quote()}">▶</button>`;
         } else {
@@ -297,7 +303,15 @@ export class MediaComponent extends HTMLElement {
             let attempt = parseInt(e.target.getAttribute("data-attempt"));
             if (isNaN(attempt)) attempt = 0;
             if (attempt > 1) {
-                this.root.querySelector(".card-body-content").innerHTML = this.renderSummary();
+                if (!this._media.summary) {
+                    if (this._media.file_path.isPdfFile()) {
+                        e.target.src = "/assets/img/pdf.png";
+                    } else {
+                        this.root.querySelector(".card-body-content").innerHTML = this.renderSummary();
+                    }
+                } else {
+                    this.root.querySelector(".card-body-content").innerHTML = this.renderSummary();
+                }
             } else {
                 attempt++;
                 e.target.setAttribute("data-attempt", attempt);
