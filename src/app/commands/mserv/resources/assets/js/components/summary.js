@@ -54,6 +54,10 @@ img {
 .pointer:hover {
     text-decoration: underline;
 }
+pre {
+    white-space: pre-line;
+    font-size: 0.9em;
+}
 time {
     font-size: 0.8em;
 }
@@ -112,7 +116,7 @@ export class SummaryComponent extends HTMLElement {
 
     renderSummary() {
         return `
-        <p>${this.media.summary}</p>
+        <pre>${this.media.summary}</pre>
         <ul class="info">
             <span class="all-cast pointer">Casts</span>:
             <li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">").sanitize()}</li>

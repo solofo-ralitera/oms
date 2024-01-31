@@ -221,7 +221,7 @@ export class MediaComponent extends HTMLElement {
         }, 500);
 
         return `<article class="card-body-summary">
-            <p>${this._media.summary.sanitize()}</p>
+            <p>${this._media.summary.sanitize().substring(0, 373)}</p>
             <hr>
             <ul class="info"><li class="item cast pointer">${this._media.casts.join("</li><li class=\"item cast\">").sanitize()}</li></ul>
             <ul class="info genres">

@@ -1,4 +1,5 @@
 use std::{fs, io, os::unix::fs::MetadataExt};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use crate::helpers::{command, string, file};
 use super::{title::VideoTitle, result::VideoResult};
@@ -20,91 +21,72 @@ impl VideoMetadata {
 
         let mut title = video_title.title.clone();
         let mut summary = String::new();
-        
         let mut date = String::new();
         let mut creation_time = String::new();
-
         let mut casts = vec![];
         let mut genres = vec![];
 
         // Get media info from metadata (or exiftool ?) use -print_format json
+        // ffprobe -loglevel error -show_entries stream_tags:format_tags input
         let info = command::exec(
             "ffprobe",
              ["-loglevel", "error", "-show_entries", "stream_tags:format_tags", file_path]
         );
 
+        // Get text between [FORMAT]...[/FORMAT]
+        let re_format = Regex::new(r"(?is)\[format\](.{1,})\[/format\]").unwrap();
+        let info = if let Some((_, [format])) = re_format.captures(&info).map(|c| c.extract()) {
+            format.trim().to_string()
+        } else {
+            String::new()
+        };
+
+        let re_tag = Regex::new(r"^(?i)tag:[a-z_]{1,}=").unwrap();
+        let mut current_key = "";
+        let mut current_value = String::new();
+
         for line in info.lines() {
-            if line.trim().is_empty() {
-                continue;
-            }
+            let value = re_tag.replace(line, "").trim().to_string();
+            let l_line = line.to_lowercase();
+
+            current_value = if l_line.starts_with("tag:") {
+                format!("{value}")
+            } else {
+                format!("{current_value}\n{value}")
+            };
+
+            current_key = if l_line.starts_with("tag:title") {
+                "title"
+            } else if l_line.starts_with("tag:artist") {
+                "artist"
+            } else if l_line.starts_with("tag:genre") {
+                "genre"
+            } else if l_line.starts_with("tag:date") {
+                "date"
+            } else if l_line.starts_with("tag:creation_time") {
+                "creation_time"
+            } else if l_line.starts_with("tag:comment") {
+                "comment"
+            } else if l_line.starts_with("tag:"){
+                "other"
+            } else {
+                current_key
+            };
+
             // TAG:title -> title
             // TAG:artist -> casts
             // TAG:comment -> summary
             // TAG:genre -> genres
             // TAG:date -> year
-            if line.starts_with("TAG:title") {
-                title = line.replace("TAG:title=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:Title") {
-                title = line.replace("TAG:Title=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:TITLE") {
-                title = line.replace("TAG:TITLE=", "").trim().to_string();
-            }
-
-            else if line.starts_with("TAG:artist") {
-                casts = line.replace("TAG:artist=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-            else if line.starts_with("TAG:Artist") {
-                casts = line.replace("TAG:Artist=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-            else if line.starts_with("TAG:ARTIST") {
-                casts = line.replace("TAG:ARTIST=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-
-            else if line.starts_with("TAG:genre") {
-                genres = line.replace("TAG:genre=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-            else if line.starts_with("TAG:Genre") {
-                genres = line.replace("TAG:Genre=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-            else if line.starts_with("TAG:GENRE") {
-                genres = line.replace("TAG:GENRE=", "").trim().split(",").map(|c| c.trim().to_string()).collect();
-            }
-
-            else if line.starts_with("TAG:date") {
-                date = line.replace("TAG:date=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:Date") {
-                date = line.replace("TAG:Date=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:DATE") {
-                date = line.replace("TAG:DATE=", "").trim().to_string();
-            }
-
-
-            else if line.starts_with("TAG:creation_time") {
-                creation_time = line.replace("TAG:creation_time=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:Creation_time") {
-                creation_time = line.replace("TAG:Creation_time=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:Creation_Time") {
-                creation_time = line.replace("TAG:Creation_Time=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:CREATION_TIME") {
-                creation_time = line.replace("TAG:CREATION_TIME=", "").trim().to_string();
-            }
-            
-            else if line.starts_with("TAG:comment") {
-                summary = line.replace("TAG:comment=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:Comment") {
-                summary = line.replace("TAG:Comment=", "").trim().to_string();
-            }
-            else if line.starts_with("TAG:COMMENT") {
-                summary = line.replace("TAG:COMMENT=", "").trim().to_string();
-            }
+            match current_key {
+                "title" => title = current_value.trim().to_string(),
+                "artist" => casts = current_value.trim().split(",").map(|c| c.trim().to_string()).collect(),
+                "genre" => genres = current_value.trim().split(",").map(|c| c.trim().to_string()).collect(),
+                "date" => date = current_value.trim().to_string(),
+                "creation_time" => creation_time = current_value.trim().to_string(),
+                "comment" => summary = current_value.trim().to_string(),
+                _ => (),
+            };
         }
 
         let year = if let Ok(year) = date.get(0..=3).unwrap_or("").parse::<u16>() {
@@ -144,7 +126,7 @@ impl VideoMetadata {
                 format!("Update metadata: error: Temp file {} exists", output_file)
             ));
         }
-        println!("{}", self.summary);
+
         command::exec("ffmpeg", [
             "-i", file_path,
             "-metadata", &format!("title={}", self.title),
