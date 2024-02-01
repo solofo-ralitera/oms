@@ -1,4 +1,4 @@
-use std::{fs, io, os::unix::fs::MetadataExt};
+use std::{fs, io};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use crate::helpers::{command, string, file};
@@ -138,7 +138,7 @@ impl VideoMetadata {
             "-y", &output_file
         ]);
         if let Ok(m) = fs::metadata(&output_file) {
-            let delta = m.size() as f64 / file_size as f64;
+            let delta = m.len() as f64 / file_size as f64;
             if m.is_file() && delta > 0.95 {
                 match fs::rename(output_file, file_path) {
                     Ok(_) => return Ok(true),
