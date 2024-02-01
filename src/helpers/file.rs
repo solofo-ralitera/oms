@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, read_dir, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write, Seek, SeekFrom};
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::UNIX_EPOCH;
@@ -53,7 +52,7 @@ pub fn check_file(file_path: &String, check_size: bool) -> Result<String> {
                format!("{file_path} is not a file")
             ));
          }
-         if check_size && m.size() == 0 {
+         if check_size && m.len() == 0 {
             return Err(io::Error::new(
                io::ErrorKind::WriteZero,
                format!("{file_path} is empty")
