@@ -8,6 +8,8 @@ S: AsRef<OsStr>,
     let mut cmd = Command::new(command);
     cmd.args(args);
 
+    // println!("{:?}", cmd);
+
     let cmd= cmd
         .stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());

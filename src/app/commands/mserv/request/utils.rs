@@ -8,7 +8,7 @@ use crate::helpers::{file, ltrim_char, rtrim_char, cache, media::{video, pdf}};
 pub fn get_file_path(base_path: &String, file_path: &String) -> Option<String> {
     let file_path = Path::new(&rtrim_char(base_path, '/')).join(ltrim_char(file_path, '/')).as_path().display().to_string();
     // Test is file existe and return canonical path
-    let file_path = file::check_file(&file_path);
+    let file_path = file::check_file(&file_path, false);
     if file_path.is_err() {
         return None;
     }

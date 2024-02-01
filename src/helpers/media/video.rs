@@ -2,7 +2,7 @@ pub mod metadata;
 pub mod result;
 pub mod title;
 
-use std::{io, fs};
+use std::{fs, io, path::Path};
 use crate::helpers::{file, command};
 use regex::Regex;
 pub mod provider;
@@ -32,11 +32,7 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
-            let output = if output.eq("av1") {
-                String::from("mkv")
-            } else {
-                output.to_string()
-            };
+            let output = transcode_extension(&output);
             re.replace(file_path.as_str(), format!(".{output}")).to_string()
         },
         Some(d) => d.to_string(),
@@ -46,13 +42,15 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
         return Ok(None);
     }
     
-    if let Ok(_) = file::check_file(&dest_path) {
+    if let Ok(_) = file::check_file(&dest_path, false) {
         return Ok(None);
     }
 
     println!("Transcoding start {file_path} -> {output}");
     if output.eq("av1") {
         command::exec("ffmpeg",["-i", file_path, "-c:v", "libaom-av1", "-crf", "31", &dest_path]);
+    } else if output.eq("vp9") {
+        command::exec("ffmpeg",["-i", file_path, "-c:v", "libvpx-vp9", "-crf", "31", "-b:v", "0", &dest_path]);
     } else {
         command::exec("ffmpeg",["-i", file_path, &dest_path]);
     }
@@ -68,11 +66,21 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
     };
 }
 
+pub fn transcode_extension(extension: &String) -> String {
+    let extension = extension.to_lowercase();
+    if extension.eq("av1") {
+        "mkv".to_string()
+    } else if extension.eq("vp9") {
+        "webm".to_string()
+    } else {
+        extension.to_string()
+    }
+}
+
 pub fn video_duration(file_path: &String) -> usize {
     if !file::is_video_file(file_path) {
         return 0;
     }
-    
     let output = command::exec(
         "ffprobe",
         ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]        
@@ -105,6 +113,53 @@ pub fn need_reencode(file_path: &String) -> bool {
     // Check if codec is hXXX,vpX, avX
     let re_codec = Regex::new("^(vp8|vp9|h264|avc|av1|ogg)").unwrap();
     return !re_codec.is_match(&codec);
+}
+
+pub fn split_video(file_path: &String, dest_dir: &String, segment_time: usize) {
+    let output = Path::new(&dest_dir);
+    let output = output.join(format!(
+        "part-%07d.{}", 
+        file::get_extension(file_path)
+    ));
+    command::exec(
+        "ffmpeg",
+        ["-i", file_path, "-c", "copy", "-flags", "+global_header", "-segment_time", &segment_time.to_string(), "-f", "segment", &output.display().to_string()]
+    );
+}
+
+pub fn concat_video(input_text: &String, output: &String) -> Result<Option<String>, io::Error> {
+    let required_extension = file::get_extension(output).to_lowercase();
+    let output_extension = transcode_extension(&required_extension).to_lowercase();
+
+    // set extension appropriate extension if codec provided
+    let output = if required_extension.ne(&output_extension) {
+        let re = Regex::new(&format!(r"\.{}$", required_extension)).unwrap();
+        re.replace(&output, format!(".{output_extension}")).to_string()
+    } else {
+        output.to_string()
+    };
+
+    let output = if let Ok(output) = file::check_file(&output, false) {
+        format!("{output}.{output_extension}")
+    } else {
+        output.to_string()
+    };
+    
+    if let Ok(_) = file::check_file(&output, false) {
+        return Ok(None);
+    }
+
+    command::exec(
+        "ffmpeg",
+        ["-f", "concat", "-i", input_text, "-c", "copy", "-fflags", "+genpts", &output]
+    );
+    if let Ok(output) = file::check_file(&output, true) {
+        return Ok(Some(output));
+    }
+    return Err(io::Error::new(
+        io::ErrorKind::WriteZero, 
+        format!("Video concat error: {output} not created")
+    ));        
 }
 
 /// Search if file with .mp4 extension existe in the same directory,

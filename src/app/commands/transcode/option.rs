@@ -7,6 +7,7 @@ pub struct TranscodeOption {
     pub extensions: Vec<String>,
     pub thread: usize,
     pub delete: bool,
+    pub split: usize,
     output_formats: HashMap<String, String>,
 }
 
@@ -16,6 +17,7 @@ impl TranscodeOption {
             extensions: vec![],
             thread: max(1, num_cpus::get() - 1),
             delete: false,
+            split: 0,
             output_formats: HashMap::new(),
         }
     }
@@ -34,6 +36,24 @@ impl TranscodeOption {
                 ErrorKind::NotFound, 
                 format!("Invalid value for thread")
             ))
+        }
+    }
+
+    pub fn set_split(&mut self, value: &String) -> Result<()> {
+        let value = if value.is_empty() {
+            String::from("10")
+        } else {
+            value.to_string()
+        };
+        match value.parse::<usize>() {
+            Ok(v) => {
+                self.split = v;
+                Ok(())
+            },
+            _ => Err(Error::new(
+                ErrorKind::NotFound, 
+                format!("Invalid value for split")
+            )),
         }
     }
 
@@ -91,5 +111,17 @@ impl TranscodeOption {
             return true;
         }
         self.extensions.contains(&extension.to_lowercase())
+    }
+}
+
+impl Clone for TranscodeOption {
+    fn clone(&self) -> Self {
+        TranscodeOption { 
+            delete: self.delete,
+            extensions: self.extensions.clone(),
+            output_formats: self.output_formats.clone(),
+            split: self.split,
+            thread: self.thread,
+        }
     }
 }

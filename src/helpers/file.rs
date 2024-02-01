@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, read_dir, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Write, Seek, SeekFrom};
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::UNIX_EPOCH;
@@ -13,7 +14,7 @@ use data_encoding::HEXUPPER;
 
 type Result<T> = std::result::Result<T, std::io::Error>;
 
-pub static VIDEO_EXTENSIONS: [&str; 29] = ["mpe", "mpv", "m2v", "m4v", "3gp", "3g2", "mp4", "mkv", "avi", "flv", "f4v", "f4p", "f4a", "f4b", "mpg", "mpeg", "mp2", "divx", "wmv", "dat", "webm", "vob", "ogv", "m4p", "ts", "webm", "mov", "ogm", "av1"];
+pub static VIDEO_EXTENSIONS: [&str; 30] = ["mpe", "mpv", "m2v", "m4v", "3gp", "3g2", "mp4", "mkv", "avi", "flv", "f4v", "f4p", "f4a", "f4b", "mpg", "mpeg", "mp2", "divx", "wmv", "dat", "webm", "vob", "ogv", "m4p", "ts", "webm", "mov", "ogm", "av1", "vp9"];
 pub static VIDEO_EXTENSIONS_IGNORED: [&str; 9] = ["db", "srt", "nfo", "idx", "sub", "bup", "ifo", "vob", "sfv"];
 pub static PDF_EXTENSIONS: [&str; 1] = ["pdf"];
 pub static MS_EXTENSIONS: [&str; 6] = ["doc", "docx", "odp", "odt", "pptx", "xlsx"];
@@ -25,37 +26,44 @@ pub static AUDIO_EXTENSIONS: [&str; 20] = ["wav", "wave", "aiff", "aif", "aifc",
 /// # Arguments
 ///
 /// * `file_path` - the path of the file to check
+/// * `check_size` - check if file size is 0
 /// 
 /// # Examples
 /// 
 /// ```
 /// use oms::helpers::file;
 /// 
-/// match file::check_file(&"./Cargo.toml".to_string()) {
+/// match file::check_file(&"./Cargo.toml".to_string(), true) {
 ///     Ok(file_path) => assert!(file_path.ends_with("Cargo.toml")),
 ///     Err(err) => panic!("Should be Ok"),
 /// };
 /// 
-/// match file::check_file(&"./404.txt".to_string()) {
+/// match file::check_file(&"./404.txt".to_string(), false) {
 ///     Ok(file_path) => panic!("Should throw error"),
 ///     Err(err) => assert!(err.to_string().starts_with("No")),
 /// };
 /// ```
-pub fn check_file(file_path: &String) -> Result<String> {
+pub fn check_file(file_path: &String, check_size: bool) -> Result<String> {
    match fs::metadata(file_path) {
       Ok(m) if m.is_file() => {
          let full_path = fs::canonicalize(file_path).unwrap_or_default().as_path().display().to_string();
          if full_path.is_empty() {
             return Err(io::Error::new(
-               io::ErrorKind::WriteZero,
+               io::ErrorKind::PermissionDenied,
                format!("{file_path} is not a file")
             ));
+         }
+         if check_size && m.size() == 0 {
+            return Err(io::Error::new(
+               io::ErrorKind::WriteZero,
+               format!("{file_path} is empty")
+            ));            
          }
          Ok(full_path)
       },
       Err(err) => Err(err),
       _ => Err(io::Error::new(
-         io::ErrorKind::WriteZero, 
+         io::ErrorKind::Unsupported, 
          format!("{file_path} is not a file")
       ))
    }
@@ -191,17 +199,17 @@ pub fn get_creation_time(file_path: &str) -> u64 {
    return 0;
 }
 
-pub fn rename_file(file_path: &String, new_name: &String) -> Result<()> {
+pub fn rename_file(file_path: &String, new_name: &String) -> Result<String> {
    if let Some(dir) = get_file_dir(file_path) {
       let new_file = Path::new(&dir).join(new_name);
       if !new_file.exists() {
-         match fs::rename(file_path, new_file) {
-            Ok(_) => return Ok(()),
-            Err(err) => return Err(io::Error::new(
+         return match fs::rename(file_path, &new_file) {
+            Ok(_) => Ok(new_file.display().to_string()),
+            Err(err) => Err(io::Error::new(
                io::ErrorKind::PermissionDenied,
                format!("{}", err.to_string())
-            ))
-         }
+            )),
+         };
       } else {
          return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
@@ -233,8 +241,32 @@ pub fn get_file_name(file_path: &String) -> String {
       .to_string()
 }
 
+pub fn scan_files(dir_path: &Path) -> Vec<String> {
+   let mut result = vec![];
+   let read_dir = read_dir(dir_path);
+   if read_dir.is_err() {
+      return result;
+   }
+   for entry_res in read_dir.unwrap() {
+      if entry_res.is_err() {
+         continue;
+      }
+      let entry = entry_res.unwrap();
+      if entry.file_name().eq(".") || entry.file_name().eq("..") {
+         continue;
+      }
+      if let Ok(file_type) = entry.file_type() {
+         if file_type.is_file() {
+            result.push(entry.path().display().to_string());
+         }
+      }
+   }
+   return result;
+}
+
 pub fn write_file_content(file_name: &Path, content: &str, append: bool) -> Result<()> {
    let mut fopen = match OpenOptions::new()
+      .truncate(!append)
       .append(append)
       .write(true)
       .create(true)
