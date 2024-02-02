@@ -254,6 +254,12 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
                     println!("{} {} {}", "Transcode finished with warning:".yellow(), output_file.yellow(), "already exists".yellow());
                 },
                 Ok(output) => {
+                    let mut output = output.unwrap();
+                    
+                    // Set metadata
+                    let _ = video::metadata::VideoMetadata::from(&file_path)
+                        .write(&output);
+
                     // Remove split directory
                     file::scan_files(&directory)
                         .into_iter()
@@ -273,7 +279,6 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
                         }
                     }
                     // Rename output
-                    let mut output = output.unwrap();
                     let extension = file::get_extension(&output);
                     if output.ends_with(&format!(".{}.{}", extension, extension)) {
                         if let Ok(o) = file::rename_file(&output, &file::remove_extension(&output)) {
