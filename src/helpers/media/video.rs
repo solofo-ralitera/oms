@@ -3,7 +3,7 @@ pub mod result;
 pub mod title;
 
 use std::{fs, io, path::Path};
-use crate::helpers::{file, command};
+use crate::helpers::{command, file, ltrim_char};
 use regex::Regex;
 pub mod provider;
 
@@ -97,22 +97,28 @@ pub fn video_duration(file_path: &String) -> usize {
     return size;
 }
 
-pub fn video_codec(file_path: &String) -> String {
+fn video_format(file_path: &String, key: &str) -> String {
     if !file::is_video_file(file_path) {
         return String::new();
     }
     let output = command::exec(
         "ffprobe",
-        ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", file_path]
+        ["-v", "error", "-hide_banner", "-of", "default=noprint_wrappers=0", "-print_format", "flat", "-select_streams", "v:0", "-show_format", "-i", file_path]
     );
-    return output.trim().to_lowercase().to_string();
+    for line in output.lines() {
+        if line.starts_with(key) {
+            return ltrim_char(&line.replace(key, "").replace("\"", ""), '=');
+        }
+    }
+    return String::new();
 }
 
+///
+/// Check if video is not streamable natively
 pub fn need_reencode(file_path: &String) -> bool {
-    let codec = video_codec(file_path);
-    // Check if codec is hXXX,vpX, avX
-    let re_codec = Regex::new("^(vp8|vp9|h264|avc|av1|ogg)").unwrap();
-    return !re_codec.is_match(&codec);
+    let format = video_format(file_path, "format.format_name");
+    let re_format = Regex::new("(webm|mp4)").unwrap();
+    return !re_format.is_match(&format);
 }
 
 pub fn split_video(file_path: &String, dest_dir: &String, segment_time: usize) {
