@@ -54,6 +54,13 @@ export class PlayerAudioComponent extends HTMLElement {
         this.render();
     }
 
+    set currentTime(time) {
+        const audio = this.root.querySelector("audio");        
+        if (!audio) return;
+        audio.currentTime = time;
+        audio.play();
+    }
+
     render() {
         if (!this.mediaItem) {
             this.root.innerHTML = '';

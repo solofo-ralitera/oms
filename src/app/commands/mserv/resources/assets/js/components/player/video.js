@@ -37,6 +37,7 @@ const CSS = `<style type="text/css">
     }
     .tool .title {
         cursor: pointer;
+        overflow: hidden;
     }
     .tool .title:hover {
         text-decoration: underline;
@@ -61,6 +62,13 @@ export class PlayerVideoComponent extends HTMLElement {
     set media(mediaItem) {
         this.mediaItem = mediaItem;
         this.render();
+    }
+
+    set currentTime(time) {
+        const video = this.root.querySelector("video");        
+        if (!video) return;
+        video.currentTime = time;
+        video.play();
     }
 
     render() {

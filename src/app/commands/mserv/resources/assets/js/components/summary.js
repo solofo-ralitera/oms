@@ -25,10 +25,11 @@ img {
 }
 #poster {
     min-width: 295px;
-    max-width: 691px;
+    max-width: 591px;
 }
 .title {
     padding: 0 1em;
+    max-width: 591px;
 }
 .summary {
     position: absolute;
@@ -115,8 +116,21 @@ export class SummaryComponent extends HTMLElement {
     }
 
     renderSummary() {
+        const summary = this.media.summary.sanitize().replace(/\({0,1}(([0-9]{1,2}:){0,1}[0-9]{1,2}:[0-9]{1,2})\){0,1}/g, `<button class="goto" data-time="$1">$1</button>`);
+        window.setTimeout(() => {
+            this.root.querySelectorAll(".goto").forEach(btn => btn.addEventListener("click", e => {
+                const button = e.target;
+                const time = button.getAttribute("data-time").toSeconds();
+                if (time === false) return;
+                if (time >= this.media.duration) return;
+                eventBus.fire("play-media-current-time", {
+                    media: this.media,
+                    time: time,
+                });
+            }))
+        }, 300);
         return `
-        <pre>${this.media.summary}</pre>
+        <pre>${summary}</pre>
         <ul class="info">
             <span class="all-cast pointer">Casts</span>:
             <li class="item cast pointer">${this.media.casts.join("</li><li class=\"item cast pointer\">").sanitize()}</li>

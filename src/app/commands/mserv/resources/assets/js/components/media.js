@@ -219,9 +219,13 @@ export class MediaComponent extends HTMLElement {
                 });
             });
         }, 500);
+        let summary = this._media.summary.sanitize().substring(0, 373);
+        if (this._media.summary.length > 373) {
+            summary += "...";
+        }
 
         return `<article class="card-body-summary">
-            <p>${this._media.summary.sanitize().substring(0, 373)}</p>
+            <p>${summary}</p>
             <hr>
             <ul class="info"><li class="item cast pointer">${this._media.casts.join("</li><li class=\"item cast\">").sanitize()}</li></ul>
             <ul class="info genres">

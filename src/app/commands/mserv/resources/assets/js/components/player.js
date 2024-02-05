@@ -4,6 +4,7 @@ import {PlayerAudioComponent} from './player/audio.js';
 
 export class PLayerComponent extends HTMLElement {
     media = null;
+    player = null;
 
     constructor() {
         super();
@@ -12,7 +13,17 @@ export class PLayerComponent extends HTMLElement {
 
         eventBus.register("play-media", e => {
             this.media = e.detail;
+            if (this.media === null) {
+                this.removePlayer();
+            }
             this.render();
+        });
+        eventBus.register("play-media-current-time", e => {
+            if (!this.player) {
+                this.media = e.detail.media;
+                this.render();                
+            };
+            this.player.currentTime = e.detail.time;
         });
     }
 
@@ -24,27 +35,39 @@ export class PLayerComponent extends HTMLElement {
 </style>`;
     }
 
+    removePlayer() {
+        try {
+            this.player.remove();
+            this.player = null;
+        } catch (err) {
+            this.player = null;
+        }
+    }
+
     renderPlayer() {
         if(!this.media) {
+            this.removePlayer();
             return '';
         }
         if (this.media.file_type === "image") {
             
         } else if (this.media.file_type === "video") {
-            const player = new PlayerVideoComponent();
-            player.media = this.media;
-            this.root.append(player);
+            this.player = new PlayerVideoComponent();
+            this.player.media = this.media;
+            this.root.append(this.player);
         } else if (this.media.file_type === "audio") {
-            const player = new PlayerAudioComponent();
-            player.media = this.media;
-            this.root.append(player);
+            this.player = new PlayerAudioComponent();
+            this.player.media = this.media;
+            this.root.append(this.player);
         } else {
+            this.removePlayer();
             return '';
         }  
     }
 
     render() {
         if (!this.media) {
+            this.removePlayer();
             this.root.innerHTML = '';
             return;
         };
