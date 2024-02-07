@@ -8,6 +8,7 @@ pub struct TranscodeOption {
     pub thread: usize,
     pub delete: bool,
     pub split: usize,
+    pub force: bool,
     output_formats: HashMap<String, String>,
 }
 
@@ -18,6 +19,7 @@ impl TranscodeOption {
             thread: max(1, num_cpus::get() - 1),
             delete: false,
             split: 0,
+            force: false,
             output_formats: HashMap::new(),
         }
     }
@@ -26,6 +28,10 @@ impl TranscodeOption {
         self.delete = true;
     }
 
+    pub fn set_force(&mut self) {
+        self.force = true;
+    }
+    
     pub fn set_thread(&mut self, value: &String) -> Result<()> {
         match value.parse::<usize>() {
             Ok(v) => {
@@ -122,6 +128,7 @@ impl Clone for TranscodeOption {
             output_formats: self.output_formats.clone(),
             split: self.split,
             thread: self.thread,
+            force: self.force,
         }
     }
 }

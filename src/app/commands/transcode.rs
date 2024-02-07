@@ -54,6 +54,7 @@ impl Runnable for Transcode {
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "d" => transcode_option.set_delete(),
+                "f" | "force" => transcode_option.set_force(),
                 "t" | "thread" => transcode_option.set_thread(value)?,
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
                 "o" | "output" => transcode_option.set_output(value)?,
@@ -104,7 +105,6 @@ impl Runnable for Transcode {
     }
 }
 
-
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
     if transcode_option.split > 0 {
         transcode_file_split(file_path, transcode_option);
@@ -122,13 +122,16 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
         return ();
     }
     let file_path = file_path.clone();
-    let delete_after = transcode_option.delete;
-    let output_format = transcode_option.get_output(&extension);
-
+    let transcode_option = transcode_option.clone();
     thread_pool.execute(move || {
-        if !video::need_reencode(&file_path) {
+        // If the input is already streamable: don't transcode
+        if !video::need_reencode(&file_path) && transcode_option.force == false {
             return;
         }
+
+        let delete_after = transcode_option.delete;
+        let output_format = transcode_option.get_output(&extension);
+
         match video::transcode(&file_path, None, &output_format) {
             Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
                 Ok(_) => {
@@ -163,7 +166,7 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
     if !file::is_video_file(file_path) {
         return;
     }
-    // Don't re-encode part-
+    // Don't re-encode part-00000XX
     let re_part = Regex::new(r"^part\-[0-9]{7}\.").unwrap();
     if re_part.is_match(&file::get_file_name(file_path)) {
         return;
@@ -318,6 +321,7 @@ transcode [options] <file_path|directory_path>
 
     --help
     -d  Delete original file after transcoding
+    -f --force  Force transcode even if the file is already streamable
     -e <string> --extensions=<string>   Only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'
     -t <int> --thread=<int> Number of threads used
     -o <string> --output=<string>   Output extension, default mp4, (Output can be something like flv>webm,avi>mp4,mp4)
