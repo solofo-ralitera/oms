@@ -85,16 +85,35 @@ pub fn video_duration(file_path: &String) -> usize {
         "ffprobe",
         ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]        
     );
-    let mut size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+    let size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
     if size == 0 {
         // Try stream option if the first one failed
         let output = command::exec(
             "ffprobe",
             ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]        
         );
-        size = output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+        return output.parse::<f64>().unwrap_or(0.).ceil() as usize;
+    } else {
+        return size;
     }
-    return size;
+}
+
+/// Check if same video
+/// Use duration
+/// TODO: other check
+pub fn is_output_valid(input_video: &String, output_video: &String) -> bool {
+    if video_duration(input_video) != video_duration(output_video) {
+        println!("Different duration");
+        return false;
+    }
+    // -sseof will check last 10 sec of video to help reduce time
+    if let Err(_) = command::exec_result(
+        "ffmpeg",
+        ["-v", "error", "-sseof", "-10", "-i", output_video, "-f", "null", "null"]
+    ) {
+        return false;
+    }
+    return true;
 }
 
 fn video_format(file_path: &String, key: &str) -> String {

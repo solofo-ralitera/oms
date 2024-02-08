@@ -1,7 +1,7 @@
 use std::{fs, io};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use crate::helpers::{command, string, file};
+use crate::helpers::{command, file, media, string};
 use super::{title::VideoTitle, result::VideoResult};
 
 type Result<T> = std::result::Result<T, std::io::Error>;
@@ -118,7 +118,6 @@ impl VideoMetadata {
 
     pub fn write(&self, file_path: &String) -> Result<bool> {
         let extension = file::get_extension(file_path);
-        let file_size = file::file_size(file_path).unwrap_or(1);
         let output_file = format!("{file_path}.oms_metadata_updated.{extension}");
         if let Ok(_) = fs::metadata(&output_file) {
             return Err(io::Error::new(
@@ -138,8 +137,7 @@ impl VideoMetadata {
             "-y", &output_file
         ]);
         if let Ok(m) = fs::metadata(&output_file) {
-            let delta = m.len() as f64 / file_size as f64;
-            if m.is_file() && delta > 0.95 {
+            if m.is_file() && media::video::is_output_valid(&file_path, &output_file) {
                 match fs::rename(output_file, file_path) {
                     Ok(_) => return Ok(true),
                     Err(err) => {
@@ -152,7 +150,7 @@ impl VideoMetadata {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData, 
-                    format!("Metadata write error: insufficient delta {delta}")
+                    format!("Metadata write error: output seems invalid")
                 ));
             }
         } else {

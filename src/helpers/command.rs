@@ -1,6 +1,8 @@
-use std::{process::{Command, Stdio}, io::{BufReader, BufRead}, ffi::OsStr};
+use std::{ffi::OsStr, io::{self, BufRead, BufReader}, process::{Command, Stdio}};
 
-pub fn exec<I, S> (command: &str, args: I) -> String
+type Result<T> = std::result::Result<T, std::io::Error>;
+
+pub fn exec_result<I, S> (command: &str, args: I) -> Result<String>
 where
 I: IntoIterator<Item = S>,
 S: AsRef<OsStr>,
@@ -12,12 +14,39 @@ S: AsRef<OsStr>,
 
     let cmd= cmd
         .stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-    if let Ok(output) = cmd.output() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return stdout.trim().to_string();
+    cmd.stderr(Stdio::piped());
+
+    match cmd.output() {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            if stdout.is_empty() && !stderr.is_empty() {
+                return Err(io::Error::new(
+                    io::ErrorKind::Interrupted, 
+                    stderr
+                ));
+            } else {
+                return Ok(stdout.trim().to_string());
+            }
+        },
+        Err(err) => {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted, 
+                format!("{}", err.to_string())
+            ));
+        }
     }
-    return String::new();
+}
+
+pub fn exec<I, S> (command: &str, args: I) -> String
+where
+I: IntoIterator<Item = S>,
+S: AsRef<OsStr>,
+{
+    return match exec_result(command, args) {
+        Err(_) => String::new(),
+        Ok(o) => o,
+    };
 }
 
 pub fn exec_stdout<I, S> (command: &str, args: I)

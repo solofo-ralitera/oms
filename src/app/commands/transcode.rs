@@ -133,17 +133,25 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
         let output_format = transcode_option.get_output(&extension);
 
         match video::transcode(&file_path, None, &output_format) {
-            Ok(dest_output) if dest_output.is_some() && delete_after => match fs::remove_file(&file_path) {
-                Ok(_) => {
-                    let dest_output = dest_output.unwrap_or_default();
-                    if dest_output.eq(&format!("{file_path}.{output_format}")) {
-                        // Rename output if same extension but need to re-encode .mp4.mp4
-                        if let Err(err) = file::rename_file(&dest_output, &file_path) {
-                            println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
-                        }
+            Ok(dest_output) if dest_output.is_some() => {
+                let dest_output = dest_output.unwrap();
+                if delete_after {
+                    if video::is_output_valid(&file_path, &dest_output) {
+                        match fs::remove_file(&file_path) {
+                            Ok(_) => {
+                                if dest_output.eq(&format!("{file_path}.{output_format}")) {
+                                    // Rename output if same extension but need to re-encode .mp4.mp4
+                                    if let Err(err) = file::rename_file(&dest_output, &file_path) {
+                                        println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
+                                    }
+                                }
+                            },
+                            Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
+                        };
+                    } else {
+                        println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), file_path.yellow());
                     }
-                },
-                Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
+                }
             },
             Ok(dest_output) if dest_output.is_none() => {
                 println!("{}{}", "Transcode warn: Output already exists ".blue(), file_path.blue());
@@ -277,8 +285,12 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
                     }
                     // remove source file if -d
                     if transcode_option.delete {
-                        if let Err(err) =  fs::remove_file(&file_path) {
-                            println!("{} {} {}", "Enable to remove original file".yellow(), file_path.to_string().yellow(), err.to_string().yellow());
+                        if video::is_output_valid(&file_path,&output) {
+                            if let Err(err) =  fs::remove_file(&file_path) {
+                                println!("{} {} {}", "Enable to remove original file".yellow(), file_path.to_string().yellow(), err.to_string().yellow());
+                            }
+                        } else {
+                            println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), file_path.yellow());
                         }
                     }
                     // Rename output
