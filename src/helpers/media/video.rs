@@ -106,10 +106,14 @@ pub fn is_output_valid(input_video: &String, output_video: &String) -> bool {
         println!("Different duration");
         return false;
     }
-    // -sseof will check last 10 sec of video to help reduce time
+    return check_last_seconds(output_video, 10);
+}
+
+pub fn check_last_seconds(video_path: &String, s: usize) -> bool {
+    // -sseof will check last x seconds (reduce time)
     if let Err(_) = command::exec_result(
         "ffmpeg",
-        ["-v", "error", "-sseof", "-10", "-i", output_video, "-f", "null", "null"]
+        ["-v", "error", "-sseof", &format!("-{s}"), "-i", video_path, "-f", "null", "null"]
     ) {
         return false;
     }

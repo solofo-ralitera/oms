@@ -50,10 +50,11 @@ impl Runnable for Transcode {
             println!("\n{}\n", usage());
             return Ok(());
         }
-
+        
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "d" => transcode_option.set_delete(),
+                "c" | "check" => transcode_option.set_check(),
                 "f" | "force" => transcode_option.set_force(),
                 "t" | "thread" => transcode_option.set_thread(value)?,
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
@@ -106,6 +107,11 @@ impl Runnable for Transcode {
 }
 
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
+    // Ony check
+    if transcode_option.check {
+        check_invalid(file_path);
+        return;
+    }
     if transcode_option.split > 0 {
         transcode_file_split(file_path, transcode_option);
     } else {
@@ -322,6 +328,12 @@ fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_p
     }
 }
 
+pub fn check_invalid(file_path: &String) {
+    if !video::check_last_seconds(file_path, 10) {
+        println!("{} {file_path}", "Invalid video: ".red());
+    }
+}
+
 /// Help message for this command
 pub fn usage() -> String {
     format!("\
@@ -332,6 +344,7 @@ transcode [options] <file_path|directory_path>
         Need to install ffmpeg
 
     --help
+    -c --check  Seek for invalid video, don't transcode
     -d  Delete original file after transcoding
     -f --force  Force transcode even if the file is already streamable
     -e <string> --extensions=<string>   Only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'

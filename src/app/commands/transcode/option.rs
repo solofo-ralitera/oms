@@ -9,6 +9,7 @@ pub struct TranscodeOption {
     pub delete: bool,
     pub split: usize,
     pub force: bool,
+    pub check: bool,
     output_formats: HashMap<String, String>,
 }
 
@@ -20,12 +21,17 @@ impl TranscodeOption {
             delete: false,
             split: 0,
             force: false,
+            check: false,
             output_formats: HashMap::new(),
         }
     }
 
     pub fn set_delete(&mut self) {
         self.delete = true;
+    }
+
+    pub fn set_check(&mut self) {
+        self.check = true;
     }
 
     pub fn set_force(&mut self) {
@@ -129,6 +135,7 @@ impl Clone for TranscodeOption {
             split: self.split,
             thread: self.thread,
             force: self.force,
+            check: self.check,
         }
     }
 }
