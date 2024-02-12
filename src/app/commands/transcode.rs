@@ -54,12 +54,16 @@ impl Runnable for Transcode {
         for (option, value) in &self.cmd_options {
             match option.as_str() {
                 "d" => transcode_option.set_delete(),
+                "keep-smallest" => transcode_option.set_keep_smallest(),
                 "c" | "check" => transcode_option.set_check(),
                 "f" | "force" => transcode_option.set_force(),
                 "t" | "thread" => transcode_option.set_thread(value)?,
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
                 "o" | "output" => transcode_option.set_output(value)?,
                 "s" | "split" => transcode_option.set_split(value)?,
+                "list" => {
+                    transcode_option.set_list(value)?; // Files are provided in option
+                },
                 arg => {
                     *b_isrunning = false;
                     return Err(io::Error::new(
@@ -70,7 +74,19 @@ impl Runnable for Transcode {
             };
         }
 
+        // Options warning
+        if !transcode_option.delete && transcode_option.keep_smallest {
+            println!("{}", "keep-smallest ignored, -d not set".yellow());
+        }
+
         let thread_pool = ThreadPool::new(transcode_option.thread);
+
+        // if files are provided in option as list
+        if transcode_option.list.len() > 0 {
+            file_info_from_list(&transcode_option, &thread_pool);
+            *b_isrunning = false;
+            return Ok(());
+        }
 
         match fs::metadata(&self.file_path) {
             Ok(md) if md.is_file() => {
@@ -106,8 +122,22 @@ impl Runnable for Transcode {
     }
 }
 
+fn file_info_from_list(transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
+    for file_path in &transcode_option.list {
+        match fs::metadata(&file_path) {
+            Ok(md) if md.is_dir() => {
+                transcode_dir(&file_path, transcode_option, thread_pool);
+            },
+            Ok(md) if md.is_file() => {
+                transcode_file(&file_path, transcode_option, thread_pool);
+            },
+            _ => (),
+        };
+    }
+}
+
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
-    // Ony check
+    // Only check
     if transcode_option.check {
         check_invalid(file_path);
         return;
@@ -143,20 +173,29 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
                 let dest_output = dest_output.unwrap();
                 if delete_after {
                     if video::is_output_valid(&file_path, &dest_output) {
-                        match fs::remove_file(&file_path) {
-                            Ok(_) => {
-                                if dest_output.eq(&format!("{file_path}.{output_format}")) {
-                                    // Rename output if same extension but need to re-encode .mp4.mp4
-                                    if let Err(err) = file::rename_file(&dest_output, &file_path) {
-                                        println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
+                        // Keep the smallest (size) file between input and output
+                        if transcode_option.keep_smallest && file::file_size(&dest_output).unwrap_or_default() > file::file_size(&file_path).unwrap_or_default() {
+                            let _ = fs::remove_file(&dest_output);
+                            println!("{} {}", "Keep original file, output is bigger".yellow(), file_path.yellow());
+                        } else {
+                            match fs::remove_file(&file_path) {
+                                Ok(_) => {
+                                    let final_output = dest_output.replace(".oms_transcoded.", ".");
+                                    if let Ok(_) = file::check_file(&final_output, true) {
+                                        println!("{} {}", "Transcode error: unable to rename output file, output file already exists: ".yellow(), final_output.yellow());
+                                    } else {
+                                        // Rename output if same extension but need to re-encode .mp4.mp4
+                                        if let Err(err) = file::rename_file(&dest_output, &final_output) {
+                                            println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
+                                        }
                                     }
-                                }
-                            },
-                            Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
-                        };
+                                },
+                                Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
+                            };
+                        }
                     } else {
-                        println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), file_path.yellow());
-                    }
+                        println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), dest_output.yellow());
+                    }                    
                 }
             },
             Ok(dest_output) if dest_output.is_none() => {
@@ -249,7 +288,10 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
             let output = directory.join("oms_output.txt");
             let mut file_names: Vec<String> = file::scan_files(&directory)
                 .into_iter()
-                .filter(|f| f.contains(".oms_transcoded."))
+                .filter(|f| {
+                    let extension = file::get_extension(&file_path).to_lowercase();
+                    return f.contains(".oms_transcoded.") && file::get_extension(&f).eq(&transcode_option.get_output(&extension));
+                })
                 .map(|f| format!("file '{}'", file::get_file_name(&f)))
                 .collect();
             file_names.sort();
@@ -291,13 +333,18 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
                     }
                     // remove source file if -d
                     if transcode_option.delete {
-                        if video::is_output_valid(&file_path,&output) {
-                            if let Err(err) =  fs::remove_file(&file_path) {
-                                println!("{} {} {}", "Enable to remove original file".yellow(), file_path.to_string().yellow(), err.to_string().yellow());
-                            }
+                        if transcode_option.keep_smallest && file::file_size(&output).unwrap_or_default() > file::file_size(&file_path).unwrap_or_default() {
+                            let _ = fs::remove_file(&output);
+                            println!("{} {}", "Keep original file, output is bigger".yellow(), file_path.yellow());
                         } else {
-                            println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), file_path.yellow());
-                        }
+                            if video::is_output_valid(&file_path,&output) {
+                                if let Err(err) =  fs::remove_file(&file_path) {
+                                    println!("{} {} {}", "Enable to remove original file".yellow(), file_path.to_string().yellow(), err.to_string().yellow());
+                                }
+                            } else {
+                                println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), output.yellow());
+                            }
+                        } 
                     }
                     // Rename output
                     let extension = file::get_extension(&output);
@@ -329,8 +376,8 @@ fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_p
 }
 
 pub fn check_invalid(file_path: &String) {
-    if !video::check_last_seconds(file_path, 10) {
-        println!("{} {file_path}", "Invalid video: ".red());
+    if file::is_video_file(file_path) && !video::check_last_seconds(file_path, 10) {
+        println!("{file_path}");
     }
 }
 
@@ -346,7 +393,9 @@ transcode [options] <file_path|directory_path>
     --help
     -c --check  Seek for invalid video, don't transcode
     -d  Delete original file after transcoding
+    --keep-smallest Keep the smallest (size) file between input and output
     -f --force  Force transcode even if the file is already streamable
+    --list=<sting>  Path of a file containing the list of files to transcore
     -e <string> --extensions=<string>   Only transcode files with these extensions, separated by '{OPTION_SEPARATOR}'
     -t <int> --thread=<int> Number of threads used
     -o <string> --output=<string>   Output extension, default mp4, (Output can be something like flv>webm,avi>mp4,mp4)

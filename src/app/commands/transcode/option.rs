@@ -7,9 +7,11 @@ pub struct TranscodeOption {
     pub extensions: Vec<String>,
     pub thread: usize,
     pub delete: bool,
+    pub keep_smallest: bool,
     pub split: usize,
     pub force: bool,
     pub check: bool,
+    pub list: Vec<String>,
     output_formats: HashMap<String, String>,
 }
 
@@ -19,10 +21,12 @@ impl TranscodeOption {
             extensions: vec![],
             thread: max(1, num_cpus::get() - 1),
             delete: false,
+            keep_smallest: false,
             split: 0,
             force: false,
             check: false,
             output_formats: HashMap::new(),
+            list: vec![],
         }
     }
 
@@ -30,6 +34,10 @@ impl TranscodeOption {
         self.delete = true;
     }
 
+    pub fn set_keep_smallest(&mut self) {
+        self.keep_smallest = true;
+    }
+    
     pub fn set_check(&mut self) {
         self.check = true;
     }
@@ -103,6 +111,21 @@ impl TranscodeOption {
         Ok(())
     }
 
+    pub fn set_list(&mut self, value: &String) -> Result<()> {
+        if let Some(lines) = file::read_lines(value) {
+            for (_, line) in lines.enumerate() {
+                if let Ok(l) = line {
+                    self.list.push(l.trim().to_string());
+                }
+            }
+            return Ok(());
+        }
+        return Err(Error::new(
+            ErrorKind::NotFound, 
+            format!("Unknown value for list")
+        ));
+    }
+
     pub fn get_output(&self, extension: &String) -> String {
         if let Some(output) = self.output_formats.get(&extension.to_lowercase()) {
             return output.to_string();
@@ -130,12 +153,14 @@ impl Clone for TranscodeOption {
     fn clone(&self) -> Self {
         TranscodeOption { 
             delete: self.delete,
+            keep_smallest: self.keep_smallest,
             extensions: self.extensions.clone(),
             output_formats: self.output_formats.clone(),
             split: self.split,
             thread: self.thread,
             force: self.force,
             check: self.check,
+            list: self.list.clone(),
         }
     }
 }

@@ -23,17 +23,13 @@ pub fn transcode(file_path: &String, dest_path: Option<&String>, output: &String
             format!("Video transcode: unknown extension {output}")
         ))
     }
-    let extension = file::get_extension(file_path);
-    let output = if output.to_lowercase().eq(&extension.to_lowercase()) {
-        format!("{output}.{output}")
-    } else {
-        output.to_string()
-    };
     let dest_path = match dest_path {
         None => {
             let re = Regex::new(r"(?i)\.[0-9a-z]{2,}$").unwrap();
             let output = transcode_extension(&output);
-            re.replace(file_path.as_str(), format!(".{output}")).to_string()
+            let path = re.replace(file_path.as_str(), format!(".oms_transcoded.{output}")).to_string();
+            let _ = fs::remove_file(&path);
+            path
         },
         Some(d) => d.to_string(),
     };
