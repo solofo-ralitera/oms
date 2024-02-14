@@ -12,6 +12,7 @@ pub struct TranscodeOption {
     pub force: bool,
     pub check: bool,
     pub list: Vec<String>,
+    pub skip_list: Vec<String>,
     output_formats: HashMap<String, String>,
 }
 
@@ -27,6 +28,7 @@ impl TranscodeOption {
             check: false,
             output_formats: HashMap::new(),
             list: vec![],
+            skip_list: vec![],
         }
     }
 
@@ -115,7 +117,9 @@ impl TranscodeOption {
         if let Some(lines) = file::read_lines(value) {
             for (_, line) in lines.enumerate() {
                 if let Ok(l) = line {
-                    self.list.push(l.trim().to_string());
+                    if !l.is_empty() {
+                        self.list.push(l.trim().to_string());
+                    }
                 }
             }
             return Ok(());
@@ -123,6 +127,23 @@ impl TranscodeOption {
         return Err(Error::new(
             ErrorKind::NotFound, 
             format!("Unknown value for list")
+        ));
+    }
+
+    pub fn set_skiplist(&mut self, value: &String) -> Result<()> {
+        if let Some(lines) = file::read_lines(value) {
+            for (_, line) in lines.enumerate() {
+                if let Ok(l) = line {
+                    if !l.is_empty() {
+                        self.skip_list.push(file::get_file_name(&l.trim().to_string()));
+                    }
+                }
+            }
+            return Ok(());
+        }
+        return Err(Error::new(
+            ErrorKind::NotFound, 
+            format!("Unknown value for skip-list")
         ));
     }
 
@@ -161,6 +182,7 @@ impl Clone for TranscodeOption {
             force: self.force,
             check: self.check,
             list: self.list.clone(),
+            skip_list: self.list.clone(),
         }
     }
 }

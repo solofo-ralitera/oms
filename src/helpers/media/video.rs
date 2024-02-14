@@ -99,7 +99,6 @@ pub fn video_duration(file_path: &String) -> usize {
 /// TODO: other check
 pub fn is_output_valid(input_video: &String, output_video: &String) -> bool {
     if video_duration(input_video) != video_duration(output_video) {
-        println!("Different duration");
         return false;
     }
     return check_last_seconds(output_video, 10);

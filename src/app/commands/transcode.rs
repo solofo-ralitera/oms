@@ -61,9 +61,8 @@ impl Runnable for Transcode {
                 "e" | "extensions" => transcode_option.extensions_from(value)?,
                 "o" | "output" => transcode_option.set_output(value)?,
                 "s" | "split" => transcode_option.set_split(value)?,
-                "list" => {
-                    transcode_option.set_list(value)?; // Files are provided in option
-                },
+                "skip-list" => transcode_option.set_skiplist(value)?,
+                "list" => transcode_option.set_list(value)?,
                 arg => {
                     *b_isrunning = false;
                     return Err(io::Error::new(
@@ -137,6 +136,9 @@ fn file_info_from_list(transcode_option: &TranscodeOption, thread_pool: &ThreadP
 }
 
 fn transcode_file(file_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
+    if transcode_option.skip_list.contains(&file::get_file_name(file_path)) {
+        return;
+    }
     // Only check
     if transcode_option.check {
         check_invalid(file_path);
@@ -157,6 +159,12 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
     if !transcode_option.has_extension(&extension) {
         return ();
     }
+
+    let file_name = file::get_file_name(file_path);
+    if file_name.contains(".oms_transcoded.") || file_name.contains(".oms_transcode_temp.") {
+        return ();
+    }    
+
     let file_path = file_path.clone();
     let transcode_option = transcode_option.clone();
     thread_pool.execute(move || {
@@ -185,7 +193,7 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
                                         println!("{} {}", "Transcode error: unable to rename output file, output file already exists: ".yellow(), final_output.yellow());
                                     } else {
                                         // Rename output if same extension but need to re-encode .mp4.mp4
-                                        if let Err(err) = file::rename_file(&dest_output, &final_output) {
+                                        if let Err(err) = file::rename_file(&dest_output, &file::get_file_name(&final_output)) {
                                             println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
                                         }
                                     }
@@ -194,7 +202,7 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
                             };
                         }
                     } else {
-                        println!("{}{}", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), dest_output.yellow());
+                        println!("\n{}{}\n", "Transcode warning: original file not deleted, output seems invalid: ".yellow(), dest_output.yellow());
                     }                    
                 }
             },
@@ -365,7 +373,14 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
 }
 
 fn transcode_dir(dir_path: &String, transcode_option: &TranscodeOption, thread_pool: &ThreadPool) {
-    for entry in fs::read_dir(Path::new(&dir_path)).unwrap() {
+    let read_dir =  fs::read_dir(Path::new(&dir_path));
+    if read_dir.is_err() {
+        return;
+    }
+    for entry in read_dir.unwrap() {
+        if entry.is_err() {
+            continue;
+        }
         let path = entry.unwrap().path();
         if path.is_file() {
             transcode_file(&path.to_str().unwrap().to_string(), transcode_option, thread_pool)
