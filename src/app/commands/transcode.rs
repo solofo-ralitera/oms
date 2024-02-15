@@ -194,11 +194,11 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
                                     } else {
                                         // Rename output if same extension but need to re-encode .mp4.mp4
                                         if let Err(err) = file::rename_file(&dest_output, &file::get_file_name(&final_output)) {
-                                            println!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
+                                            eprintln!("{}{}", "Transcode error: unable to rename output file, ".red(), err.to_string().red())
                                         }
                                     }
                                 },
-                                Err(err) => println!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
+                                Err(err) => eprintln!("{}{}", "Transcode error: unable to delete original file, ".red(), err.to_string().red()),
                             };
                         }
                     } else {
@@ -210,7 +210,7 @@ fn transcode_file_single(file_path: &String, transcode_option: &TranscodeOption,
                 println!("{}{}", "Transcode warn: Output already exists ".blue(), file_path.blue());
             },
             Err(err) => {
-                println!("{}{}", "Transcode error: ".red(), err.to_string().red())
+                eprintln!("{}{}", "Transcode error: ".red(), err.to_string().red())
             },
             _ => (),
         }
@@ -235,7 +235,7 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
 
     let directory = file::get_file_dir(file_path);
     if directory.is_none() {
-        println!("{}{}", "Transcode error: unable to find directory for ".red(), file_path.red());
+        eprintln!("{}{}", "Transcode error: unable to find directory for ".red(), file_path.red());
         return;
     }
     let directory = directory.unwrap();
@@ -243,7 +243,7 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
     let directory = directory.join(file::remove_extension(&file::get_file_name(file_path)));
     
     if directory.is_file() {
-        println!("{}{}", "Transcode error: file exists instead of directory: ".red(), directory.display().to_string().red());
+        eprintln!("{}{}", "Transcode error: file exists instead of directory: ".red(), directory.display().to_string().red());
         return;
     }
     
@@ -298,7 +298,7 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
                 .into_iter()
                 .filter(|f| {
                     let extension = file::get_extension(&file_path).to_lowercase();
-                    return f.contains(".oms_transcoded.") && file::get_extension(&f).eq(&transcode_option.get_output(&extension));
+                    return f.contains(".oms_transcoded.") && file::get_extension(&f).eq(&video::transcode_extension(&transcode_option.get_output(&extension)));
                 })
                 .map(|f| format!("file '{}'", file::get_file_name(&f)))
                 .collect();
@@ -367,7 +367,7 @@ fn transcode_file_split(file_path: &String, transcode_option: &TranscodeOption) 
             };
         },
         Err(err) => {
-            println!("{} {}: {}", "Transcode finished with error on".red(), file_path.red(), err.downcast_ref::<&str>().unwrap_or(&""));
+            eprintln!("{} {}: {}", "Transcode finished with error on".red(), file_path.red(), err.downcast_ref::<&str>().unwrap_or(&""));
         },
     }
 }

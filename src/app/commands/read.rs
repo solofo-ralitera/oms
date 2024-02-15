@@ -51,7 +51,7 @@ fn read_text_file(file_path: &String) -> JoinHandle<Result<()>> {
                 Ok(())
             }
             Err(err) => {
-                println!("\nRead error: {err}\n");
+                eprintln!("\nRead error: {err}\n");
                 print_usage();
                 return Err(Error::new(
                     err.kind(), 

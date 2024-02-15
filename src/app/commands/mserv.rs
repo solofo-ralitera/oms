@@ -153,7 +153,7 @@ fn handle_connection(mut stream: TcpStream, option: MservOption) {
         }
         if let Some(bytes) = bytes_content {
             if let Err(err) = stream.write (&bytes) {
-                println!("Stream write error: {}", err.to_string());
+                eprintln!("Stream write error: {}", err.to_string());
             }
         }
         let _ = stream.write_all(b"");
