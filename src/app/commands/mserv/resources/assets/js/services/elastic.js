@@ -136,6 +136,10 @@ class ElasticMedia {
                 "order" : "asc"
             }
         });
+        // If only random sort: no end, always start at 0
+        if (sort.length === 1) {
+            from = 0;
+        }
 
         return fetch(ELASTIC_URL + "/_search", {
             method: "POST",
